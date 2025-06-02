@@ -7,8 +7,8 @@ export default class LoginScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.html("loginForm", "assets/login-form.html");
-    this.load.image('bg', 'assets/backgrounds/mainbg.png');
+    this.load.html("loginForm", "/assets/login-form.html");
+    this.load.image('bg', '/assets/backgrounds/mainbg.png');
   }
 
   async create() {
