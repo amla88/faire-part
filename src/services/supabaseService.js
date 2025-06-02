@@ -4,11 +4,6 @@ import { createClient } from '@supabase/supabase-js'
 class SupabaseService {
   constructor() {
     this.supabase = createClient(env.supabaseUrl, env.supabaseAnonKey);
-    this.user = null
-  }
-
-  async signIn() {
-    return this.signIn(env.emailUser, env.passwordUser)
   }
 
   async signIn(email, password) {
@@ -18,14 +13,11 @@ class SupabaseService {
     })
 
     if (error) throw error
-
-    this.user = data.user
     return data.user
   }
 
   async getUser() {
     const { data: { user } } = await this.supabase.auth.getUser()
-    this.user = user
     return user
   }
 

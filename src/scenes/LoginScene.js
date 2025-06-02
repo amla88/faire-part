@@ -1,4 +1,5 @@
 import supabase from "../services/supabaseService.js";
+import env from '../environment';
 
 export default class LoginScene extends Phaser.Scene {
   constructor() {
@@ -16,7 +17,7 @@ export default class LoginScene extends Phaser.Scene {
     // Si un UUID est présent, tenter de se connecter
     if (uuid) {
       try {
-        const user = await supabase.signIn();
+        const user = await supabase.signIn(env.emailUser, env.passwordUser);
         if (user) {
           this.scene.start("MainScene");
           return;
