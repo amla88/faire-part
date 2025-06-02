@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 class SupabaseService {
   constructor() {
     this.supabase = createClient(env.supabaseUrl, env.supabaseAnonKey);
+    this.user = null;
   }
 
   async signIn(email, password) {
@@ -16,9 +17,27 @@ class SupabaseService {
     return data.user
   }
 
-  async getUser() {
+  async getTechnicalUser() {
     const { data: { user } } = await this.supabase.auth.getUser()
     return user
+  }
+
+  getlUser() {
+    return this.user
+  }
+
+  async loadUser(uuid) {
+    const { data, error } = await this.supabase
+      .from("users")
+      .select("*")
+      .eq("auth_uuid", uuid)
+      .maybeSingle();
+
+    if (error || !data) {
+      this.user = null;
+    } else {
+      this.user = data;
+    }
   }
 
   async savePlayerData(data) {

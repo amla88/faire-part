@@ -8,7 +8,7 @@ export default class MainScene extends Phaser.Scene {
   }
 
   async create() {
-    /*this.connectToDB();
+    /*
     this.add.text(50, 50, "Phaser + Supabase", {
       font: "24px Arial",
       fill: "#fff",
@@ -42,20 +42,7 @@ export default class MainScene extends Phaser.Scene {
     }*/
   }
 
-  async loadUser() {
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("auth_uuid", this.auth.id)
-      .maybeSingle();
-
-    if (error || !data) {
-      console.error("Erreur chargement utilisateur :", error);
-    } else {
-      this.user = data;
-      console.log("user :", this.user);
-    }
-  }
+  
 
   async saveGame() {
     const {
