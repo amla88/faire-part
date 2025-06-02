@@ -12,7 +12,7 @@ dist/
 
 # Environment files
 .env
-src/environment.js
+.env.local
 
 # Vite cache and metadata
 .vite/deps/
