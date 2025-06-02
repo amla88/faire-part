@@ -12,7 +12,7 @@ export default class LoginScene extends Phaser.Scene {
   }
 
   async create() {
-    console.log("Base path =", env.basePath);
+    console.log("Base path = ", env.basePath);
     this.add.image(0, 0, 'bg').setOrigin(0, 0);
     // Fonction pour obtenir l'UUID depuis l'URL
     const uuid = this.getUUIDFromURL();
