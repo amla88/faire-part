@@ -26,6 +26,10 @@ export default class LoginScene extends Phaser.Scene {
     }
   }
 
+  getClient() {
+    return supabaseService.getClient();
+  }
+
   async connexionClassique(uuid) {
     let error = null;
     try {

@@ -4,8 +4,8 @@ import LoginScene from "./scenes/LoginScene.js";
 
 const config = {
   type: Phaser.AUTO,
-  width: 1280,
-  height: 720,
+  width: 800,
+  height: 600,
   backgroundColor: "#2d3436",
   parent: "game",
   scene: [LoginScene, MainScene],
