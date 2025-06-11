@@ -2,10 +2,6 @@ import Phaser from "phaser";
 import MainScene from "./scenes/MainScene.js";
 import LoginScene from "./scenes/LoginScene.js";
 
-import { testEnvVars } from './env-test.js'
-
-testEnvVars()
-
 const config = {
   type: Phaser.AUTO,
   width: 800,
