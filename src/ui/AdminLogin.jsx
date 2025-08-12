@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { supabase } from "../services/supabaseClient";
+import { useNavigate } from "react-router-dom";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const navigate = useNavigate();
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -20,8 +22,19 @@ export default function AdminLogin() {
       return;
     }
 
-    // Après connexion, on peut vérifier le rôle si besoin ici ou dans AdminPanel
-    window.location.href = "/admin-panel"; // Change le chemin selon ta route admin
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", data.user.id)
+      .single();
+
+    if (profileError || profile.role !== "admin") {
+      setErrorMsg("Accès refusé : vous n'êtes pas administrateur.");
+      await supabase.auth.signOut();
+      return;
+    }
+
+    navigate("/admin-panel");
   }
 
   return (
