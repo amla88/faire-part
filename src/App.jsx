@@ -7,7 +7,7 @@ import Game from "./Game";
 
 export default function App() {
   return (
-    <Router>
+    <Router basename="/faire-part">
       <Routes>
         <Route path="/admin-login" element={<AdminLogin />} />
         <Route path="/admin-panel" element={<AdminPanel />} />
