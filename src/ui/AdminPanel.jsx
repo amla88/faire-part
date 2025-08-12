@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+// src/ui/AdminPanel.jsx
+import React, { useState, useEffect } from "react";
 import QRCode from "react-qr-code";
 import { supabase } from "../services/supabaseClient";
 import { generateLoginToken } from "../utils/token";
@@ -8,21 +9,54 @@ export default function AdminPanel() {
   const [link, setLink] = useState("");
   const [nom, setNom] = useState("");
   const [prenom, setPrenom] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    async function checkRole() {
+      const { data: { user }, error } = await supabase.auth.getUser();
+
+      if (error || !user) {
+        window.location.href = "/admin-login";
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      if (profileError || !profile) {
+        alert("Impossible de vérifier le rôle.");
+        window.location.href = "/";
+        return;
+      }
+
+      if (profile.role === "admin") {
+        setIsAdmin(true);
+      } else {
+        alert("Accès refusé : vous n'êtes pas administrateur.");
+        window.location.href = "/";
+      }
+      setLoading(false);
+    }
+
+    checkRole();
+  }, []);
 
   async function handleAddUser() {
     const token = generateLoginToken();
 
-    // Récupère l'utilisateur actuellement connecté
     const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
     if (userError || !currentUser) {
       alert("Vous devez être connecté pour créer un utilisateur.");
       return;
     }
 
-    // Ajoute l'id de l'utilisateur connecté dans la nouvelle ligne
     const { data, error } = await supabase
       .from("users")
-      .insert({ login_token: token, created_by: currentUser.id }) // Ajoute created_by
+      .insert({ login_token: token, created_by: currentUser.id })
       .select()
       .single();
 
@@ -32,12 +66,21 @@ export default function AdminPanel() {
       nom,
       prenom,
       user_id: data.id,
-      created_by: currentUser.id // Optionnel si tu veux aussi dans cette table
+      created_by: currentUser.id
     });
 
-    const loginLink = `${window.location.origin}/?uuid=${token}`;
+    // <-- lien vers /game (change ici)
+    const loginLink = `${window.location.origin}/game?uuid=${token}`;
     setLink(loginLink);
     setQr(loginLink);
+  }
+
+  if (loading) {
+    return <p style={{ color: "#fff" }}>Vérification en cours...</p>;
+  }
+
+  if (!isAdmin) {
+    return null;
   }
 
   return (
@@ -48,7 +91,7 @@ export default function AdminPanel() {
       <button onClick={handleAddUser}>Créer et générer QR/lien</button>
       {qr && (
         <div>
-          <p>Lien unique : <a href={link}>{link}</a></p>
+          <p>Lien unique : <a href={link}>{link}</a></p>
           <QRCode value={qr} />
         </div>
       )}

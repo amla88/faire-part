@@ -149,7 +149,7 @@ export default class MainScene extends Phaser.Scene {
       console.log('TODO: Load second zone');
     });
 
-    const personne_id = this.registry.get('personne_id');
+    const personne_id = this.registry.get('personne_id') || parseInt(localStorage.getItem('personne_id'), 10);
     const avatarSprite = this.add.sprite(400, 300, 'player', 0);
 
     getAvatar(personne_id).then(({ data }) => {
