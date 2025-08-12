@@ -1,6 +1,9 @@
 import supabaseService from "../services/supabaseService.js";
 import env from "../environment";
 import NPCForm from '../ui/NPCFormMusic';
+import AvatarCustomizer from '../ui/AvatarCustomizer.js';
+import { supabase } from "../services/supabaseClient";
+import { getAvatar } from '../services/avatarService.js';
 
 export default class MainScene extends Phaser.Scene {
   constructor() {
@@ -27,7 +30,7 @@ export default class MainScene extends Phaser.Scene {
   }
 
   create() {
-    const user = supabaseService.getlUser();
+    const user = supabaseService.getUser();
     this.npcForm = new NPCForm(this, user, () => {
       this.dialogActive = false; // ✅ Réactive le mouvement quand le form se ferme
     });
@@ -145,6 +148,36 @@ export default class MainScene extends Phaser.Scene {
     this.physics.add.overlap(this.player, this.exitZone, () => {
       console.log('TODO: Load second zone');
     });
+
+    const personne_id = this.registry.get('personne_id');
+    const avatarSprite = this.add.sprite(400, 300, 'player', 0);
+
+    getAvatar(personne_id).then(({ data }) => {
+      if (data) {
+        // Exemple d’application des propriétés (à adapter selon tes sprites)
+        // Change la couleur de peau
+        if (data.couleur_peau === 2) avatarSprite.setTint(0xfad7b6);
+        else if (data.couleur_peau === 3) avatarSprite.setTint(0x8d5524);
+        else avatarSprite.clearTint();
+
+        // Ajoute un accessoire, chapeau, etc. selon les valeurs
+        // Tu peux afficher d'autres sprites par-dessus avatarSprite
+        // Exemple :
+        if (data.chapeau) {
+          this.add.sprite(400, 280, 'chapeau_' + data.chapeau);
+        }
+        // Idem pour les autres propriétés...
+      }
+    });
+
+    const customizeBtn = this.add.text(20, 20, 'Personnaliser Avatar', { fontSize: '20px', fill: '#fff' })
+      .setInteractive()
+      .on('pointerdown', () => {
+        // Remplace par l’ID de la personne connectée
+        const personne_id = this.registry.get('personne_id');
+        const customizer = new AvatarCustomizer(supabase, personne_id);
+        customizer.show();
+      });
   }
 
   update() {

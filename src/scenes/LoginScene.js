@@ -1,4 +1,5 @@
 import supabaseService from "../services/supabaseService.js";
+import { supabase } from "../services/supabaseClient";
 import env from "../environment";
 
 export default class LoginScene extends Phaser.Scene {
@@ -33,27 +34,25 @@ export default class LoginScene extends Phaser.Scene {
   async connexionClassique(uuid) {
     let error = null;
     try {
-      const user = await supabaseService.signIn(
-        env.emailUser,
-        env.passwordUser
-      );
-      if (user) {
-        await supabaseService.loadUser(uuid);
-        if (supabaseService.getlUser()) {
-          console.log(
-            "Utilisateur connecté avec succès:",
-            supabaseService.getlUser()
-          );
+      // Pas besoin d'email/password pour les invités
+      const { data, error: userError } = await supabase
+        .from("users")
+        .select("*")
+        .eq("login_token", uuid)
+        .maybeSingle();
+      if (userError || !data) {
+        error = "Aucun utilisateur trouvé avec ce lien";
+      } else {
+        await supabaseService.loadUser(data.auth_uuid);
+        if (supabaseService.getUser()) {
           this.scene.start("MainScene");
-          return; //connecté et un user trouvé avec l'uuid
+          return;
         } else {
-          error = "Aucun utilisateur trouvé avec l'UUID";
-          console.log("Aucun utilisateur trouvé avec l'UUID:", uuid);
+          error = "Utilisateur non trouvé";
         }
       }
     } catch (err) {
-      error = "Login failed with UUID";
-      console.error("Login failed with UUID:", err);
+      error = "Erreur de connexion";
     }
     return error;
   }
@@ -63,14 +62,20 @@ export default class LoginScene extends Phaser.Scene {
     try {
       const user = await supabaseService.signIn(email, password);
       if (user) {
-        console.log("Utilisateur admin connecté avec succès:", user);
+        await supabaseService.loadUser(user.id);
+        if (supabaseService.getUser()?.is_admin) {
+          // Redirige vers l’interface admin
+          window.location.href = "/?admin=true";
+          return;
+        } else {
+          error = "Ce compte n'est pas administrateur";
+        }
       } else {
-        error = "Échec de la connexion admin: utilisateur non trouvé";
-        console.log("Échec de la connexion admin: utilisateur non trouvé");
+        error = "Échec de la connexion admin";
       }
     } catch (err) {
-      error = "Échec de la connexion admin";
-      console.error("Échec de la connexion admin:", err);
+      console.error("Erreur dans signIn :", err);
+      error = "Erreur de connexion admin";
     }
     return error;
   }

@@ -1,18 +1,18 @@
-import env from '../environment';
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from "../services/supabaseClient";
 
 class SupabaseService {
   constructor() {
-    this.supabase = createClient(env.supabaseUrl, env.supabaseAnonKey);
     this.user = null;
+    this.supabase = supabase;
   }
 
   async signIn(email, password) {
+    console.log(supabase);
     const { data, error } = await this.supabase.auth.signInWithPassword({
       email,
       password
     })
-
+    console.log("Réponse Supabase :", data, error);
     if (error) throw error
     return data.user
   }
@@ -22,11 +22,16 @@ class SupabaseService {
     return user
   }
 
-  getlUser() {
+  getSupabase() {
+    return this.supabase
+  }
+
+  getUser() {
     return this.user
   }
 
   async loadUser(uuid) {
+    console.log(uuid)
     const { data, error } = await this.supabase
       .from("users")
       .select("*")
