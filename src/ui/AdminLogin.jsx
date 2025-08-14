@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { supabase } from "../services/supabaseClient";
+import { useNavigate } from "react-router-dom";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const navigate = useNavigate();
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -20,8 +22,23 @@ export default function AdminLogin() {
       return;
     }
 
-    // Après connexion, on peut vérifier le rôle si besoin ici ou dans AdminPanel
-    window.location.href = "/admin-panel"; // Change le chemin selon ta route admin
+    // On attend explicitement que la session soit bien propagée
+    let attempts = 0;
+    let maxAttempts = 10;
+    let delay = 100; // ms
+
+    while (attempts < maxAttempts) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        navigate("/admin-panel");
+        return;
+      }
+      await new Promise((res) => setTimeout(res, delay));
+      attempts++;
+    }
+
+    // Si toujours pas de user, afficher un msg
+    setErrorMsg("Session non initialisée, veuillez réessayer.");
   }
 
   return (
