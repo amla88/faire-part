@@ -1,13 +1,8 @@
-// src/ui/AdminPanel.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import AddUserForm from "./AddUserForm";
 import UserList from "./UserList";
-import {
-  fetchUsersWithPersonnes,
-  addUser,
-  deleteUserCascade,
-} from "../services/userService";
+import { fetchUsersWithPersonnes, addUser, deleteUserCascade } from "../services/userService";
 import { supabase } from "../services/supabaseClient";
 import { Container, Nav, Button, Alert, Spinner } from "react-bootstrap";
 
@@ -29,11 +24,7 @@ export default function AdminPanel() {
 
   useEffect(() => {
     async function checkRole() {
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser();
-
+      const { data: { user }, error } = await supabase.auth.getUser();
       if (error || !user) {
         setErrorMsg("Vous devez être connecté.");
         setLoading(false);
@@ -42,13 +33,11 @@ export default function AdminPanel() {
         }, 2000);
         return;
       }
-
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("role")
         .eq("id", user.id)
         .single();
-
       if (profileError || !profile) {
         setErrorMsg("Impossible de vérifier le rôle.");
         setLoading(false);
@@ -57,19 +46,18 @@ export default function AdminPanel() {
         }, 2000);
         return;
       }
-
       if (profile.role === "admin") {
         setIsAdmin(true);
-
         const { data: adminUser } = await supabase
           .from("users")
           .select("login_token")
           .eq("auth_uuid", user.id)
           .maybeSingle();
-
         setAdminToken(adminUser?.login_token || "");
-        await handleFetchUsers(); // gère loading en interne
-        return;
+        handleFetchUsers();
+      } else {
+        setErrorMsg("Accès refusé : vous n'êtes pas administrateur.");
+        setTimeout(() => { navigate("/"); }, 2000);
       }
 
       setErrorMsg("Accès refusé : vous n'êtes pas administrateur.");
@@ -78,9 +66,7 @@ export default function AdminPanel() {
         navigate("/");
       }, 2000);
     }
-
     checkRole();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleLogout() {
@@ -156,7 +142,6 @@ export default function AdminPanel() {
       </Container>
     );
   }
-
   if (loading) {
     return (
       <Container className="mt-5 text-center">

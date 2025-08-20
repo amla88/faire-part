@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { supabase } from "../services/supabaseClient";
 import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -18,19 +19,23 @@ export default function AdminLogin() {
       return;
     }
 
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", data.user.id)
-      .single();
+    // On attend explicitement que la session soit bien propagée
+    let attempts = 0;
+    let maxAttempts = 10;
+    let delay = 100; // ms
 
-    if (profileError || profile.role !== "admin") {
-      setErrorMsg("Accès refusé : vous n'êtes pas administrateur.");
-      await supabase.auth.signOut();
-      return;
+    while (attempts < maxAttempts) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        navigate("/admin-panel");
+        return;
+      }
+      await new Promise((res) => setTimeout(res, delay));
+      attempts++;
     }
 
-    navigate("/admin-panel");
+    // Si toujours pas de user, afficher un msg
+    setErrorMsg("Session non initialisée, veuillez réessayer.");
   }
 
   return (

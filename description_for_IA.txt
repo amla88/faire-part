@@ -1,0 +1,148 @@
+Projet : Faire-part de mariage interactif / SPA React + Supabase
+
+Résumé fonctionnel :
+  - Un faire-part de mariage numérique, sur lequel les invités reçoivent un QR code unique ou un lien court pour accéder à une expérience personnalisée (mini-jeu, formulaire, avatar).
+  - Les invités n'ont pas de compte à mot de passe, mais accèdent via un token unique généré à la création de leur "profil".
+  - Un panneau d'administration permet de gérer les invités, générer les tokens/liens, voir les réponses, etc.
+  - Deployment sur GitHub Pages dans un sous-répertoire (/faire-part).
+
+Technos utilisées :
+  - Frontend : React (via Vite), Phaser.js (mini-jeu), react-router-dom pour routage, react-qr-code pour QR
+  - Backend/DB : Supabase (PostgreSQL, Auth), RLS policies
+  - Déploiement : GitHub Pages (branche gh-pages, base: /faire-part)
+  - Utilitaires : Génération de tokens courts (8+ caractères alphanumériques sans ambiguité)
+
+Schéma simplifié de la DB :
+  - Table auth.users (UUID) : utilisée par Supabase Auth (ne jamais modifier à la main)
+  - Table profiles (id UUID FK auth.users, role='admin' ou 'invite')
+  - Table users (bigint PK auto, login_token TEXT unique, created_by UUID FK profiles/id, auth_uuid UUID nullable FK auth.users/id)
+  - Table personnes (id BIGINT, nom, prenom, user_id BIGINT FK users/id)
+  - Table avatars et musiques (personnalisations liées à personnes)
+  - Le mapping "qui peut faire quoi" est validé par policies RLS, principalement en checkant profiles/id = auth.uid() et role = 'admin' pour les actions admin
+
+Flux invité :
+  1. AdminPanel génère un token court unique (login_token) et associe un couple nom/prénom à un user.
+  2. L'invité reçoit pointe vers /game?token=LOGIN_TOKEN
+  3. En accédant à ce lien, le front vérifie la validité du token dans la table users puis charge la fiche associée (personnes, etc) ; pas de passage par Supabase Auth natif.
+
+Flux admin :
+  - Accès au panel via /admin-login ; on vérifie via Supabase Auth + profils (role admin) + RLS.
+  - L'admin peut ajouter des invités, générer QR, voir et éditer les données.
+  - Possibilité de générer des tokens courts, les vérifier à l'ajout (unicité), voir le profil de chaque invité.
+
+Sécurité :
+  - RLS activée sur toutes les tables sensibles. 
+  - SELECT/INSERT autorisés pour l'admin partout. Pour les invités, le SELECT est possible sur 'users' via leur login_token, et sur leurs propres données liées.
+  - INSERT sur users/personnes interdit sauf via l’admin (policy with check EXISTS sur profiles/id=auth.uid() and role='admin')
+  - Policy SELECT admin : EXISTS (SELECT 1 FROM profiles WHERE id=auth.uid() AND role='admin')
+  - Policy SELECT invité : login_token = ((current_setting('request.jwt.claims', true)::json->>'uuid')) OU auth_uuid = auth.uid()
+
+Code/organisation :
+  - src/ui/ : composants React (AdminLogin, AdminPanel)
+  - src/utils/token.js : génération token court
+  - src/services/supabaseClient.js : API Supabase
+  - src/Game.jsx : mini-jeu, vérification token et chargement invité
+  - Un App.jsx avec <Router basename="/faire-part"> et routes claires.
+
+Exemple de génération de token court :
+  function generateLoginToken(length = 8) { ... } (mélange A-Z, 2-9)
+
+À fournir pour debug/collaboration :
+  - Copie de la structure du projet (tree)
+  - Polices RLS sur users, personnes, profiles (texte SQL)
+  - Extraits précis de l’erreur, du code, ou logs de console JS au besoin
+
+Déploiement :
+  - npm install / npm run build localement avec le bon .env (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY)
+  - npm run deploy pour GitHub Pages (attention à base /faire-part)
+
+  Policies:
+  alter policy "Allow admin insert"
+
+on "public"."personnes"
+
+to public
+
+with check (
+
+  (EXISTS ( SELECT 1
+
+   FROM profiles
+
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text))))
+
+);
+
+
+
+
+
+alter policy "admin all update"
+
+on "public"."users"
+
+to public
+
+using (
+
+  (EXISTS ( SELECT 1
+
+   FROM profiles
+
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text))))
+
+);
+
+
+
+
+
+alter policy "Allow admin insert"
+
+on "public"."users"
+
+to public
+
+with check (
+
+(EXISTS ( SELECT 1
+
+   FROM profiles
+
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text))))
+
+);
+
+
+
+
+
+alter policy "Lecture admin ou token"
+
+on "public"."users"
+
+to public
+
+using (
+
+  ((EXISTS ( SELECT 1
+
+   FROM profiles
+
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text)))) OR (login_token = ((current_setting('request.jwt.claims'::text, true))::json ->> 'uuid'::text)) OR (auth_uuid = auth.uid()))
+
+);
+
+
+
+alter policy "Allow user read own profile"
+
+on "public"."profiles"
+
+to public
+
+using (
+
+  (id = auth.uid())
+
+);

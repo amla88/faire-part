@@ -15,17 +15,21 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: '20.19.0'
+
+      - name: Downgrade npm (use npm 9)
+        run: npm install -g npm@9
+
+      - name: Clear npm cache
+        run: npm cache clean --force
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build Vite project
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          VITE_EMAIL_USER: ${{ secrets.VITE_EMAIL_USER }}
-          VITE_PASSWORD_USER: ${{ secrets.VITE_PASSWORD_USER }}
           VITE_BASE_PATH: ${{ secrets.VITE_BASE_PATH }}
         run: npm run build
 
