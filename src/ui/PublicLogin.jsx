@@ -1,0 +1,41 @@
+import React, { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+
+export default function PublicLogin() {
+  const [code, setCode] = useState("");
+  const navigate = useNavigate();
+  const location = useLocation();
+  const incomingError = (location.state && location.state.error) || null;
+
+  const onSubmit = (e) => {
+    e.preventDefault();
+    const trimmed = code.trim();
+    if (!trimmed) return;
+    navigate(`/game?uuid=${encodeURIComponent(trimmed)}`);
+  };
+
+  return (
+    <div className="page">
+      <div className="card">
+        <h1 className="title">Accès au faire-part</h1>
+        <p className="subtitle">Entrez votre code personnel pour accéder au jeu.</p>
+
+        {incomingError && <div className="alert alert-error">{incomingError}</div>}
+
+        <form onSubmit={onSubmit}>
+          <label htmlFor="code" className="label">Code personnel</label>
+          <input
+            id="code"
+            type="text"
+            placeholder="Ex: UOQ612TC"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            autoFocus
+            className="input"
+          />
+          <button type="submit" className="btn btn-primary w-100 mt-12">Valider</button>
+        </form>
+      </div>
+    </div>
+  );
+}

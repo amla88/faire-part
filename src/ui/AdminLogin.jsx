@@ -12,11 +12,7 @@ export default function AdminLogin() {
     e.preventDefault();
     setErrorMsg("");
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setErrorMsg(error.message);
       return;
@@ -38,30 +34,38 @@ export default function AdminLogin() {
   }
 
   return (
-    <div style={{ maxWidth: 400, margin: "auto", padding: 24, background: "#222", color: "#fff", borderRadius: 8 }}>
-      <h2>Connexion Admin</h2>
-      <form onSubmit={handleLogin}>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          style={{ width: "100%", marginBottom: 12, padding: 8 }}
-        />
-        <input
-          type="password"
-          placeholder="Mot de passe"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          style={{ width: "100%", marginBottom: 12, padding: 8 }}
-        />
-        <button type="submit" style={{ width: "100%", padding: 10 }}>
-          Se connecter
-        </button>
-        {errorMsg && <p style={{ color: "red" }}>{errorMsg}</p>}
-      </form>
+    <div className="page">
+      <div className="card">
+        <h2 className="title">Connexion administrateur</h2>
+        <p className="subtitle">Espace réservé aux organisateurs.</p>
+
+        <form onSubmit={handleLogin}>
+          <label className="label" htmlFor="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            placeholder="nom@exemple.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="input"
+          />
+
+          <label className="label mt-12" htmlFor="password">Mot de passe</label>
+          <input
+            id="password"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="input"
+          />
+
+          <button type="submit" className="btn btn-primary w-100 mt-16">Se connecter</button>
+          {errorMsg && <div className="alert alert-error mt-12">{errorMsg}</div>}
+        </form>
+      </div>
     </div>
   );
 }

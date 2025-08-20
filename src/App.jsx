@@ -1,20 +1,23 @@
 // src/App.jsx
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import PublicLogin from "./ui/PublicLogin";
 import AdminLogin from "./ui/AdminLogin";
 import AdminPanel from "./ui/AdminPanel";
 import Game from "./Game";
+import "./ui/theme.css";
 
 export default function App() {
   return (
     <Router basename="/faire-part">
       <Routes>
+        <Route path="/login" element={<PublicLogin />} />
         <Route path="/admin-login" element={<AdminLogin />} />
         <Route path="/admin-panel" element={<AdminPanel />} />
         <Route path="/game" element={<Game />} />
         {/* redirige racine vers /game */}
-        <Route path="/" element={<Navigate to="/game" replace />} />
-        <Route path="*" element={<Navigate to="/game" replace />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
   );

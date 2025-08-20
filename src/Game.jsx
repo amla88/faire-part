@@ -9,7 +9,6 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 export default function Game() {
   const gameRef = useRef(null);
   const [status, setStatus] = useState("Vérification du lien...");
-  const [error, setError] = useState(null);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -19,8 +18,10 @@ export default function Game() {
       const uuid = searchParams.get("uuid");
 
       if (!uuid) {
-        setError("Lien invalide : aucun token fourni.");
-        setStatus(null);
+        navigate("/login", {
+          replace: true,
+          state: { error: "Lien invalide : aucun code personnel fourni." },
+        });
         return;
       }
 
@@ -29,8 +30,10 @@ export default function Game() {
       // 1) vérifier le token et charger l'objet user via supabaseService
       const user = await supabaseService.loadUserByLoginToken(uuid);
       if (!user) {
-        setError("Token invalide ou expiré.");
-        setStatus(null);
+        navigate("/login", {
+          replace: true,
+          state: { error: "Code personnel invalide ou expiré." },
+        });
         return;
       }
 
@@ -42,8 +45,13 @@ export default function Game() {
         .maybeSingle();
 
       if (personneError) {
-        setError("Erreur lors de la récupération des données utilisateur.");
-        setStatus(null);
+        navigate("/login", {
+          replace: true,
+          state: {
+            error:
+              "Erreur lors de la récupération des données utilisateur. Réessayez.",
+          },
+        });
         return;
       }
 
@@ -74,10 +82,7 @@ export default function Game() {
         };
 
         gameRef.current = new Phaser.Game(config);
-
-        // give Phaser a moment to initialise, then set registry values
-        // (registry exists on game instance)
-        // A tiny timeout ensures gameRef.current.registry exists
+        
         setTimeout(() => {
           try {
             if (gameRef.current && gameRef.current.registry) {
@@ -111,13 +116,7 @@ export default function Game() {
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}>
       <div id="game" style={{ width: 800, height: 600 }} />
-      {status && <div style={{ position: "absolute", color: "#fff" }}>{status}</div>}
-      {error && (
-        <div style={{ position: "absolute", color: "red", background: "#0008", padding: 12 }}>
-          <p>{error}</p>
-          <button onClick={() => window.location.href = "/"}>Retour</button>
-        </div>
-      )}
+      {status && (<div style={{ position: "absolute", color: "#fff" }}>{status}</div>)}
     </div>
   );
 }
