@@ -1,9 +1,10 @@
 {
   "name": "phaser-vite-supabase",
   "version": "1.0.0",
+  "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev debug": "vite --debug",
+    "dev:debug": "vite --debug",
     "build": "vite build",
     "preview": "vite preview",
     "deploy": "gh-pages -d dist",
@@ -13,13 +14,19 @@
     "@supabase/supabase-js": "^2.55.0",
     "bootstrap": "^5.3.7",
     "phaser": "^3.70.0",
+    "react": "^19.1.0",
     "react-bootstrap": "^2.10.10",
+    "react-dom": "^19.1.0",
     "react-qr-code": "^2.0.18",
     "react-router-dom": "^7.8.0"
   },
   "devDependencies": {
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react": "^5.0.0",
     "gh-pages": "^6.3.0",
+    "typescript": "^5.9.2",
     "vite": "^5.0.0"
   }
 }
