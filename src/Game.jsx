@@ -60,6 +60,7 @@ export default function Game() {
         setStatus("Chargement du jeu...");
         const config = {
           type: Phaser.AUTO,
+          pixelArt: true,
           width: 800,
           height: 600,
           backgroundColor: "#2d3436",

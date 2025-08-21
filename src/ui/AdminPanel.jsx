@@ -54,10 +54,8 @@ export default function AdminPanel() {
           .eq("auth_uuid", user.id)
           .maybeSingle();
         setAdminToken(adminUser?.login_token || "");
-        handleFetchUsers();
-      } else {
-        setErrorMsg("Accès refusé : vous n'êtes pas administrateur.");
-        setTimeout(() => { navigate("/"); }, 2000);
+        await handleFetchUsers();
+        return;
       }
 
       setErrorMsg("Accès refusé : vous n'êtes pas administrateur.");
@@ -157,7 +155,7 @@ export default function AdminPanel() {
     : "#";
 
   return (
-    <Container style={{ maxWidth: 900 }} className="mt-5 bg-white rounded shadow p-4">
+    <Container className="panel">
       <Nav variant="tabs" activeKey={tab} className="mb-4 align-items-center">
         <Nav.Item>
           <Nav.Link eventKey="add" onClick={() => setTab("add")}>
@@ -174,14 +172,13 @@ export default function AdminPanel() {
             href={profileLink}
             target="_blank"
             rel="noopener noreferrer"
-            aria-disabled={!adminToken}
-            style={{ color: !adminToken ? "#999" : undefined }}
+            disabled={!adminToken}
           >
             Voir mon profil public
           </Nav.Link>
         </Nav.Item>
         <Nav.Item className="ms-auto">
-          <Button variant="outline-danger" size="sm" onClick={handleLogout}>
+          <Button variant="outline-danger" size="sm" className="btn-ghost" onClick={handleLogout}>
             Se déconnecter
           </Button>
         </Nav.Item>
