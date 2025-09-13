@@ -2,6 +2,7 @@
 import { supabase } from "./supabaseClient";
 
 export interface Personne {
+  id?: number;
   nom: string;
   prenom: string;
 }
@@ -10,7 +11,7 @@ export interface User {
   id: number;
   login_token: string;
   personnes?: Personne[];
-  uuid?: string; // si présent dans ta table
+  auth_uuid?: string; // id d'auth Supabase si présent
 }
 
 export interface FetchUsersResult {
@@ -20,11 +21,12 @@ export interface FetchUsersResult {
 
 export async function fetchUsersWithPersonnes(): Promise<FetchUsersResult> {
   const { data, error } = await supabase
-    .from<User>("users")
+    .from("users")
     .select(`
       id,
       login_token,
       personnes:personnes!personnes_user_id_fkey (
+  id,
         nom,
         prenom
       )
@@ -43,7 +45,7 @@ export interface AddUserParams {
 
 export async function addUser({ nom, prenom, token, createdBy }: AddUserParams): Promise<User> {
   const { data, error } = await supabase
-    .from<User>("users")
+    .from("users")
     .insert({ login_token: token, created_by: createdBy })
     .select()
     .single();
@@ -64,8 +66,8 @@ export async function addUser({ nom, prenom, token, createdBy }: AddUserParams):
 export async function deleteUserCascade(loginToken: string): Promise<boolean> {
   // 1. Récupérer user.id à partir du token
   const { data: user, error: userErr } = await supabase
-    .from<User>("users")
-    .select("id, uuid")
+    .from("users")
+  .select("id, auth_uuid")
     .eq("login_token", loginToken)
     .single();
 
@@ -76,8 +78,8 @@ export async function deleteUserCascade(loginToken: string): Promise<boolean> {
   await supabase.from("personnes").delete().eq("user_id", user.id);
 
   // 3. (optionnel) Supprimer le profil si présent
-  if (user.uuid) {
-    await supabase.from("profiles").delete().eq("id", user.uuid);
+  if ((user as any).auth_uuid) {
+    await supabase.from("profiles").delete().eq("id", (user as any).auth_uuid);
   }
 
   // 4. Supprimer le user

@@ -72,7 +72,8 @@ export default class NPCForm {
       e.preventDefault();
       const target = e.target as HTMLFormElement;
       const formData = new FormData(target);
-      const data: MusicPreference = Object.fromEntries(formData.entries()) as MusicPreference;
+  const raw = Object.fromEntries(formData.entries()) as unknown;
+  const data: MusicPreference = raw as MusicPreference;
 
       const { error } = await this.supabase.from('music_preferences').insert([data]);
       if (error) {

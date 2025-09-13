@@ -13,7 +13,7 @@ interface SupabaseResponse<T> {
 
 export async function getAvatar(personne_id: string): Promise<SupabaseResponse<Avatar>> {
   const { data, error } = await supabase
-    .from<Avatar>('avatars')
+    .from('avatars')
     .select('*')
     .eq('personne_id', personne_id)
     .maybeSingle();
@@ -23,7 +23,7 @@ export async function getAvatar(personne_id: string): Promise<SupabaseResponse<A
 export async function upsertAvatar(personne_id: string, avatarData: Partial<Avatar>) {
   // Vérifie si l'avatar existe
   const { data: existing } = await supabase
-    .from<Avatar>('avatars')
+    .from('avatars')
     .select('id')
     .eq('personne_id', personne_id)
     .maybeSingle();
@@ -31,13 +31,13 @@ export async function upsertAvatar(personne_id: string, avatarData: Partial<Avat
   if (existing) {
     // Mise à jour
     return await supabase
-      .from<Avatar>('avatars')
+      .from('avatars')
       .update(avatarData)
       .eq('id', existing.id);
   } else {
     // Création
     return await supabase
-      .from<Avatar>('avatars')
+      .from('avatars')
       .insert([{ personne_id, ...avatarData }]);
   }
 }

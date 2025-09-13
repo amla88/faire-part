@@ -4,7 +4,8 @@ import Phaser from "phaser";
 import MainScene from "./scenes/MainScene";
 import supabaseService from "./services/supabaseService";
 import { supabase } from "./services/supabaseClient";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import type { PersonneRow } from "./services/supabaseService";
+import { useSearchParams, useNavigate, Link } from "react-router-dom";
 
 // Typage minimal pour user et personne (adapter selon ton DB)
 interface User {
@@ -54,22 +55,16 @@ const Game: React.FC = () => {
       }
 
       // 2) récupérer la personne liée (si existante)
-      const { data: personne, error: personneError } = await supabase
-        .from<Personne>("personnes")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (personneError) {
-        navigate("/login", {
-          replace: true,
-          state: {
-            error:
-              "Erreur lors de la récupération des données utilisateur. Réessayez.",
-          },
-        });
-        return;
-      }
+  const personne: PersonneRow | null = await supabaseService.loadPersonneByUserId(user.id);
+      // Persiste le contexte pour l'éditeur d'avatar React
+      try {
+        if (personne?.id) {
+          localStorage.setItem("personne_id", String(personne.id));
+        } else {
+          localStorage.removeItem("personne_id");
+        }
+        if (uuid) localStorage.setItem("login_uuid", uuid);
+      } catch {}
 
       // 3) créer l'instance Phaser (si pas déjà créée)
       if (!gameRef.current) {
@@ -78,9 +73,9 @@ const Game: React.FC = () => {
         const config: Phaser.Types.Core.GameConfig = {
           type: Phaser.AUTO,
           pixelArt: true,
-          width: 800,
-          height: 600,
-          backgroundColor: "#2d3436",
+           width: 360,
+           height: 240,
+          backgroundColor: "#10141f", // neutral-900 from palette
           parent: "game",
           scene: [MainScene],
           dom: {
@@ -93,7 +88,7 @@ const Game: React.FC = () => {
           physics: {
             default: "arcade",
             arcade: {
-              gravity: { y: 0 },
+              gravity: { x:0, y: 0 },
               debug: false,
             },
           },
@@ -133,17 +128,17 @@ const Game: React.FC = () => {
   }, [searchParams, navigate]);
 
   return (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <div id="game" style={{ width: 800, height: 600 }} />
-      {status && <div style={{ position: "absolute", color: "#fff" }}>{status}</div>}
+    <div style={{ width: "100vw", height: "100vh", position: "relative" }}>
+      <div id="game" style={{ width: "100%", height: "100%" }} />
+      {status && (
+        <div style={{ position: "absolute", top: 12, left: 12, color: "#fff" }}>{status}</div>
+      )}
+      {/* Bouton pour accéder au créateur d'avatar (préserve le uuid) */}
+      <Link
+        to={`/avatar?uuid=${encodeURIComponent(searchParams.get("uuid") || "")}`}
+        className="admin-fab"
+        style={{ right: 70 }}
+      >Avatar</Link>
     </div>
   );
 };

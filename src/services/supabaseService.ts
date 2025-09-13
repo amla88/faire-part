@@ -6,6 +6,13 @@ interface PlayerData {
   [key: string]: any;
 }
 
+export interface PersonneRow {
+  id: number;
+  nom?: string;
+  prenom?: string;
+  user_id: number;
+}
+
 class SupabaseService {
   private user: any = null;
   private supabase: typeof supabase;
@@ -56,19 +63,30 @@ class SupabaseService {
   }
 
   async loadUserByLoginToken(loginToken: string): Promise<any | null> {
-    const { data, error } = await this.supabase
-      .from("users")
-      .select("*")
-      .eq("login_token", loginToken)
-      .maybeSingle();
+    // Utilise la RPC SECURITY DEFINER pour contourner RLS de façon contrôlée
+    const { data, error } = await this.supabase.rpc("get_user_by_token", {
+      p_token: loginToken,
+    });
 
-    if (error || !data) {
+    if (error) {
       this.user = null;
       return null;
-    } else {
-      this.user = data;
-      return data;
     }
+
+    // La RPC peut renvoyer un tableau (ROWS) ou une ligne unique selon la définition
+    const row = Array.isArray(data) ? (data[0] ?? null) : (data as any ?? null);
+    this.user = row || null;
+    return this.user;
+  }
+
+  async loadPersonneByUserId(userId: number): Promise<PersonneRow | null> {
+    // SELECT direct (pas de RPC pour éviter PGRST202 tant que la fonction n'existe pas)
+    const { data } = await this.supabase
+      .from("personnes")
+      .select("id, nom, prenom, user_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    return (data as PersonneRow) ?? null;
   }
 
   async savePlayerData(data: PlayerData): Promise<void> {

@@ -2,21 +2,21 @@ import React, { useState } from "react";
 import { Table, Button, Badge, Modal } from "react-bootstrap";
 
 interface Personne {
-  id: string;
+  id?: number;
   nom: string;
   prenom: string;
 }
 
 interface User {
-  id: string;
+  id: number;
   login_token: string;
   personnes?: Personne[];
 }
 
 interface UserListProps {
   users: User[];
-  onUserIdClick?: (userId: string) => void;
-  onPersonClick?: (personId: string) => void;
+  onUserIdClick?: (userId: number) => void;
+  onPersonClick?: (personId: number) => void;
   onTokenClick?: (token: string) => void;
   onDeleteUser: (userId: string) => void;
 }
@@ -79,39 +79,74 @@ export default function UserList({
               <td>
                 {user.personnes && user.personnes.length > 0 ? (
                   user.personnes.map((p) => (
-                    <Badge
-                      key={p.nom + p.prenom}
-                      bg="secondary"
-                      pill
-                      style={{ marginRight: 5, cursor: "pointer", fontSize: "1em" }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        window.open(
-                          `/faire-part/admin-panel/user/${user.id}`,
-                          "_blank",
-                          "noopener"
-                        );
-                      }}
-                    >
-                      {p.prenom} {p.nom}
-                    </Badge>
+                    <div key={(p.id ?? p.nom) + (p.prenom || "") } style={{ display: 'inline-flex', gap: 6, alignItems: 'center', marginRight: 8, marginBottom: 6 }}>
+                      <Badge
+                        bg="secondary"
+                        pill
+                        style={{ cursor: "pointer", fontSize: "1em" }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(
+                            `/faire-part/admin-panel/user/${user.id}`,
+                            "_blank",
+                            "noopener"
+                          );
+                        }}
+                      >
+                        {p.prenom} {p.nom}
+                      </Badge>
+                      <Button
+                        variant="outline-secondary"
+                        size="sm"
+                        title="Éditer l'avatar"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const base = (import.meta as any)?.env?.BASE_URL || "/";
+                          const uuid = encodeURIComponent(user.login_token);
+                          const pid = encodeURIComponent(String(p.id ?? ""));
+                          const url = `${window.location.origin}${base}avatar?uuid=${uuid}&personne_id=${pid}`;
+                          window.open(url, "_blank", "noopener");
+                        }}
+                      >Avatar</Button>
+                    </div>
                   ))
                 ) : (
                   <span style={{ color: "#aaa" }}>Aucune</span>
                 )}
               </td>
               <td>
-                <Button
-                  variant="outline-warning"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onTokenClick?.(user.login_token);
-                  }}
-                  title="Voir la fiche publique"
-                >
-                  {user.login_token}
-                </Button>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <Button
+                    variant="outline-warning"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const base = (import.meta as any)?.env?.BASE_URL || "/";
+                      const url = `${window.location.origin}${base}game?uuid=${encodeURIComponent(user.login_token)}`;
+                      window.open(url, "_blank", "noopener");
+                    }}
+                    title="Ouvrir le lien public"
+                  >
+                    {user.login_token}
+                  </Button>
+                  <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      try {
+                        const base = (import.meta as any)?.env?.BASE_URL || "/";
+                        const url = `${window.location.origin}${base}game?uuid=${encodeURIComponent(user.login_token)}`;
+                        await navigator.clipboard.writeText(url);
+                      } catch {
+                        /* ignore */
+                      }
+                    }}
+                    title="Copier le lien public"
+                  >
+                    Copier
+                  </Button>
+                </div>
               </td>
               <td>
                 <Button

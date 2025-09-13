@@ -14,7 +14,7 @@ export default function PublicLogin() {
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const trimmed = code.trim();
+  const trimmed = code.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
     if (!trimmed) return;
     navigate(`/game?uuid=${encodeURIComponent(trimmed)}`);
   };
@@ -34,7 +34,10 @@ export default function PublicLogin() {
             type="text"
             placeholder="Ex: UOQ612TC"
             value={code}
-            onChange={(e) => setCode(e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+              setCode(v);
+            }}
             autoFocus
             className="input"
           />

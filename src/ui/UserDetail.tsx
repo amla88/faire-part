@@ -4,12 +4,13 @@ import { supabase } from "../services/supabaseClient";
 import { Card, ListGroup, Spinner } from "react-bootstrap";
 
 interface Personne {
+  id?: number;
   nom: string;
   prenom: string;
 }
 
 interface User {
-  id: string;
+  id: number;
   login_token: string;
   personnes?: Personne[];
 }
@@ -27,13 +28,13 @@ export default function UserDetail() {
       }
 
       const { data, error } = await supabase
-        .from<User>("users")
+        .from("users")
         .select(`
           id,
           login_token,
-          personnes:personnes!personnes_user_id_fkey(nom, prenom)
+          personnes:personnes!personnes_user_id_fkey(id, nom, prenom)
         `)
-        .eq("id", id)
+        .eq("id", Number(id))
         .single();
 
       if (error) {

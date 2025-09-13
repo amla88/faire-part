@@ -6,14 +6,9 @@ import UserList from "./UserList";
 import { fetchUsersWithPersonnes, addUser, deleteUserCascade } from "../services/UserService";
 import { supabase } from "../services/supabaseClient";
 import { Container, Nav, Button, Alert, Spinner } from "react-bootstrap";
+import AdminAvatarAssets from "./AdminAvatarAssets";
 
-interface User {
-  id: number;
-  nom: string;
-  prenom: string;
-  login_token: string;
-  [key: string]: any;
-}
+type User = import("../services/UserService").User;
 
 interface AddedUser {
   loginLink: string;
@@ -25,13 +20,13 @@ export default function AdminPanel() {
   const [loading, setLoading] = useState<boolean>(true);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
-  const [tab, setTab] = useState<"add" | "list">("add");
+  const [tab, setTab] = useState<"add" | "list" | "assets">("add");
   const [users, setUsers] = useState<User[]>([]);
   const [adminToken, setAdminToken] = useState<string>("");
   const navigate = useNavigate();
 
   function withBase(path: string) {
-    const base = (import.meta?.env?.BASE_URL || "/").replace(/\/$/, "");
+  const base = ((import.meta as any)?.env?.BASE_URL || "/").replace(/\/$/, "");
     const normalized = path.startsWith("/") ? path : `/${path}`;
     return `${window.location.origin}${base}${normalized}`;
   }
@@ -90,8 +85,8 @@ export default function AdminPanel() {
 
   async function handleFetchUsers() {
     setLoading(true);
-    const { data } = await fetchUsersWithPersonnes();
-    setUsers(data || []);
+  const { data } = await fetchUsersWithPersonnes();
+  setUsers((data as User[]) || []);
     setLoading(false);
   }
 
@@ -169,6 +164,11 @@ export default function AdminPanel() {
           </Nav.Link>
         </Nav.Item>
         <Nav.Item>
+          <Nav.Link eventKey="assets" onClick={() => setTab("assets")}>
+            Assets Avatar
+          </Nav.Link>
+        </Nav.Item>
+        <Nav.Item>
           <Nav.Link
             href={profileLink}
             target="_blank"
@@ -196,6 +196,8 @@ export default function AdminPanel() {
           onDeleteUser={handleDeleteUser}
         />
       )}
+
+  {tab === "assets" && <AdminAvatarAssets />}
     </Container>
   );
 }
