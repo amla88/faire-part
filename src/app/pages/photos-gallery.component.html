@@ -1,0 +1,21 @@
+<div class="page-wrapper">
+  <mat-card>
+    <mat-card-title>Galerie photos</mat-card-title>
+    <mat-card-content>
+      <div *ngIf="initialLoading">Chargement…</div>
+      <div *ngIf="error" class="error">{{ error }}</div>
+      <div *ngIf="!initialLoading && photos.length === 0" class="hint">Aucune photo pour le moment.</div>
+      <div class="grid">
+        <a *ngFor="let p of photos" [href]="p.url" target="_blank" class="grid-item">
+          <img [src]="p.url" loading="lazy" [alt]="p.path" class="img" />
+        </a>
+        <div *ngIf="loadingMore" class="skeleton"></div>
+        <div *ngIf="loadingMore" class="skeleton"></div>
+      </div>
+      <div class="center mt12">
+        <button mat-stroked-button *ngIf="hasMore && !loadingMore" (click)="loadMore()">Charger plus</button>
+        <mat-progress-spinner *ngIf="loadingMore" diameter="26" mode="indeterminate"></mat-progress-spinner>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

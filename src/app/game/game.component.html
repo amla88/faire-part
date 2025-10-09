@@ -1,0 +1,7 @@
+<div class="game-wrapper">
+  <div class="top-left">
+    <a routerLink="/" class="back">← Retour aux pages</a>
+  </div>
+  <div #host class="host"></div>
+  <div *ngIf="status" class="status">{{ status }}</div>
+</div>

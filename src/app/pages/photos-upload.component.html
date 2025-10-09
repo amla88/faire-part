@@ -1,0 +1,31 @@
+<div class="page-wrapper">
+  <mat-card>
+    <mat-card-title>Partage des photos</mat-card-title>
+    <mat-card-content>
+      <p>Ajoute une photo (JPG/PNG, max 8 Mo). Elle pourra être modérée avant publication.</p>
+      <div class="col">
+        <div (dragover)="$event.preventDefault()" (drop)="onDrop($event)" class="drop">
+          <div *ngIf="!previewUrl">Glisse/dépose une image ici ou clique pour choisir</div>
+          <img *ngIf="previewUrl" [src]="previewUrl" alt="preview" class="preview" />
+          <input type="file" (change)="onFile($event)" accept="image/*" class="mt8" />
+        </div>
+        <div *ngIf="file" class="fileinfo">
+          Taille initiale: {{ fmtSize(originalSize) }}
+          <span *ngIf="compressedSize"> • Après compression: {{ fmtSize(compressedSize) }}</span>
+          <span *ngIf="compressing" class="compressing">(Compression…)</span>
+        </div>
+        <mat-form-field appearance="outline">
+          <mat-label>Ton nom (optionnel)</mat-label>
+          <input matInput [(ngModel)]="author" name="author" (ngModelChange)="persistAuthor()" />
+        </mat-form-field>
+        <div class="row">
+          <button mat-raised-button color="primary" (click)="send()" [disabled]="!file || uploading || compressing">
+            {{ compressing ? 'Compression…' : (uploading ? 'Envoi…' : 'Envoyer') }}
+          </button>
+          <button mat-stroked-button type="button" (click)="clear()" [disabled]="uploading">Effacer</button>
+          <div *ngIf="msg" [style.color]="msgColor">{{ msg }}</div>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

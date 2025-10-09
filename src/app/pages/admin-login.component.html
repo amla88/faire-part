@@ -1,0 +1,19 @@
+<div class="page-wrapper">
+  <mat-card>
+    <mat-card-title>Connexion administrateur</mat-card-title>
+    <mat-card-content>
+      <form (ngSubmit)="submit()" #f="ngForm" class="grid">
+        <mat-form-field appearance="outline">
+          <mat-label>Email</mat-label>
+          <input matInput id="email" name="email" type="email" [(ngModel)]="email" required />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Mot de passe</mat-label>
+          <input matInput id="password" name="password" type="password" [(ngModel)]="password" required />
+        </mat-form-field>
+        <button mat-raised-button color="primary" type="submit" class="full">Se connecter</button>
+        <div *ngIf="error" class="error">{{ error }}</div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

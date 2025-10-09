@@ -1,0 +1,58 @@
+<div class="page-wrapper">
+  <mat-card>
+    <mat-card-title>Propose tes musiques préférées</mat-card-title>
+    <mat-card-content>
+      <p>Partage jusqu'à deux musiques. La première est requise, la seconde est optionnelle.</p>
+      <form (ngSubmit)="submit()" #f="ngForm" class="grid">
+        <mat-card subtitle="Musique 1">
+          <div class="grid pad8">
+            <mat-form-field appearance="outline">
+              <mat-label>Artiste 1</mat-label>
+              <input matInput [(ngModel)]="form.artist1" name="artist1" required (ngModelChange)="persist()" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Titre 1</mat-label>
+              <input matInput [(ngModel)]="form.title1" name="title1" required (ngModelChange)="persist()" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Lien 1 (Spotify/YouTube/Deezer ou autre)</mat-label>
+              <input matInput [(ngModel)]="form.link1" name="link1" type="url" (ngModelChange)="persist()" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Commentaire 1</mat-label>
+              <textarea matInput [(ngModel)]="form.comment1" name="comment1"></textarea>
+            </mat-form-field>
+          </div>
+        </mat-card>
+        <mat-card subtitle="Musique 2">
+          <div class="grid pad8">
+            <mat-form-field appearance="outline">
+              <mat-label>Artiste 2</mat-label>
+              <input matInput [(ngModel)]="form.artist2" name="artist2" (ngModelChange)="persist()" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Titre 2</mat-label>
+              <input matInput [(ngModel)]="form.title2" name="title2" (ngModelChange)="persist()" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Lien 2</mat-label>
+              <input matInput [(ngModel)]="form.link2" name="link2" type="url" (ngModelChange)="persist()" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Commentaire 2</mat-label>
+              <textarea matInput [(ngModel)]="form.comment2" name="comment2" (ngModelChange)="persist()"></textarea>
+            </mat-form-field>
+            <mat-hint *ngIf="secondPartiallyFilled && !isSecondValid()" class="error">Si tu renseignes une partie de la 2e musique, indique au moins l'artiste et le titre.</mat-hint>
+          </div>
+        </mat-card>
+        <div class="row">
+          <button mat-raised-button color="primary" type="submit" [disabled]="submitting || !canSubmit(f)">
+            {{ submitting ? 'Envoi…' : 'Envoyer' }}
+          </button>
+          <button mat-stroked-button type="button" (click)="reset()" [disabled]="submitting">Effacer</button>
+          <span *ngIf="message" [style.color]="messageColor">{{ message }}</span>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

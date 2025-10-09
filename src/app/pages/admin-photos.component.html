@@ -1,0 +1,37 @@
+<div class="page-wrapper">
+  <mat-card>
+    <mat-card-title>Admin • Photos</mat-card-title>
+    <mat-card-content>
+      <div *ngIf="message" [style.color]="messageColor" class="mb8">{{ message }}</div>
+      <div class="row mb8">
+        <button mat-stroked-button (click)="load()">Rafraîchir</button>
+        <mat-select [(ngModel)]="filter" (selectionChange)="load()" class="minw200">
+          <mat-option value="all">Tous</mat-option>
+          <mat-option value="pending">En attente</mat-option>
+          <mat-option value="approved">Approuvés</mat-option>
+          <mat-option value="rejected">Rejetés</mat-option>
+        </mat-select>
+      </div>
+      <div *ngIf="loading">
+        <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+      </div>
+      <div *ngIf="error" class="error">{{ error }}</div>
+      <div class="grid">
+        <mat-card *ngFor="let p of photos" class="mat-elevation-z2">
+          <a [href]="p.url" target="_blank">
+            <img [src]="p.url" [alt]="p.path" class="thumb" />
+          </a>
+          <mat-card-content>
+            <div class="meta">{{ p.author || '—' }} · {{ p.status || '—' }}</div>
+          </mat-card-content>
+          <div class="actions">
+            <button mat-button (click)="copy(p.url)"><mat-icon>content_copy</mat-icon> Copier</button>
+            <button mat-button color="primary" (click)="setStatus(p, 'approved')"><mat-icon>check</mat-icon> Approuver</button>
+            <button mat-button color="warn" (click)="setStatus(p, 'rejected')"><mat-icon>close</mat-icon> Rejeter</button>
+            <button mat-button (click)="remove(p)"><mat-icon>delete</mat-icon> Supprimer</button>
+          </div>
+        </mat-card>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

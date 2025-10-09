@@ -1,0 +1,12 @@
+<mat-toolbar color="primary" style="position:sticky;top:0;z-index:1000">
+  <button mat-icon-button routerLink="/"><mat-icon>home</mat-icon></button>
+  <span style="margin-left:8px;font-weight:600">Faire‑Part</span>
+  <span class="spacer"></span>
+  <button mat-button routerLink="/login">Login</button>
+  <button mat-button routerLink="/rsvp">RSVP</button>
+  <button mat-button routerLink="/admin">Admin</button>
+</mat-toolbar>
+<div class="container">
+  <router-outlet></router-outlet>
+</div>
+<app-toast-container></app-toast-container>

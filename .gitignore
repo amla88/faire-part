@@ -15,7 +15,9 @@ dist/
 .env.local
 
 # Vite cache and metadata
-.vite/deps/
+.angular
+.exemples/dashboard/.editorconfig
+.exemples/dashboard/.vscode
 
 # IDE specific files
 .vscode/

@@ -1,0 +1,5 @@
+.page-wrapper { max-width:720px; margin:24px auto; }
+.grid { display:grid; gap:12px; }
+.pad8 { padding:8px 0; }
+.row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.error { color:#b00020; }

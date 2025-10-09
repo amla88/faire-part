@@ -1,0 +1,117 @@
+<div class="page-wrapper">
+  <mat-card>
+    <mat-card-title>Assets d'avatar</mat-card-title>
+    <mat-card-content>
+      <div class="row">
+        <mat-form-field appearance="outline">
+          <mat-label>Catégorie</mat-label>
+          <mat-select [(ngModel)]="category" (selectionChange)="refresh()">
+            <mat-option *ngFor="let c of categories" [value]="c.id">{{ c.label }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <form (ngSubmit)="create()" class="row-end">
+          <mat-form-field appearance="outline">
+            <mat-label>Image</mat-label>
+            <input matInput type="file" accept="image/*" (change)="onFile($event)" [disabled]="busy()" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Label</mat-label>
+            <input matInput [(ngModel)]="label" name="label" [disabled]="busy()" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Ordre</mat-label>
+            <input matInput type="number" [(ngModel)]="orderIndex" name="orderIndex" [disabled]="busy()" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Profondeur</mat-label>
+            <input matInput type="number" min="0" max="99" [(ngModel)]="depth" name="depth" [disabled]="busy()" />
+          </mat-form-field>
+          <button mat-raised-button color="primary" type="submit" [disabled]="busy() || !file || !label">
+            <mat-icon>add</mat-icon>
+            Ajouter
+          </button>
+        </form>
+      </div>
+    </mat-card-content>
+    <mat-progress-bar *ngIf="busy()" mode="indeterminate"></mat-progress-bar>
+  </mat-card>
+
+  <mat-card>
+    <mat-card-title>Liste</mat-card-title>
+    <mat-card-content>
+      <table mat-table [dataSource]="assets" class="mat-elevation-z1 full">
+        <ng-container matColumnDef="preview">
+          <th mat-header-cell *matHeaderCellDef>Prévisu</th>
+          <td mat-cell *matCellDef="let a">
+            <img [src]="service.getPublicUrl(a.storage_path)" [alt]="a.label" class="prev" />
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="label">
+          <th mat-header-cell *matHeaderCellDef>Label</th>
+          <td mat-cell *matCellDef="let a">
+            <mat-form-field appearance="outline" class="w200">
+              <input matInput [value]="a.label" (blur)="update(a, { label: $any($event.target).value })" />
+            </mat-form-field>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="category">
+          <th mat-header-cell *matHeaderCellDef>Catégorie</th>
+          <td mat-cell *matCellDef="let a">
+            <mat-form-field appearance="outline" class="w200">
+              <mat-select [ngModel]="a.category" (ngModelChange)="move(a, $event)">
+                <mat-option *ngFor="let c of categories" [value]="c.id">{{ c.label }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="order">
+          <th mat-header-cell *matHeaderCellDef>Ordre</th>
+          <td mat-cell *matCellDef="let a">
+            <mat-form-field appearance="outline" class="w120">
+              <input matInput type="number" [value]="a.order_index" (blur)="update(a, { order_index: +$any($event.target).value })" />
+            </mat-form-field>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="depth">
+          <th mat-header-cell *matHeaderCellDef>Profondeur</th>
+          <td mat-cell *matCellDef="let a">
+            <mat-form-field appearance="outline" class="w140">
+              <input matInput type="number" min="0" max="99" [value]="a.depth ?? 50" (blur)="update(a, { depth: Math.max(0, Math.min(99, +$any($event.target).value)) })" />
+            </mat-form-field>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="path">
+          <th mat-header-cell *matHeaderCellDef>Chemin</th>
+          <td mat-cell *matCellDef="let a"><code>{{ a.storage_path }}</code></td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let a">
+            <button mat-button color="primary" (click)="$event.preventDefault()">
+              <label class="file-label">
+                <input type="file" accept="image/*" (change)="replace(a, $event)" class="hidden" />
+                <mat-icon>file_upload</mat-icon>
+                Remplacer
+              </label>
+            </button>
+            <button mat-button color="warn" (click)="remove(a)">
+              <mat-icon>delete</mat-icon>
+              Supprimer
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="['preview','label','category','order','depth','path','actions']"></tr>
+        <tr mat-row *matRowDef="let row; columns: ['preview','label','category','order','depth','path','actions'];"></tr>
+      </table>
+    </mat-card-content>
+    <mat-progress-bar *ngIf="busy()" mode="indeterminate"></mat-progress-bar>
+  </mat-card>
+</div>
