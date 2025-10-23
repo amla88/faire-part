@@ -3,7 +3,7 @@ import { adminGuard } from './guards/admin-auth.guard';
 import { guestGuard } from './guards/guest.guard';
 
 export const routes: Routes = [
-  { path: '', loadComponent: () => import('./pages/home.component').then(m => m.HomeComponent) },
+  { path: '', pathMatch: 'full', redirectTo: 'login' },
   { path: 'login', loadComponent: () => import('./pages/login.component').then(m => m.LoginComponent) },
   { path: 'admin-login', loadComponent: () => import('./pages/admin-login.component').then(m => m.AdminLoginComponent) },
   { path: 'rsvp', canActivate: [guestGuard], loadComponent: () => import('./pages/rsvp.component').then(m => m.RsvpComponent) },
@@ -17,5 +17,5 @@ export const routes: Routes = [
   { path: 'photos/upload', canActivate: [guestGuard], loadComponent: () => import('./pages/photos-upload.component').then(m => m.PhotosUploadComponent) },
   { path: 'photos', canActivate: [guestGuard], loadComponent: () => import('./pages/photos-gallery.component').then(m => m.PhotosGalleryComponent) },
   { path: 'admin/photos', canActivate: [adminGuard], loadComponent: () => import('./pages/admin-photos.component').then(m => m.AdminPhotosComponent) },
-  { path: '**', redirectTo: '' }
+  { path: '**', redirectTo: 'login' }
 ];

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "ng serve",
-    "build": "set NG_CLI_ANALYTICS=false&& ng build --base-href=/faire-part/",
+    "build": "cross-env NG_CLI_ANALYTICS=false ng build --base-href=/faire-part/",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "deploy": "gh-pages -d dist",
@@ -35,7 +35,8 @@
     "@angular/compiler-cli": "^18.2.0",
     "@types/jasmine": "~5.1.0",
     "@types/node": "^20.11.30",
-    "postcss": "^8.4.47",
+  "postcss": "^8.4.47",
+  "cross-env": "^7.0.3",
     "gh-pages": "^6.3.0",
     "jasmine-core": "~5.3.0",
     "karma": "~6.4.0",
