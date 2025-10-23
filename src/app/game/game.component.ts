@@ -31,10 +31,10 @@ export class GameComponent implements AfterViewInit, OnDestroy {
       height: 240,
       backgroundColor: '#10141f',
       parent: this.host.nativeElement,
-      scene: [MainScene as any],
+      scene: [MainScene],
       dom: { createContainer: true },
       scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-      physics: { default: 'arcade', arcade: { gravity: { x:0, y:0 }, debug: false } },
+      physics: { default: 'arcade', arcade: { gravity: { x: 0, y: 0 }, debug: false } },
     };
     this.status = 'Chargement du jeu…';
     this.game = new Phaser.Game(config);

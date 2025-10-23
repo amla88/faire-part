@@ -18,8 +18,10 @@ declare global {
 
 function getOrCreateSupabase(url: string, anon: string): SupabaseClient {
   const key = `${url}|${anon.slice(0, 12)}`;
-  (globalThis as any).__SB_CLIENTS__ = (globalThis as any).__SB_CLIENTS__ || ({} as Record<string, SupabaseClient>);
-  if ((globalThis as any).__SB_CLIENTS__[key]) return (globalThis as any).__SB_CLIENTS__[key];
+  const clients = (globalThis as { __SB_CLIENTS__?: Record<string, SupabaseClient> }).__SB_CLIENTS__ || 
+                  ({} as Record<string, SupabaseClient>);
+  
+  if (clients[key]) return clients[key];
   
   const client = createClient(url, anon, {
     auth: {
@@ -27,7 +29,9 @@ function getOrCreateSupabase(url: string, anon: string): SupabaseClient {
       autoRefreshToken: true,
     },
   });
-  (globalThis as any).__SB_CLIENTS__[key] = client;
+  
+  clients[key] = client;
+  (globalThis as { __SB_CLIENTS__?: Record<string, SupabaseClient> }).__SB_CLIENTS__ = clients;
   return client;
 }
 

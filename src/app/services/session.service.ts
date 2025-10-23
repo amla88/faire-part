@@ -1,8 +1,6 @@
 import { Injectable } from '@angular/core';
 import { SupabaseApiService } from './supabase/supabase-api.service';
-
-interface Personne { id: number; nom?: string; prenom?: string; famille_id: number }
-interface Famille { id: number; [k: string]: any }
+import { Personne, Famille } from '../models';
 
 /**
  * Service Angular pour gérer l'état de session utilisateur.
@@ -28,7 +26,7 @@ export class SessionService {
       localStorage.setItem('login_uuid', fromQuery);
       return fromQuery;
     }
-    // 2) Essayer dans la partie hash (ex: #/avatar?uuid=XXXX)
+    // 2) Essayer dans la partie hash (ex: #/avatar?uuid=...)
     const hash = window.location.hash || '';
     const qIndex = hash.indexOf('?');
     if (qIndex >= 0) {
@@ -51,14 +49,15 @@ export class SessionService {
       if (!this.uuid) { this.error = 'Aucun token de connexion'; return; }
       const famille = await this.api.getFamilleByToken(this.uuid);
       if (!famille) { this.error = 'Famille introuvable'; return; }
-      this.famille = famille as any;
+      this.famille = famille;
       // Utiliser la RPC token-based pour contourner les RLS sur personnes
       this.personnes = await this.api.listPersonnesByToken(this.uuid);
       // Sélectionner la première personne en session
       this.selectedPersonneId = this.personnes[0]?.id ?? null;
       this.initialized = true;
-    } catch (e: any) {
-      this.error = e?.message || 'Erreur de session';
+    } catch (e) {
+      const err = e as Error;
+      this.error = err?.message || 'Erreur de session';
     }
   }
 

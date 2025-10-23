@@ -2,17 +2,22 @@ import Phaser from 'phaser';
 import InputService from './InputService';
 import UIService from './UIService';
 import ChecklistService from './ChecklistService';
+import { Personne } from '../../models';
 
-interface MainSceneData { user?: any | null }
+interface MainSceneData { 
+  personne?: Personne | null 
+}
+
+type FacingDirection = 'front' | 'back' | 'left' | 'right';
 
 export default class MainScene extends Phaser.Scene {
-  user: any | null = null;
+  personne: Personne | null = null;
   checklistService!: ChecklistService;
   inputService!: InputService;
   uiService!: UIService;
   player!: Phaser.Physics.Arcade.Sprite;
   private worldLayer?: Phaser.Tilemaps.TilemapLayer;
-  private facing: 'front' | 'back' | 'left' | 'right' = 'front';
+  private facing: FacingDirection = 'front';
 
   constructor() { super('MainScene'); }
 
@@ -40,7 +45,9 @@ export default class MainScene extends Phaser.Scene {
     this.load.atlas('thib_walk_right', `${pBase}Walk_side_right.png`, `${pBase}Walk_side_right.json`);
   }
 
-  init(data: MainSceneData) { this.user = data.user || null; }
+  init(data: MainSceneData) { 
+    this.personne = data.personne || null; 
+  }
 
   create() {
     const map = this.make.tilemap({ key: 'map' });
@@ -50,14 +57,15 @@ export default class MainScene extends Phaser.Scene {
     const aboveLayer = map.createLayer('Above Player', tileset!, 0, 0);
     if (aboveLayer) aboveLayer.setDepth(10);
 
-    const worldW = map.widthInPixels; const worldH = map.heightInPixels;
+    const worldW = map.widthInPixels; 
+    const worldH = map.heightInPixels;
     this.physics.world.setBounds(0, 0, worldW, worldH);
     this.cameras.main.setBounds(0, 0, worldW, worldH);
 
-    this.checklistService = new ChecklistService(this, this.user);
+    this.checklistService = new ChecklistService(this);
     this.inputService = new InputService(this);
     this.inputService.createTouchButtons();
-    this.uiService = new UIService(this, this.user, this.checklistService, this.inputService);
+    this.uiService = new UIService(this, this.checklistService, this.inputService);
 
     this.player = this.physics.add.sprite(64, 64, 'thib_idle_front', 'Idle_front_0');
     this.player.setScale(1);

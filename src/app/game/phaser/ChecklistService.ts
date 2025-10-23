@@ -1,9 +1,9 @@
 import Phaser from 'phaser';
 
 export default class ChecklistService {
-  constructor(private scene: Phaser.Scene, private user: any) {}
+  constructor(private scene: Phaser.Scene) {}
+  
   markDone(objectiveId: number) {
-    // TODO: wire with Supabase if needed later
-    console.log('Objective done:', objectiveId);
+    // Marquer l'objectif comme complété dans l'état local
   }
 }

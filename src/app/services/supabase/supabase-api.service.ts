@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { initSupabaseClient } from './supabase.client';
+import { Famille, Personne, RSVP } from '../../models';
 
 /**
  * Service Angular pour l'API Supabase.
@@ -16,13 +17,20 @@ export class SupabaseApiService {
   }
 
   /**
+   * Accès direct au client Supabase (pour les opérations non encapsulées)
+   */
+  get supabase(): SupabaseClient {
+    return this.client;
+  }
+
+  /**
    * Récupère la famille associée à un token de connexion
    */
-  async getFamilleByToken(loginToken: string) {
+  async getFamilleByToken(loginToken: string): Promise<Famille | null> {
     const rpcFam = await this.client.rpc('get_famille_by_token', { p_token: loginToken });
     if (!rpcFam.error && rpcFam.data) {
-      const d = Array.isArray(rpcFam.data) ? (rpcFam.data[0] ?? null) : (rpcFam.data as any ?? null);
-      if (d) return d;
+      const d = Array.isArray(rpcFam.data) ? (rpcFam.data[0] ?? null) : rpcFam.data;
+      if (d) return d as Famille;
     }
     return null;
   }
@@ -30,34 +38,34 @@ export class SupabaseApiService {
   /**
    * Récupère une personne spécifique par ID de famille
    */
-  async getPersonneByFamilleId(familleId: number) {
+  async getPersonneByFamilleId(familleId: number): Promise<Personne | null> {
     const { data, error } = await this.client
       .from('personnes')
       .select('id, nom, prenom, famille_id')
       .eq('famille_id', familleId)
       .maybeSingle();
     if (error) throw error;
-    return data as { id: number; nom?: string; prenom?: string; famille_id: number } | null;
+    return data as Personne | null;
   }
 
   /**
    * Liste toutes les personnes associées à un token
    */
-  async listPersonnesByToken(loginToken: string) {
+  async listPersonnesByToken(loginToken: string): Promise<Personne[]> {
     const { data, error } = await this.client.rpc('list_personnes_by_token', { p_token: loginToken });
     if (error) throw error;
-    return (Array.isArray(data) ? data : (data ? [data] : [])) as Array<{ id: number; nom?: string; prenom?: string; famille_id: number }>;
+    return (Array.isArray(data) ? data : (data ? [data] : [])) as Personne[];
   }
 
   /**
    * Enregistre la réponse RSVP
    */
-  async recordRsvp(familleId: number, payload: any) {
+  async recordRsvp(familleId: number, payload: Record<string, unknown>): Promise<RSVP> {
     const { data, error } = await this.client.rpc('record_rsvp', {
       p_famille_id: familleId,
       p_payload: payload
     });
     if (error) throw error;
-    return data;
+    return data as RSVP;
   }
 }

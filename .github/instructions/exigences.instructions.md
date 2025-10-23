@@ -1,0 +1,2 @@
+Utilises toujours le mcp contexte 7 pour la documentation. Vérifies les bonnes versions de mon application avant de répondre.
+Dans le dossier.exemple/modernize-free-angular-v5, tu trouveras un modèle à suivre pour le design. Suis l'apparence et le style de ce modèle pour mon application
