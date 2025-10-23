@@ -34,12 +34,17 @@ jobs:
         run: npm run build
 
       - name: Inject Supabase keys into meta tags
-        if: ${{ secrets.VITE_SUPABASE_URL != '' && secrets.VITE_SUPABASE_ANON_KEY != '' }}
         run: |
-          for f in ./dist/index.html ./dist/404.html; do \
-            sed -i -E 's|<meta name="supabase-url"[^>]*>|<meta name="supabase-url" content="${{ secrets.VITE_SUPABASE_URL }}"/>|g' "$f"; \
-            sed -i -E 's|<meta name="supabase-anon-key"[^>]*>|<meta name="supabase-anon-key" content="${{ secrets.VITE_SUPABASE_ANON_KEY }}"/>|g' "$f"; \
-          done
+          SB_URL="${{ secrets.VITE_SUPABASE_URL }}"
+          SB_ANON="${{ secrets.VITE_SUPABASE_ANON_KEY }}"
+          if [ -n "$SB_URL" ] && [ -n "$SB_ANON" ]; then
+            for f in ./dist/index.html ./dist/404.html; do \
+              sed -i -E 's|<meta name="supabase-url"[^>]*>|<meta name="supabase-url" content="'"$SB_URL"'"/>|g' "$f"; \
+              sed -i -E 's|<meta name="supabase-anon-key"[^>]*>|<meta name="supabase-anon-key" content="'"$SB_ANON"'"/>|g' "$f"; \
+            done
+          else
+            echo "Skipping Supabase meta injection: secrets not set."
+          fi
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
