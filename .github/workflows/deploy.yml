@@ -34,7 +34,7 @@ jobs:
         run: npm run build
 
       - name: Inject Supabase keys into meta tags
-          if: ${{ secrets.VITE_SUPABASE_URL != '' && secrets.VITE_SUPABASE_ANON_KEY != '' }}
+        if: ${{ secrets.VITE_SUPABASE_URL != '' && secrets.VITE_SUPABASE_ANON_KEY != '' }}
         run: |
           for f in ./dist/index.html ./dist/404.html; do \
             sed -i -E 's|<meta name="supabase-url"[^>]*>|<meta name="supabase-url" content="${{ secrets.VITE_SUPABASE_URL }}"/>|g' "$f"; \
