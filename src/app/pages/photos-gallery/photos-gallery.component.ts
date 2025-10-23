@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { PhotoGalleryService, PhotoRow } from '../services/photo-gallery.service';
+import { PhotoGalleryService, PhotoRow } from '../../services/photo-gallery.service';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';

@@ -6,11 +6,11 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { AvatarAssetsService, AvatarAsset, AvatarCategories, AvatarCategory } from '../services/avatar-assets.service';
-import { AvatarChoiceService } from '../services/avatar-choice.service';
-import { NgSupabaseService } from '../services/supabase.service';
-import { SessionService } from '../services/session.service';
-import { ToastService } from '../services/toast.service';
+import { AvatarAssetsService, AvatarAsset, AvatarCategories, AvatarCategory } from '../../services/avatar-assets.service';
+import { AvatarChoiceService } from '../../services/avatar-choice.service';
+import { NgSupabaseService } from '../../services/supabase.service';
+import { SessionService } from '../../services/session.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   standalone: true,

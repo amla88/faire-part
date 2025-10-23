@@ -6,8 +6,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { PhotoGalleryService, PhotoRow, PhotoStatus } from '../services/photo-gallery.service';
-import { ToastService } from '../services/toast.service';
+import { PhotoGalleryService, PhotoRow, PhotoStatus } from '../../services/photo-gallery.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   standalone: true,

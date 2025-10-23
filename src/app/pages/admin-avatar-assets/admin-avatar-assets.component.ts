@@ -9,7 +9,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { AvatarAssetsService, AvatarCategories, AvatarCategory, AvatarAsset } from '../services/avatar-assets.service';
+import { AvatarAssetsService, AvatarCategories, AvatarCategory, AvatarAsset } from '../../services/avatar-assets.service';
 
 @Component({
   standalone: true,

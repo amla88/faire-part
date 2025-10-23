@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { SessionService } from '../services/session.service';
+import { SessionService } from '../../services/session.service';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
@@ -35,6 +35,16 @@ export class PersonSwitcherComponent {
 
   applyAndGo(path: string) {
     if (this.selected != null) this.session.setSelectedPersonneId(this.selected);
-    this.router.navigateByUrl(path);
+    const uuid = this.session.getUuid();
+    // Navigue en conservant les query params existants et en s'assurant que uuid est présent
+    this.router.navigate([path], {
+      queryParams: uuid ? { uuid } : {},
+      queryParamsHandling: 'merge'
+    });
+  }
+
+  closeSelector() {
+    if (this.selected != null) this.session.setSelectedPersonneId(this.selected);
+    this.router.navigate(['../'], { relativeTo: this.router.routerState.root });
   }
 }

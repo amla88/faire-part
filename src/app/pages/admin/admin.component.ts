@@ -7,8 +7,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatTableModule } from '@angular/material/table';
-import { NgSupabaseService } from '../services/supabase.service';
-import { AdminStatsService } from '../services/admin-stats.service';
+import { NgSupabaseService } from '../../services/supabase.service';
+import { AdminStatsService } from '../../services/admin-stats.service';
 
 @Component({
   standalone: true,

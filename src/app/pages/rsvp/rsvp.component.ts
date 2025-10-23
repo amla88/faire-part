@@ -6,7 +6,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
-import { NgSupabaseService } from '../services/supabase.service';
+import { NgSupabaseService } from '../../services/supabase.service';
 
 @Component({
   standalone: true,

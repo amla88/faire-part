@@ -6,8 +6,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { PhotoGalleryService } from '../services/photo-gallery.service';
-import { ToastService } from '../services/toast.service';
+import { PhotoGalleryService } from '../../services/photo-gallery.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   standalone: true,

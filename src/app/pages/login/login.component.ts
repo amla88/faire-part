@@ -30,6 +30,6 @@ export class LoginComponent {
     try { localStorage.setItem('login_uuid', uuid); } catch {}
     // Navigation SPA: on reste dans l'app Angular (hash routing), sans chemin spécifique à GitHub Pages
     const params = `uuid=${encodeURIComponent(uuid)}`;
-    this.router.navigateByUrl(`/person?${params}`);
+    this.router.navigateByUrl(`/?${params}`);
   }
 }

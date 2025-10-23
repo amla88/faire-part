@@ -49,9 +49,8 @@ export class SessionService {
       this.famille = famille as any;
       // Utiliser la RPC token-based pour contourner les RLS sur personnes
       this.personnes = await this.api.listPersonnesByToken(this.uuid);
-      const stored = this.getStoredSelected(this.famille!.id);
-      const byId = this.personnes.find(p => p.id === stored);
-      this.selectedPersonneId = byId ? byId.id : (this.personnes[0]?.id ?? null);
+      // Sélectionner la première personne en session
+      this.selectedPersonneId = this.personnes[0]?.id ?? null;
       this.initialized = true;
     } catch (e: any) {
       this.error = e?.message || 'Erreur de session';
@@ -61,10 +60,18 @@ export class SessionService {
   getUuid() { return this.uuid; }
   getFamille() { return this.famille; }
   getSelectedPersonneId() { return this.selectedPersonneId; }
+  getSelectedPersonne(): Personne | null {
+    if (this.selectedPersonneId === null) return null;
+    return this.personnes.find(p => p.id === this.selectedPersonneId) ?? null;
+  }
+  getPersonnePrincipale(): Personne | null {
+    if (!this.famille?.['personne_principale']) return null;
+    return this.personnes.find(p => p.id === this.famille!['personne_principale']) ?? null;
+  }
 
   setSelectedPersonneId(id: number) {
     this.selectedPersonneId = id;
-    if (this.famille?.id) this.storeSelected(this.famille.id, id);
+    // La personne sélectionnée reste en session, pas en localStorage
   }
 
   private key(familleId: number) { return `selected_personne_${familleId}`; }
@@ -74,5 +81,15 @@ export class SessionService {
     if (!v) return null;
     const n = Number(v);
     return Number.isFinite(n) ? n : null;
+  }
+
+  logout(): void {
+    try { localStorage.removeItem('login_uuid'); } catch {}
+    this.uuid = null;
+    this.famille = null;
+    this.personnes = [];
+    this.selectedPersonneId = null;
+    this.initialized = false;
+    this.error = null;
   }
 }

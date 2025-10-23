@@ -7,8 +7,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MusicPreferencesService, MusicStatus } from '../services/music-preferences.service';
-import { ToastService } from '../services/toast.service';
+import { MusicPreferencesService, MusicStatus } from '../../services/music-preferences.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   standalone: true,

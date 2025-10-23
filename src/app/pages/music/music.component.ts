@@ -7,8 +7,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
-import { MusicPreferencesService, MusicPreference } from '../services/music-preferences.service';
-import { ToastService } from '../services/toast.service';
+import { MusicPreferencesService, MusicPreference } from '../../services/music-preferences.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   standalone: true,
