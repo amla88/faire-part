@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -15,6 +16,8 @@ import { MatButtonModule } from '@angular/material/button';
 export class LoginComponent {
   code = '';
 
+  constructor(private router: Router) {}
+
   onInput() {
     this.code = (this.code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   }
@@ -25,11 +28,8 @@ export class LoginComponent {
     const uuid = trimmed.toUpperCase().replace(/[^A-Z0-9]/g, '');
     // Persiste le token pour les pages Angular (hash routing inclus)
     try { localStorage.setItem('login_uuid', uuid); } catch {}
-    // Navigation: si l’objectif est d’aller dans l’app Angular (ex. avatar/person), on peut rester côté Angular
-    // Pour conserver le comportement actuel vers le jeu React, on met aussi le paramètre quand nécessaire.
+    // Navigation SPA: on reste dans l'app Angular (hash routing), sans chemin spécifique à GitHub Pages
     const params = `uuid=${encodeURIComponent(uuid)}`;
-    // Choix: par défaut on renvoie sur la Home Angular avec le token; les autres pages le liront
-    const url = `${window.location.origin}/faire-part/ng/#/?${params}`;
-    window.location.assign(url);
+    this.router.navigateByUrl(`/person?${params}`);
   }
 }

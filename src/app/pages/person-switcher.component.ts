@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { SessionService } from '../services/session.service';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -21,7 +21,7 @@ export class PersonSwitcherComponent {
   personnes: Array<{ id: number; nom?: string; prenom?: string }> = [];
   selected: number | null = null;
 
-  constructor(private session: SessionService) {
+  constructor(private session: SessionService, private router: Router) {
     this.init();
   }
 
@@ -33,7 +33,8 @@ export class PersonSwitcherComponent {
     this.ready = true;
   }
 
-  apply() {
+  applyAndGo(path: string) {
     if (this.selected != null) this.session.setSelectedPersonneId(this.selected);
+    this.router.navigateByUrl(path);
   }
 }

@@ -47,7 +47,8 @@ export class SessionService {
       const famille = await this.api.getFamilleByToken(this.uuid);
       if (!famille) { this.error = 'Famille introuvable'; return; }
       this.famille = famille as any;
-      this.personnes = await this.api.listPersonnesByFamilleId(this.famille!.id);
+      // Utiliser la RPC token-based pour contourner les RLS sur personnes
+      this.personnes = await this.api.listPersonnesByToken(this.uuid);
       const stored = this.getStoredSelected(this.famille!.id);
       const byId = this.personnes.find(p => p.id === stored);
       this.selectedPersonneId = byId ? byId.id : (this.personnes[0]?.id ?? null);

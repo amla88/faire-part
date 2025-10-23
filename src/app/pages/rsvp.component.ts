@@ -16,7 +16,7 @@ import { NgSupabaseService } from '../services/supabase.service';
   styleUrls: ['./rsvp.component.css']
 })
 export class RsvpComponent {
-  familleId: number | null = null; // TODO: à alimenter depuis le contexte utilisateur
+  familleId: number | null = null; // TODO: à alimenter depuis le contexte famille
   submitting = false;
   message = '';
   error = '';

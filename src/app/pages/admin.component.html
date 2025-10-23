@@ -26,7 +26,7 @@
   </mat-card>
 
   <mat-card>
-    <mat-card-title>Ajouter un utilisateur</mat-card-title>
+    <mat-card-title>Ajouter une famille</mat-card-title>
     <mat-card-content>
       <form (ngSubmit)="addUser()" #f="ngForm" class="row">
         <mat-form-field appearance="outline">
@@ -44,7 +44,7 @@
   </mat-card>
 
   <mat-card>
-    <mat-card-title>Liste des utilisateurs</mat-card-title>
+    <mat-card-title>Liste des familles</mat-card-title>
     <mat-card-content>
       <button mat-stroked-button (click)="loadUsers()" class="mb8">Rafraîchir</button>
       <div *ngIf="loading">Chargement…</div>

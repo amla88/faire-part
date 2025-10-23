@@ -6,7 +6,7 @@
       <div *ngIf="!ready" class="hint">Chargement…</div>
       <ng-container *ngIf="ready">
         <div *ngIf="!personnes.length" class="hint">Aucune personne liée à cette session.</div>
-        <form *ngIf="personnes.length" (ngSubmit)="apply()" class="grid">
+        <form *ngIf="personnes.length" class="grid" (submit)="$event.preventDefault()">
           <mat-form-field appearance="outline">
             <mat-label>Personne</mat-label>
             <mat-select [(ngModel)]="selected" name="selected">
@@ -14,8 +14,8 @@
             </mat-select>
           </mat-form-field>
           <div class="row">
-            <button mat-raised-button color="primary" type="submit">Valider</button>
-            <a mat-stroked-button routerLink="/avatar">Aller à l'éditeur</a>
+            <button mat-raised-button color="primary" type="button" (click)="applyAndGo('/game')">Lancer le jeu</button>
+            <button mat-stroked-button type="button" (click)="applyAndGo('/login')">Aller au menu</button>
           </div>
         </form>
       </ng-container>

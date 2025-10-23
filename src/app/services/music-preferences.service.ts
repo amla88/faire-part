@@ -25,14 +25,22 @@ export class MusicPreferencesService {
       if (error) throw error;
       return;
     } catch {
-      const { error } = await this.api.supabase.from('music_preferences').insert([pref as any]);
+      const rows: any[] = [];
+      if (pref.artist1 || pref.title1 || pref.link1 || pref.comment1) {
+        rows.push({ auteur: pref.artist1 || null, titre: pref.title1 || null, lien: pref.link1 || null, commentaire: pref.comment1 || null });
+      }
+      if (pref.artist2 || pref.title2 || pref.link2 || pref.comment2) {
+        rows.push({ auteur: pref.artist2 || null, titre: pref.title2 || null, lien: pref.link2 || null, commentaire: pref.comment2 || null });
+      }
+      if (!rows.length) return;
+      const { error } = await this.api.supabase.from('musiques').insert(rows);
       if (error) throw error;
     }
   }
 
   async listAll(): Promise<any[]> {
     const { data, error } = await this.api.supabase
-      .from('music_preferences')
+      .from('musiques')
       .select('*')
       .order('id', { ascending: false });
     if (error) throw error;
@@ -41,7 +49,7 @@ export class MusicPreferencesService {
 
   async listByStatus(status: MusicStatus): Promise<any[]> {
     const { data, error } = await this.api.supabase
-      .from('music_preferences')
+      .from('musiques')
       .select('*')
       .eq('status', status)
       .order('id', { ascending: false });
@@ -57,7 +65,7 @@ export class MusicPreferencesService {
       return;
     } catch {
       const { error } = await this.api.supabase
-        .from('music_preferences')
+        .from('musiques')
         .update({ status } as any)
         .eq('id', id);
       if (error) throw error;
@@ -66,7 +74,7 @@ export class MusicPreferencesService {
 
   async remove(id: number): Promise<void> {
     const { error } = await this.api.supabase
-      .from('music_preferences')
+      .from('musiques')
       .delete()
       .eq('id', id);
     if (error) throw error;

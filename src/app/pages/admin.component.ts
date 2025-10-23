@@ -49,7 +49,7 @@ export class AdminComponent {
       if (error) throw error;
       this.users = data as any[];
     } catch (e: any) {
-      this.error = e?.message || 'Erreur chargement utilisateurs';
+      this.error = e?.message || 'Erreur chargement familles';
     } finally {
       this.loading = false;
     }

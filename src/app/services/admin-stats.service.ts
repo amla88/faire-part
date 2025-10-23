@@ -78,30 +78,13 @@ export class AdminStatsService {
       s.photos_pending = p0 || 0; s.photos_approved = p1 || 0; s.photos_rejected = p2 || 0;
     } catch {}
 
-    // Musiques: préférer la table music_preferences (utilisée côté React)
+    // Musiques: préférer la table musiques (présente en base)
     try {
-      // Essayer avec colonne status si elle existe
-      const { count: m0 } = await this.api.supabase.from('music_preferences').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-      const { count: m1 } = await this.api.supabase.from('music_preferences').select('*', { count: 'exact', head: true }).eq('status', 'approved');
-      const { count: m2 } = await this.api.supabase.from('music_preferences').select('*', { count: 'exact', head: true }).eq('status', 'rejected');
+      const { count: m0 } = await this.api.supabase.from('musiques').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+      const { count: m1 } = await this.api.supabase.from('musiques').select('*', { count: 'exact', head: true }).eq('status', 'approved');
+      const { count: m2 } = await this.api.supabase.from('musiques').select('*', { count: 'exact', head: true }).eq('status', 'rejected');
       s.musiques_pending = m0 || 0; s.musiques_approved = m1 || 0; s.musiques_rejected = m2 || 0;
-    } catch {
-      // Fallback: pas de colonne status -> compter total en pending
-      try {
-        const { count: total } = await this.api.supabase.from('music_preferences').select('*', { count: 'exact', head: true });
-        s.musiques_pending = total || 0;
-        s.musiques_approved = 0;
-        s.musiques_rejected = 0;
-      } catch {
-        // Dernier fallback: ancienne table "musiques" si elle existe encore
-        try {
-          const { count: m0 } = await this.api.supabase.from('musiques').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-          const { count: m1 } = await this.api.supabase.from('musiques').select('*', { count: 'exact', head: true }).eq('status', 'approved');
-          const { count: m2 } = await this.api.supabase.from('musiques').select('*', { count: 'exact', head: true }).eq('status', 'rejected');
-          s.musiques_pending = m0 || 0; s.musiques_approved = m1 || 0; s.musiques_rejected = m2 || 0;
-        } catch {}
-      }
-    }
+    } catch {}
 
     return s;
   }
