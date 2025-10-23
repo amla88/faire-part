@@ -1,13 +1,13 @@
 import { Injectable } from '@angular/core';
 import { NgSupabaseService } from './supabase.service';
 
-interface Personne { id: number; nom?: string; prenom?: string; user_id: number }
-interface User { id: number; [k: string]: any }
+interface Personne { id: number; nom?: string; prenom?: string; famille_id: number }
+interface Famille { id: number; [k: string]: any }
 
 @Injectable({ providedIn: 'root' })
 export class SessionService {
   private uuid: string | null = null;
-  private user: User | null = null;
+  private famille: Famille | null = null;
   personnes: Personne[] = [];
   selectedPersonneId: number | null = null;
   initialized = false;
@@ -44,11 +44,11 @@ export class SessionService {
     try {
       this.uuid = this.readUuid();
       if (!this.uuid) { this.error = 'Aucun token de connexion'; return; }
-      const user = await this.api.getUserByToken(this.uuid);
-      if (!user) { this.error = 'Utilisateur introuvable'; return; }
-  this.user = user as any;
-  this.personnes = await this.api.listPersonnesByUserId(this.user!.id);
-  const stored = this.getStoredSelected(this.user!.id);
+      const famille = await this.api.getFamilleByToken(this.uuid);
+      if (!famille) { this.error = 'Famille introuvable'; return; }
+      this.famille = famille as any;
+      this.personnes = await this.api.listPersonnesByFamilleId(this.famille!.id);
+      const stored = this.getStoredSelected(this.famille!.id);
       const byId = this.personnes.find(p => p.id === stored);
       this.selectedPersonneId = byId ? byId.id : (this.personnes[0]?.id ?? null);
       this.initialized = true;
@@ -58,18 +58,18 @@ export class SessionService {
   }
 
   getUuid() { return this.uuid; }
-  getUser() { return this.user; }
+  getFamille() { return this.famille; }
   getSelectedPersonneId() { return this.selectedPersonneId; }
 
   setSelectedPersonneId(id: number) {
     this.selectedPersonneId = id;
-    if (this.user?.id) this.storeSelected(this.user.id, id);
+    if (this.famille?.id) this.storeSelected(this.famille.id, id);
   }
 
-  private key(userId: number) { return `selected_personne_${userId}`; }
-  private storeSelected(userId: number, personneId: number) { localStorage.setItem(this.key(userId), String(personneId)); }
-  private getStoredSelected(userId: number): number | null {
-    const v = localStorage.getItem(this.key(userId));
+  private key(familleId: number) { return `selected_personne_${familleId}`; }
+  private storeSelected(familleId: number, personneId: number) { localStorage.setItem(this.key(familleId), String(personneId)); }
+  private getStoredSelected(familleId: number): number | null {
+    const v = localStorage.getItem(this.key(familleId));
     if (!v) return null;
     const n = Number(v);
     return Number.isFinite(n) ? n : null;

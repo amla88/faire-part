@@ -45,30 +45,48 @@ export class NgSupabaseService {
     return this.client;
   }
 
-  async getUserByToken(loginToken: string) {
-    const { data, error } = await this.client.rpc('get_user_by_token', { p_token: loginToken });
-    if (error) throw error;
-    return Array.isArray(data) ? (data[0] ?? null) : (data as any ?? null);
+  // Nouveau: familles remplace users
+  async getFamilleByToken(loginToken: string) {
+    // Essaye d'abord la RPC moderne
+    try {
+      const { data, error } = await this.client.rpc('get_famille_by_token', { p_token: loginToken });
+      if (error) throw error;
+      return Array.isArray(data) ? (data[0] ?? null) : (data as any ?? null);
+    } catch {
+      // Fallback: lecture directe si la RPC n'existe pas encore
+      const { data, error } = await this.client
+        .from('familles')
+        .select('*')
+        .eq('login_token', loginToken)
+        .maybeSingle();
+      if (error) throw error;
+      return data as any;
+    }
   }
 
-  async getPersonneByUserId(userId: number) {
+  // Compat: ancien nom conservé quelques temps
+  async getUserByToken(loginToken: string) {
+    return this.getFamilleByToken(loginToken);
+  }
+
+  async getPersonneByFamilleId(familleId: number) {
     const { data, error } = await this.client
       .from('personnes')
-      .select('id, nom, prenom, user_id')
-      .eq('user_id', userId)
+      .select('id, nom, prenom, famille_id')
+      .eq('famille_id', familleId)
       .maybeSingle();
     if (error) throw error;
-    return data as { id: number; nom?: string; prenom?: string; user_id: number } | null;
+    return data as { id: number; nom?: string; prenom?: string; famille_id: number } | null;
   }
 
-  async listPersonnesByUserId(userId: number) {
+  async listPersonnesByFamilleId(familleId: number) {
     const { data, error } = await this.client
       .from('personnes')
-      .select('id, nom, prenom, user_id')
-      .eq('user_id', userId)
+      .select('id, nom, prenom, famille_id')
+      .eq('famille_id', familleId)
       .order('id', { ascending: true });
     if (error) throw error;
-    return (data || []) as Array<{ id: number; nom?: string; prenom?: string; user_id: number }>;
+    return (data || []) as Array<{ id: number; nom?: string; prenom?: string; famille_id: number }>;
   }
 
   async recordRsvp(familleId: number, payload: any) {

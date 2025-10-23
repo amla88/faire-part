@@ -32,8 +32,8 @@ export class RsvpComponent {
     // Essaie de récupérer le user via le login_uuid stocké par la page jeu React
     const uuid = localStorage.getItem('login_uuid');
     if (uuid) {
-      this.api.getUserByToken(uuid).then(user => {
-        if (user?.famille_id) this.familleId = user.famille_id;
+      this.api.getFamilleByToken(uuid).then(famille => {
+        if (famille?.id) this.familleId = famille.id;
       }).catch(() => {/* ignore */});
     }
   }

@@ -43,8 +43,8 @@ export class AdminComponent {
     this.loading = true; this.error = '';
     try {
       const { data, error } = await this.api.supabase
-        .from('users')
-        .select(`id, login_token, personnes:personnes!personnes_user_id_fkey(id, nom, prenom)`) 
+        .from('familles')
+        .select(`id, login_token, personnes(id, nom, prenom)`) 
         .order('id', { ascending: true });
       if (error) throw error;
       this.users = data as any[];
@@ -61,13 +61,13 @@ export class AdminComponent {
     try {
       const token = Math.random().toString(36).slice(2, 10).toUpperCase();
       const { data: inserted, error } = await this.api.supabase
-        .from('users')
+        .from('familles')
         .insert({ login_token: token })
         .select()
         .single();
       if (error) throw error;
 
-      await this.api.supabase.from('personnes').insert({ nom: this.newNom, prenom: this.newPrenom, user_id: inserted.id });
+      await this.api.supabase.from('personnes').insert({ nom: this.newNom, prenom: this.newPrenom, famille_id: inserted.id });
       const base = (document.baseURI || '/faire-part/').replace(/\/$/, '');
       this.addedLink = `${window.location.origin}/faire-part/game?uuid=${encodeURIComponent(inserted.login_token)}`;
       this.newNom = this.newPrenom = '';
@@ -83,16 +83,16 @@ export class AdminComponent {
     if (!confirm('Supprimer définitivement cet utilisateur ?')) return;
     try {
       const { data: user, error: userErr } = await this.api.supabase
-        .from('users')
+        .from('familles')
         .select('id, auth_uuid')
         .eq('login_token', loginToken)
         .single();
       if (userErr) throw userErr;
-      await this.api.supabase.from('personnes').delete().eq('user_id', user.id);
+      await this.api.supabase.from('personnes').delete().eq('famille_id', user.id);
       if ((user as any).auth_uuid) {
         await this.api.supabase.from('profiles').delete().eq('id', (user as any).auth_uuid);
       }
-      await this.api.supabase.from('users').delete().eq('login_token', loginToken);
+      await this.api.supabase.from('familles').delete().eq('login_token', loginToken);
       await this.loadUsers();
     } catch (e: any) {
       alert('Erreur lors de la suppression: ' + (e?.message || e));
