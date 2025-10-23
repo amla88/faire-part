@@ -1,8 +1,13 @@
 import { Injectable } from '@angular/core';
-import { NgSupabaseService } from './supabase.service';
+import { SupabaseApiService } from './supabase/supabase-api.service';
 
 interface Personne { id: number; nom?: string; prenom?: string; famille_id: number }
 interface Famille { id: number; [k: string]: any }
+
+/**
+ * Service Angular pour gérer l'état de session utilisateur.
+ * Coordonne l'authentification, la sélection de personne et la persistance locale.
+ */
 
 @Injectable({ providedIn: 'root' })
 export class SessionService {
@@ -13,7 +18,7 @@ export class SessionService {
   initialized = false;
   error: string | null = null;
 
-  constructor(private api: NgSupabaseService) {}
+  constructor(private api: SupabaseApiService) {}
 
   private readUuid(): string | null {
     const url = new URL(window.location.href);
