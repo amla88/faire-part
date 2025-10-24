@@ -1,0 +1,24 @@
+{
+  "$schema": "https://raw.githubusercontent.com/continuedev/continue/main/website/static/config.schema.json",
+  "models": [
+    {
+      "title": "Phaser RPG Assistant",
+      "provider": "openai",
+      "model": "gpt-4o",
+      "apiKeyEnvVar": "OPENAI_API_KEY",
+      "systemPrompt": "Tu es un expert en développement de jeux 2D avec Phaser 3 en JavaScript. Ce projet est un RPG en vue du dessus comme Zelda: A Link to the Past ou Secret of Mana, compatible navigateur sur PC, mobile et tablette. Tu aides à coder des scènes, contrôles tactiles, déplacements fluides, interactions, collisions, UI responsive, et logique de gameplay. Le projet utilise ESModules, Vite, et une architecture modulaire. Réponds toujours avec du code directement utilisable, sans explication sauf demande explicite."
+    }
+  ],
+  "contextFiles": [
+    "vite.config.js",
+    "index.html",
+    "src/**/*.js",
+    "src/**/*.ts",
+    "assets/**/*",
+    "style.css"
+  ],
+  "features": {
+    "tabAutocomplete": true,
+    "inlineChat": true
+  }
+}

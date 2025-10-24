@@ -1,8 +1,4 @@
-import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-
-import { AppRoutingModule } from './app-routing.module';
-import { AppComponent } from './app.component';
+import { Component } from '@angular/core';
 
 // dashboard components
 import { LayoutComponent } from './dashboard/layout/layout.component';
@@ -43,10 +39,12 @@ import { SnippetComponent } from './components/docs/snippet/snippet.component';
 import { FolderIconComponent } from './components/docs/icons/folder-icon/folder-icon.component';
 import { AngularIconComponent } from './components/docs/icons/angular-icon/angular-icon.component';
 
-@NgModule({
-  declarations: [
-    AppComponent,
-
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css'],
+  imports: [
     // dashboard
     LayoutComponent,
     TopBarComponent,
@@ -86,8 +84,5 @@ import { AngularIconComponent } from './components/docs/icons/angular-icon/angul
     FolderIconComponent,
     AngularIconComponent,
   ],
-  imports: [BrowserModule, AppRoutingModule],
-  providers: [],
-  bootstrap: [AppComponent],
 })
-export class AppModule {}
+export class AppComponent {}

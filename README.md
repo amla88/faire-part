@@ -1,75 +1,27 @@
-# Faire‑part (Angular + Phaser + Supabase)
+# Modernize-Angular-pro
+Modernize Angular Admin Dashboard
 
-Application du faire‑part de mariage hébergée sur GitHub Pages sous `/faire-part/`.
+## Mise à jour des dépendances (24-10-2025)
 
-## Démarrer en local
+Actions réalisées :
 
-Prérequis: Node 18+.
+- Mise à jour automatique des dépendances vers leurs dernières versions (majeures + mineures) via `npm-check-updates`.
+- Installation des nouvelles versions (`npm install`).
+- Adaptation des tests unitaires pour Angular 20+ (composants standalone) :
+	- `AppComponent` déplacé des `declarations` vers `imports` dans `app.component.spec.ts`.
+	- Ajustement des assertions de test pour refléter le titre et le template actuels.
+- Exécution des tests unitaires (headless) — tous les tests passent.
+- Build de l'application — build réussi, sortie dans `dist/Modernize`.
 
-1) Installer les dépendances
+Remarques / suivis recommandés :
 
-```bat
-npm install
-```
+- Vérifier manuellement l'application en local (`npm start`) et parcourir les pages critiques (jeu Phaser, upload photos, page admin).
+- Passer en revue les changements majeurs (ex : `@ngx-translate` v17, `@ng-matero/extensions` v20) — certaines APIs peuvent avoir changé.
+- Versionner ces changements dans une branche dédiée et ouvrir une pull request pour revue avant déploiement en production.
 
-2) Lancer le serveur de dev
+Si vous voulez, je peux :
 
-```bat
-npm start
-```
+- Committer les changements locaux et créer une branche/PR (si vous me donnez le feu vert).
+- Exécuter une vérification plus approfondie (lint, tests E2E s'il y en a, vérification Phaser).
+- Mettre à jour la configuration de déploiement (`base-href`, 404 fallback) et préparer le déploiement GitHub Pages.
 
-Par défaut: http://localhost:4200/faire-part/ (le `--base-href` est injecté au build, mais en dev le `<base href="/">` est utilisé).
-
-## Build et déploiement
-
-Générer la production (Angular 18, base‑href `/faire-part/`):
-
-```bat
-npm run build
-```
-
-Le dossier `dist/` est produit. Déployer sur GitHub Pages:
-
-```bat
-npm run deploy
-```
-
-Un `404.html` est créé automatiquement pour le fallback SPA.
-
-## Configuration Supabase
-
-Les clés sont lues depuis des meta tags dans `src/index.html`:
-
-- `meta[name="supabase-url"]`
-- `meta[name="supabase-anon-key"]`
-
-En dev, vous pouvez y mettre vos valeurs projet. En prod, on peut remplacer lors du build si nécessaire.
-
-## Environnements
-
-- Fichiers: `src/environments/environment.ts` (dev) et `src/environments/environment.prod.ts` (prod, utilisé via fileReplacements au build).
-- Priorité de lecture des clés Supabase côté front:
-	1. Valeurs dans `environment.*.ts` si définies (url, anonKey)
-	2. Sinon, meta tags `supabase-url` et `supabase-anon-key` dans `index.html`
-- Base href:
-	- Dev: `baseHref: '/'` (dans index.html)
-	- Prod: `baseHref: '/faire-part/'` (documenté dans environment.prod.ts et géré par `--base-href` au build)
-
-## Architecture rapide
-
-- Angular à la racine: `src/`, `angular.json`, `tsconfig*.json`.
-- Jeu Phaser intégré nativement: `src/app/game` + `src/app/game/phaser/*`.
-- Services Supabase (RPC‑first avec fallback): `src/app/services/*`.
-- Pages invité/admin (login, RSVP, musiques, photos, avatar, admin*): `src/app/pages/*`.
-- Garde invité/admin: `src/app/guards/*`.
-- Assets: `src/assets/`.
-
-## Dépannage
-
-- Avertissement CommonJS pour Phaser au build: sans impact; ignorable.
-- 404 sur GitHub Pages: vérifier que le base‑href est `/faire-part/` et que `404.html` existe dans `dist/`.
-- Actifs manquants en prod: s’assurer que les chemins utilisent `/faire-part/` (Angular CLI le gère via `--base-href`).
-
-## Licence
-
-Projet privé pour usage familial. Merci de ne pas redistribuer.

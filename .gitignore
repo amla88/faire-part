@@ -1,29 +1,42 @@
-# Logs
-logs
-*.log
-npm-debug.log*
+# See http://help.github.com/ignore-files/ for more about ignoring files.
 
-# Dependency directory
-node_modules/
-dist/
+# Compiled output
+/dist
+/tmp
+/out-tsc
+/bazel-out
 
-# Build output
-.vite/
+# Node
+/node_modules
+npm-debug.log
+yarn-error.log
 
-# Environment files
-.env
-.env.local
-
-# Vite cache and metadata
-.angular
-.exemples/dashboard/.editorconfig
-.exemples/dashboard/.vscode
-
-# IDE specific files
-.vscode/
+# IDEs and editors
 .idea/
-.continue/
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
 
-# Other system files
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/*
+
+# Miscellaneous
+/.angular/cache
+.sass-cache/
+/connect.lock
+/coverage
+/libpeerconnection.log
+testem.log
+/typings
+
+# System files
 .DS_Store
 Thumbs.db

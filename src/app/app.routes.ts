@@ -1,86 +1,51 @@
 import { Routes } from '@angular/router';
-import { FullLayoutComponent } from './layouts/full-layout/full-layout.component';
-import { BlankLayoutComponent } from './layouts/blank-layout/blank-layout.component';
-import { guestAuthGuard, publicGuard, adminAuthGuard } from './guards/auth.guard';
+import { BlankComponent } from './layouts/blank/blank.component';
+import { FullComponent } from './layouts/full/full.component';
 
 export const routes: Routes = [
   {
     path: '',
-    component: BlankLayoutComponent,
+    component: FullComponent,
     children: [
       {
         path: '',
-        redirectTo: '/login',
-        pathMatch: 'full'
+        redirectTo: '/dashboard',
+        pathMatch: 'full',
       },
       {
-        path: 'login',
-        canActivate: [publicGuard],
-        loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent)
+        path: 'dashboard',
+        loadChildren: () =>
+          import('./pages/pages.routes').then((m) => m.PagesRoutes),
       },
       {
-        path: 'admin-login',
-        loadComponent: () => import('./pages/admin-login/admin-login.component').then(m => m.AdminLoginComponent)
+        path: 'ui-components',
+        loadChildren: () =>
+          import('./pages/ui-components/ui-components.routes').then(
+            (m) => m.UiComponentsRoutes
+          ),
       },
-    ]
+      {
+        path: 'extra',
+        loadChildren: () =>
+          import('./pages/extra/extra.routes').then((m) => m.ExtraRoutes),
+      },
+    ],
   },
   {
     path: '',
-    component: FullLayoutComponent,
-    canActivate: [guestAuthGuard],
+    component: BlankComponent,
     children: [
       {
-        path: 'person',
-        loadComponent: () => import('./pages/person-switcher/person-switcher.component').then(m => m.PersonSwitcherComponent)
+        path: 'authentication',
+        loadChildren: () =>
+          import('./pages/authentication/authentication.routes').then(
+            (m) => m.AuthenticationRoutes
+          ),
       },
-      {
-        path: 'avatar',
-        loadComponent: () => import('./pages/avatar/avatar.component').then(m => m.AvatarComponent)
-      },
-      {
-        path: 'game',
-        loadComponent: () => import('./game/game.component').then(m => m.GameComponent)
-      },
-      {
-        path: 'rsvp',
-        loadComponent: () => import('./pages/rsvp/rsvp.component').then(m => m.RsvpComponent)
-      },
-      {
-        path: 'music',
-        loadComponent: () => import('./pages/music/music.component').then(m => m.MusicComponent)
-      },
-      {
-        path: 'photos',
-        loadComponent: () => import('./pages/photos/photos.component').then(m => m.PhotosComponent)
-      },
-      {
-        path: 'photos/upload',
-        loadComponent: () => import('./pages/photos-upload/photos-upload.component').then(m => m.PhotosUploadComponent)
-      },
-      {
-        path: 'admin',
-        canActivate: [adminAuthGuard],
-        loadComponent: () => import('./pages/admin/admin.component').then(m => m.AdminComponent)
-      },
-      {
-        path: 'admin/assets',
-        canActivate: [adminAuthGuard],
-        loadComponent: () => import('./pages/admin-assets/admin-assets.component').then(m => m.AdminAssetsComponent)
-      },
-      {
-        path: 'admin/music',
-        canActivate: [adminAuthGuard],
-        loadComponent: () => import('./pages/admin-music/admin-music.component').then(m => m.AdminMusicComponent)
-      },
-      {
-        path: 'admin/photos',
-        canActivate: [adminAuthGuard],
-        loadComponent: () => import('./pages/admin-photos/admin-photos.component').then(m => m.AdminPhotosComponent)
-      },
-    ]
+    ],
   },
   {
     path: '**',
-    redirectTo: '/login'
-  }
+    redirectTo: 'authentication/error',
+  },
 ];
