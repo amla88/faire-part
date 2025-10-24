@@ -1,0 +1,30 @@
+<div class="blank-layout-container justify-content-center align-items-center bg-light">
+  <div class="position-relative row w-100 h-100 bg-gredient justify-content-center">
+    <div class="col-lg-4 d-flex align-items-center">
+      <mat-card class="cardWithShadow boxed-auth">
+        <mat-card-content class="p-32">
+          <div class="text-center">
+            <img src="./assets/images/logos/dark-logo.svg" class="align-middle m-2" alt="logo" />
+          </div>
+
+          <div class="or-border m-t-30">Sélectionnez la personne qui jouera</div>
+
+          <div class="m-t-20">
+            	<mat-selection-list #pers [multiple]="false">
+                @for(p of personnes; track p) {
+                    <mat-list-option [value]="p" (click)="select(p)">
+                        <div class="person-option">
+                    <img src="/assets/images/profile/user-1.jpg" alt="profile" class="rounded-circle" width="40" />
+                    <span class="f-s-16 f-w-600">{{ p.prenom }} {{ p.nom }}</span>
+                        </div>
+                    </mat-list-option>
+                }
+                </mat-selection-list>
+
+            <div *ngIf="!personnes || personnes.length === 0" class="text-center">Aucun membre trouvé pour cette famille.</div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>

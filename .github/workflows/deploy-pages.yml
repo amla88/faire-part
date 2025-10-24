@@ -1,0 +1,54 @@
+name: Build and Deploy to GitHub Pages
+on:
+  push:
+    branches: [ main, v2 ]
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Inject Supabase secrets into index.html
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          # Insert meta tags if missing or replace existing ones
+          file=src/index.html
+          if grep -q 'name="supabase-url"' "$file"; then
+            sed -i "s|<meta name=\"supabase-url\" content=\"[^\"]*\">|<meta name=\"supabase-url\" content=\"${SUPABASE_URL}\">|g" $file
+          else
+            sed -i "1,/<\/head>/s|</head>|  <meta name=\"supabase-url\" content=\"${SUPABASE_URL}\">\n</head>|" $file
+          fi
+          if grep -q 'name="supabase-anon-key"' "$file"; then
+            sed -i "s|<meta name=\"supabase-anon-key\" content=\"[^\"]*\">|<meta name=\"supabase-anon-key\" content=\"${SUPABASE_ANON_KEY}\">|g" $file
+          else
+            sed -i "1,/<\/head>/s|</head>|  <meta name=\"supabase-anon-key\" content=\"${SUPABASE_ANON_KEY}\">\n</head>|" $file
+          fi
+
+      - name: Build production
+        run: npm run build -- --configuration production --base-href=/faire-part/
+
+      - name: Copy index.html to 404.html (SPA fallback)
+        run: cp -f dist/faire-part/index.html dist/faire-part/404.html
+
+      - name: Upload artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: dist/faire-part
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v1

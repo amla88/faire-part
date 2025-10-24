@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "Modernize": {
+  "faire-part": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -14,13 +14,11 @@
       "sourceRoot": "src",
       "prefix": "app",
       "architect": {
-        "build": {
+            "build": {
           "builder": "@angular/build:application",
           "options": {
             "allowedCommonJsDependencies": ["apexcharts", "bezier-easing", "moment"],
-            "outputPath": {
-              "base": "dist/Modernize"
-            },
+            "outputPath": "dist/faire-part",
             "index": "src/index.html",
             "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
@@ -55,17 +53,17 @@
           },
           "defaultConfiguration": "production"
         },
-        "serve": {
+            "serve": {
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "Modernize:build:production"
+              "buildTarget": "faire-part:build:production"
             },
             "hmr": {
               "hmr": true
             },
             "development": {
-              "buildTarget": "Modernize:build:development"
+              "buildTarget": "faire-part:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -73,7 +71,7 @@
         "extract-i18n": {
           "builder": "@angular/build:extract-i18n",
           "options": {
-            "buildTarget": "Modernize:build"
+                "buildTarget": "faire-part:build"
           }
         }
       }

@@ -1,5 +1,5 @@
-# Modernize-Angular-pro
-Modernize Angular Admin Dashboard
+# faire-part
+faire-part — Faire‑part de mariage
 
 ## Mise à jour des dépendances (24-10-2025)
 
@@ -11,7 +11,7 @@ Actions réalisées :
 	- `AppComponent` déplacé des `declarations` vers `imports` dans `app.component.spec.ts`.
 	- Ajustement des assertions de test pour refléter le titre et le template actuels.
 - Exécution des tests unitaires (headless) — tous les tests passent.
-- Build de l'application — build réussi, sortie dans `dist/Modernize`.
+- Build de l'application — build réussi, sortie dans `dist/faire-part`.
 
 Remarques / suivis recommandés :
 

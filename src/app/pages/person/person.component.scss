@@ -1,0 +1,18 @@
+.pointer {
+  cursor: pointer;
+}
+
+/* Small adjustments to match the login card spacing if needed */
+.boxed-auth {
+  max-width: 100%;
+}
+
+.person-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.person-option img {
+  align-self: center;
+}
