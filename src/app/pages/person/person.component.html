@@ -21,7 +21,9 @@
                 }
                 </mat-selection-list>
 
-            <div *ngIf="!personnes || personnes.length === 0" class="text-center">Aucun membre trouvé pour cette famille.</div>
+            @if (!personnes || personnes.length === 0) {
+              <div class="text-center">Aucun membre trouvé pour cette famille.</div>
+            }
           </div>
         </mat-card-content>
       </mat-card>

@@ -9,3 +9,5 @@
 - Ne fais pas de ng build ou ng serve sans que je te le demande explicitement.
 
 - Toujours utiliser RPC pour les appels à la DB quand c'est un appel pour un utilisateur normal. Utiliser les appels directs à la DB seulement pour les tâches d'administration ou de maintenance pour un administrateur authentifié.
+
+- Aucun tests unitaires ou e2e pour cette application.

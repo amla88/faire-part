@@ -14,17 +14,27 @@
             <mat-form-field appearance="outline" class="w-100" color="primary">
               <input matInput formControlName="token" maxlength="8" placeholder="8 caractères" autocomplete="off" />
               <mat-hint align="end">{{ form.get('token')?.value?.length || 0 }}/8</mat-hint>
-              <mat-error *ngIf="form.get('token')?.hasError('required')">Le code est requis</mat-error>
-              <mat-error *ngIf="form.get('token')?.hasError('minlength') || form.get('token')?.hasError('maxlength')">Le code doit comporter 8 caractères</mat-error>
-              <mat-error *ngIf="form.get('token')?.hasError('pattern')">Caractères autorisés : MAJUSCULES (A–Z) et chiffres (0–9)</mat-error>
+              @if (form.get('token')?.hasError('required')) {
+                <mat-error>Le code est requis</mat-error>
+              }
+              @if (form.get('token')?.hasError('minlength') || form.get('token')?.hasError('maxlength')) {
+                <mat-error>Le code doit comporter 8 caractères</mat-error>
+              }
+              @if (form.get('token')?.hasError('pattern')) {
+                <mat-error>Caractères autorisés : MAJUSCULES (A–Z) et chiffres (0–9)</mat-error>
+              }
             </mat-form-field>
 
             <button mat-flat-button color="primary" class="w-100" type="submit" [disabled]="loading || form.invalid">
-              <ng-container *ngIf="!loading">Se connecter</ng-container>
-              <ng-container *ngIf="loading">
-                <mat-progress-spinner diameter="18" mode="indeterminate" [strokeWidth]="3"></mat-progress-spinner>
-                &nbsp;Connexion...
-              </ng-container>
+              @if (!loading) {
+                <ng-container>Se connecter</ng-container>
+              }
+              @if (loading) {
+                <ng-container>
+                  <mat-progress-spinner diameter="18" mode="indeterminate" [strokeWidth]="3"></mat-progress-spinner>
+                  &nbsp;Connexion...
+                </ng-container>
+              }
             </button>
           </form>
         </mat-card-content>

@@ -25,6 +25,33 @@ export class AuthService {
 
   /** Valide le login_token côté DB et persiste l'objet user en localStorage */
   async loginWithToken(token: string): Promise<{ success: boolean; user?: AppUser; error?: string }> {
+    // Backwards-compatible wrapper that delegates to the silent variant
+    try {
+      const res = await this.loginWithTokenSilent(token);
+
+      if (!res.success) return res;
+
+      // Perform navigation according to personnes count (preserve previous behaviour)
+      const user = res.user!;
+      if (user.personnes && user.personnes.length > 1) {
+        // multiple persons -> selection page
+        this.router.navigate(['/person']);
+      } else {
+        // single or no persons -> go to root (dashboard)
+        this.router.navigate(['/']);
+      }
+
+      return res;
+    } catch (e: any) {
+      return { success: false, error: e?.message || String(e) };
+    }
+  }
+
+  /**
+   * Validate a token, persist user in localStorage but DO NOT perform navigation.
+   * This is useful for guards/resolvers that need to control navigation themselves.
+   */
+  async loginWithTokenSilent(token: string): Promise<{ success: boolean; user?: AppUser; error?: string }> {
     try {
       const client = this.supabase.getClient();
       const { data, error } = await client
@@ -61,15 +88,6 @@ export class AuthService {
       };
 
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(user));
-
-      // Perform navigation according to personnes count
-      if (user.personnes && user.personnes.length > 1) {
-        // multiple persons -> selection page
-        this.router.navigate(['/person']);
-      } else {
-        // single or no persons -> go to root (dashboard)
-        this.router.navigate(['/']);
-      }
 
       return { success: true, user };
     } catch (e: any) {
