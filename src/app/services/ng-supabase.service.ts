@@ -27,6 +27,13 @@ export class NgSupabaseService {
     this.client = createClient(url, key, {
       // adjust options here if needed (e.g. auth persistence)
       auth: { persistSession: true },
+      // Ensure a JSON Accept header is present for PostgREST responses. Some proxies
+      // or environments may alter the default Accept header causing a 406 Not Acceptable.
+      global: {
+        headers: {
+          Accept: 'application/json',
+        },
+      },
     });
   }
 

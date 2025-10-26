@@ -1,0 +1,13 @@
+{
+  "mcp.servers": {
+    "supabase-mcp": {
+      "command": "node",
+      "args": ["dist/mcp-simple.js"],
+      "cwd": "/home/amaury/Documents/projet/mariage/faire-part/mcp",
+      "env": {
+        "NODE_ENV": "development",
+        "DEBUG": "1"
+      }
+    }
+  }
+}

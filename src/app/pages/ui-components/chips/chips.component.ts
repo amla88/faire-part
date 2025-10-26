@@ -23,6 +23,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { LiveAnnouncer } from '@angular/cdk/a11y';
 import { MatButtonModule } from '@angular/material/button';
+import { AuthService } from 'src/app/services/auth.service';
 
 export interface ChipColor {
   name: string;
@@ -130,6 +131,11 @@ export class AppChipsComponent {
   readonly formControl = new FormControl(['angular']);
 
   announcer = inject(LiveAnnouncer);
+  private auth = inject(AuthService);
+
+  get currentAvatarUrl(): string {
+    return this.auth.avatarDataUri() || '/assets/images/profile/user-1.jpg';
+  }
 
   removeKeyword(keyword: string) {
     this.keywords.update(keywords => {

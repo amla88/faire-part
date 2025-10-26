@@ -14,18 +14,18 @@ import { AuthService, PersonneSummary } from 'src/app/services/auth.service';
 export class PersonComponent {
   personnes: PersonneSummary[] | undefined;
 
-  constructor(private auth: AuthService, private router: Router) {
+  constructor(public auth: AuthService, private router: Router) {
     const user = this.auth.getUser();
     this.personnes = user?.personnes;
   }
 
   select(p: PersonneSummary) {
-    // persist selection
-    const user = this.auth.getUser();
-    if (!user) return;
-    user.selected_personne_id = p.id;
-    localStorage.setItem('app_user', JSON.stringify(user));
-    // navigate to dashboard
-    this.router.navigate(['/']);
+    // use AuthService to persist selection and load avatar into cache
+    this.auth.selectPerson(p.id).then(() => {
+      this.router.navigate(['/']);
+    }).catch((err) => {
+      console.error('Erreur lors de la sélection de la personne', err);
+      this.router.navigate(['/']);
+    });
   }
 }

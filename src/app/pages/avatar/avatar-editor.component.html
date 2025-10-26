@@ -1,0 +1,183 @@
+<div class="avatar-editor-container">
+  <!-- Header -->
+  <div class="editor-header">
+    <h1>Éditeur d'Avatar</h1>
+    <p class="subtitle">Personnalisez votre avatar pour le mariage</p>
+  </div>
+
+  <div class="editor-content">
+    <!-- Section Prévisualisation -->
+    <mat-card class="preview-section">
+      <mat-card-header>
+        <mat-card-title>Aperçu</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="preview-container" [class.loading]="isLoading()">
+          @if (isLoading()) {
+            <mat-spinner diameter="100"></mat-spinner>
+          } @else {
+            <img
+              [src]="avatarDataUri()"
+              [alt]="'Avatar - ' + currentStyle()?.label"
+              class="avatar-preview"
+            />
+          }
+        </div>
+
+        <!-- Actions rapides -->
+        <div class="preview-actions">
+          <button
+            mat-raised-button
+            color="primary"
+            (click)="generateRandomSeed()"
+            class="action-btn"
+          >
+            <mat-icon>casino</mat-icon>
+            Générer aléatoire
+          </button>
+          <button
+            mat-raised-button
+            color="accent"
+            (click)="downloadAvatar()"
+            class="action-btn"
+          >
+            <mat-icon>download</mat-icon>
+            Télécharger
+          </button>
+          <button
+            mat-raised-button
+            (click)="copyToClipboard()"
+            class="action-btn"
+          >
+            <mat-icon>content_copy</mat-icon>
+            Copier
+          </button>
+          <button
+            mat-raised-button
+            color="primary"
+            (click)="saveAvatar()"
+            [disabled]="isLoading() || isSaving() || !avatarDataUri()"
+            class="action-btn"
+          >
+            <mat-icon>save</mat-icon>
+            Enregistrer
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Section Paramètres -->
+    <mat-card class="settings-section">
+      <mat-card-header>
+        <mat-card-title>Paramètres</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <!-- Sélection du style -->
+        <div class="setting-group">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Style d'avatar</mat-label>
+            <mat-select
+              [value]="selectedStyle()"
+              (selectionChange)="onStyleChange($event.value)"
+            >
+              @for (style of styles; track style.name) {
+                <mat-option [value]="style.name">
+                  {{ style.label }}
+                </mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <mat-divider class="my-4"></mat-divider>
+
+        <!-- Seed -->
+        <div class="setting-group">
+          <label class="setting-label">Seed (identifiant unique)</label>
+          <div class="seed-input-group">
+            <input
+              type="text"
+              [(ngModel)]="seed"
+              (change)="onSeedChange($event.target.value)"
+              class="seed-input"
+              placeholder="Entrez une seed unique"
+            />
+            <button
+              mat-icon-button
+              (click)="generateRandomSeed()"
+              title="Générer une seed aléatoire"
+            >
+              <mat-icon>refresh</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <mat-divider class="my-4"></mat-divider>
+
+        <!-- Taille -->
+        <div class="setting-group">
+          <label class="setting-label">Taille: {{ size() }}px</label>
+          <input
+            type="range"
+            [value]="size()"
+            (input)="onSizeChange(+$event.target.value)"
+            min="64"
+            max="512"
+            step="32"
+            class="size-slider"
+          />
+          <div class="size-presets">
+            <button
+              mat-stroked-button
+              (click)="onSizeChange(96)"
+              [class.active]="size() === 96"
+              class="preset-btn"
+            >
+              96px
+            </button>
+            <button
+              mat-stroked-button
+              (click)="onSizeChange(128)"
+              [class.active]="size() === 128"
+              class="preset-btn"
+            >
+              128px
+            </button>
+            <button
+              mat-stroked-button
+              (click)="onSizeChange(256)"
+              [class.active]="size() === 256"
+              class="preset-btn"
+            >
+              256px
+            </button>
+            <button
+              mat-stroked-button
+              (click)="onSizeChange(512)"
+              [class.active]="size() === 512"
+              class="preset-btn"
+            >
+              512px
+            </button>
+          </div>
+        </div>
+
+        <mat-divider class="my-4"></mat-divider>
+
+        <!-- Info style -->
+        @if (currentStyle()) {
+          <div class="style-info">
+            <h3>{{ currentStyle()?.label }}</h3>
+            <p>
+              Style actuellement sélectionné: <strong>{{ selectedStyle() }}</strong>
+            </p>
+            <p class="info-text">
+              Utilisez cet éditeur pour créer et personnaliser votre avatar. Les
+              modifications sont appliquées en temps réel.
+            </p>
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

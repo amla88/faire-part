@@ -18,7 +18,7 @@ Résumé
 2) Partie Invités (expérience)
 - Connexion: scan QR ou lien contenant un uuid (query/hash). Pas de mot de passe.
 - Mini‑jeu 2D (Phaser): déplacement, collision, PNJ, transitions de pièces.
-- Avatar personnel: éditeur visuel basé sur des calques (depth) avec assets stockés sur Supabase Storage.
+- Avatar personnel: éditeur dicebear avec une bibliothèque personnalisée. Persistance des choix. Aperçu en temps réel. utilises le mpc context7 pour la documentation.
 - Multi‑membres par famille: sélection d’un membre (personne) et possibilité de changer à tout moment.
 - Interactions disponibles:
   - Proposer des musiques (texte/liens Spotify/YouTube/Deezer/autres).
@@ -110,8 +110,6 @@ Commandes utiles
   - `npm start`
 - Build (base href ajustée pour /faire-part) + fallback SPA:
   - `npm run build` (génère `dist/` et copie `dist/index.html` → `dist/404.html`)
-- Tests:
-  - `npm test`
 - Déploiement GitHub Pages:
   - `npm run deploy` (publie `dist/`)
 
