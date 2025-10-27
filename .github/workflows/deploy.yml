@@ -8,15 +8,14 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.19.0'
+          node-version: '20'
 
       - name: Install dependencies
         run: npm ci
@@ -24,13 +23,26 @@ jobs:
       - name: Build Angular app
         run: npm run build
 
-      - name: Copy SPA fallback
-        run: cp dist/index.html dist/404.html
+      - name: Copy SPA fallback (404.html)
+        run: cp dist/faire-part/index.html dist/faire-part/404.html
+
+      - name: Inject Supabase keys into meta tags
+        run: |
+          SB_URL="${{ secrets.VITE_SUPABASE_URL }}"
+          SB_ANON="${{ secrets.VITE_SUPABASE_ANON_KEY }}"
+          if [ -n "$SB_URL" ] && [ -n "$SB_ANON" ]; then
+            for f in ./dist/faire-part/index.html ./dist/faire-part/404.html; do \
+              sed -i -E 's|<meta name="supabase-url"[^>]*>|<meta name="supabase-url" content="'"$SB_URL"'"/>|g' "$f"; \
+              sed -i -E 's|<meta name="supabase-anon-key"[^>]*>|<meta name="supabase-anon-key" content="'"$SB_ANON"'"/>|g' "$f"; \
+            done
+          else
+            echo "Skipping Supabase meta injection: secrets not set."
+          fi
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
+          publish_dir: ./dist/faire-part
           publish_branch: gh-pages
           force_orphan: true
