@@ -15,7 +15,6 @@ import {
   withInMemoryScrolling,
 } from '@angular/router';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
-import { provideClientHydration } from '@angular/platform-browser';
 // Translations removed (project is private)
 
 // icons
@@ -41,7 +40,6 @@ export const appConfig: ApplicationConfig = {
       withComponentInputBinding()
     ),
     provideHttpClient(withInterceptorsFromDi()),
-    provideClientHydration(),
     provideAnimationsAsync(),
     importProvidersFrom(
       FormsModule,

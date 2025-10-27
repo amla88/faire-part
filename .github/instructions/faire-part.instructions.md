@@ -68,9 +68,9 @@ RPC recommandées (SECURITY DEFINER)
 - rotate_token(p_user_id int) → nouveau token/QR (optionnel)
 - get_stats_admin() → agrégats RSVP/photos/musiques
 
-Storage (Supabase)
-- Buckets: avatar-assets (public), photos (private/modérée), exports (admin). Signed URLs possible pour partage.
-- Règles: upload photos via RPC; lecture publique uniquement pour assets d’avatar.
+Storage (Cloud oracle - always free)
+- Nom du buckets: assets-mariage
+- Lien publique: https://axadzdd2ubpq.objectstorage.eu-paris-1.oci.customer-oci.com/n/axadzdd2ubpq/b/assets-mariage/o/
 
 Jeu (Phaser) – principes
 - Config: 360×240, pixelArt, Scale.FIT, CENTER_BOTH; physics arcade (no gravity).
