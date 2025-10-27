@@ -2,7 +2,8 @@ name: Build & Deploy Angular to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches:
+      - v2
 
 jobs:
   build-and-deploy:
@@ -17,34 +18,14 @@ jobs:
         with:
           node-version: '20.19.0'
 
-      - name: Downgrade npm (use npm 9)
-        run: npm install -g npm@9
-
-      - name: Clear npm cache
-        run: npm cache clean --force
-
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Build Angular project
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          VITE_BASE_PATH: ${{ secrets.VITE_BASE_PATH }}
+      - name: Build Angular app
         run: npm run build
 
-      - name: Inject Supabase keys into meta tags
-        run: |
-          SB_URL="${{ secrets.VITE_SUPABASE_URL }}"
-          SB_ANON="${{ secrets.VITE_SUPABASE_ANON_KEY }}"
-          if [ -n "$SB_URL" ] && [ -n "$SB_ANON" ]; then
-            for f in ./dist/index.html ./dist/404.html; do \
-              sed -i -E 's|<meta name="supabase-url"[^>]*>|<meta name="supabase-url" content="'"$SB_URL"'"/>|g' "$f"; \
-              sed -i -E 's|<meta name="supabase-anon-key"[^>]*>|<meta name="supabase-anon-key" content="'"$SB_ANON"'"/>|g' "$f"; \
-            done
-          else
-            echo "Skipping Supabase meta injection: secrets not set."
-          fi
+      - name: Copy SPA fallback
+        run: cp dist/index.html dist/404.html
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
@@ -52,3 +33,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
           publish_branch: gh-pages
+          force_orphan: true
