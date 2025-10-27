@@ -6,7 +6,7 @@
     "start": "node ./tools/inject-env.js && ng serve",
     "build": "ng build --base-href=/faire-part/",
     "watch": "ng build --watch --configuration development",
-    "spa-fallback": "copy dist\\index.html dist\\404.html"
+    "spa-fallback": "copy dist\\faire-part\\browser\\index.html dist\\faire-part\\browser\\404.html"
   },
   "private": true,
   "dependencies": {

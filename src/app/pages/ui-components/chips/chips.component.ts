@@ -134,7 +134,7 @@ export class AppChipsComponent {
   private auth = inject(AuthService);
 
   get currentAvatarUrl(): string {
-    return this.auth.avatarDataUri() || '/assets/images/profile/user-1.jpg';
+    return this.auth.avatarDataUri() || 'assets/images/profile/user-1.jpg';
   }
 
   removeKeyword(keyword: string) {

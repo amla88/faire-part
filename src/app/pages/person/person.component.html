@@ -14,7 +14,7 @@
                 @for(p of personnes; track p) {
                     <mat-list-option [value]="p" (click)="select(p)">
                         <div class="person-option">
-                    <img [src]="auth.getAvatarDataUri(p.id) || '/assets/images/profile/user-1.jpg'" alt="profile" class="rounded-circle" width="40" />
+                    <img [src]="auth.getAvatarDataUri(p.id) || 'assets/images/profile/user-1.jpg'" alt="profile" class="rounded-circle" width="40" />
                     <span class="f-s-16 f-w-600">{{ p.prenom }} {{ p.nom }}</span>
                         </div>
                     </mat-list-option>
