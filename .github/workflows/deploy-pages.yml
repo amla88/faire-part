@@ -31,17 +31,17 @@ jobs:
       - name: Affiche la version d’Angular CLI
         run: npx ng version
       - name: Vérification du build
-        run: ls -l dist/faire-part
-      - name: Affiche le contenu du dossier dist/faire-part
-        run: ls -lR dist/faire-part
+        run: ls -l dist/faire-part/browser
+      - name: Affiche le contenu du dossier dist/faire-part/browser
+        run: ls -lR dist/faire-part/browser
       - name: Copie du fallback SPA (404.html)
-        run: cp -f dist/faire-part/index.html dist/faire-part/404.html
+        run: cp -f dist/faire-part/browser/index.html dist/faire-part/browser/404.html
       - name: Injection des clés Supabase dans les meta tags
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          for f in dist/faire-part/index.html dist/faire-part/404.html; do
+          for f in dist/faire-part/browser/index.html dist/faire-part/browser/404.html; do
             if grep -q 'name="supabase-url"' "$f"; then
               sed -i "s|<meta name=\"supabase-url\" content=\"[^\"]*\">|<meta name=\"supabase-url\" content=\"${SUPABASE_URL}\">|g" $f
             else
@@ -54,11 +54,11 @@ jobs:
             fi
           done
       - name: Affiche la version de l’action upload-pages-artifact
-        run: cat $GITHUB_ACTION_PATH || echo "Variable GITHUB_ACTION_PATH non définie."
+        run: echo "Using actions/upload-pages-artifact@v4"
       - name: Upload artifact for GitHub Pages
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v4
         with:
-          path: dist/faire-part
+          path: dist/faire-part/browser
 
   deploy:
     runs-on: ubuntu-latest
@@ -68,4 +68,4 @@ jobs:
       id-token: write
     steps:
       - name: Déploiement sur GitHub Pages
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v4
