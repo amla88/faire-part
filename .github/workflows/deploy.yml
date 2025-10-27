@@ -19,8 +19,11 @@ jobs:
         run: npm ci
       - name: Build Angular app
         run: npm run build
-    outputs:
-      build_path: dist/faire-part
+      - name: Upload build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifact
+          path: dist/faire-part
 
   spa-fallback:
     runs-on: ubuntu-latest
@@ -28,10 +31,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Restore build output
+      - name: Download build output
         uses: actions/download-artifact@v4
         with:
-          name: build
+          pattern: build-artifact
+          merge-multiple: true
           path: dist/faire-part
       - name: Copy SPA fallback (404.html)
         run: cp dist/faire-part/index.html dist/faire-part/404.html
@@ -47,8 +51,11 @@ jobs:
           else
             echo "Skipping Supabase meta injection: secrets not set."
           fi
-    outputs:
-      spa_path: dist/faire-part
+      - name: Upload SPA fallback
+        uses: actions/upload-artifact@v4
+        with:
+          name: spa-fallback-artifact
+          path: dist/faire-part
 
   deploy:
     runs-on: ubuntu-latest
@@ -56,10 +63,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Restore SPA output
+      - name: Download SPA fallback
         uses: actions/download-artifact@v4
         with:
-          name: spa-fallback
+          pattern: spa-fallback-artifact
+          merge-multiple: true
           path: dist/faire-part
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
