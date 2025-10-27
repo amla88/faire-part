@@ -24,8 +24,16 @@ jobs:
         run: npm ci
       - name: Build Angular app
         run: npm run build -- --configuration production --base-href=/faire-part/
+      - name: Affiche la version de Node.js
+        run: node --version
+      - name: Affiche la version de npm
+        run: npm --version
+      - name: Affiche la version d’Angular CLI
+        run: npx ng version
       - name: Vérification du build
         run: ls -l dist/faire-part
+      - name: Affiche le contenu du dossier dist/faire-part
+        run: ls -lR dist/faire-part
       - name: Copie du fallback SPA (404.html)
         run: cp -f dist/faire-part/index.html dist/faire-part/404.html
       - name: Injection des clés Supabase dans les meta tags
@@ -45,6 +53,8 @@ jobs:
               sed -i "1,/<\/head>/s|</head>|  <meta name=\"supabase-anon-key\" content=\"${SUPABASE_ANON_KEY}\">\n</head>|" $f
             fi
           done
+      - name: Affiche la version de l’action upload-pages-artifact
+        run: cat $GITHUB_ACTION_PATH || echo "Variable GITHUB_ACTION_PATH non définie."
       - name: Upload artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v1
         with:
