@@ -20,12 +20,12 @@ jobs:
       - name: Build Angular app
         run: npm run build
       - name: Vérification du build
-        run: ls -l dist/faire-part
+        run: ls -l dist/faire-part/browser
       - name: Upload build output (artefact)
         uses: actions/upload-artifact@v4
         with:
           name: build-artifact
-          path: dist/faire-part
+          path: dist/faire-part/browser
 
   spa-fallback:
     runs-on: ubuntu-latest
@@ -38,17 +38,17 @@ jobs:
         with:
           pattern: build-artifact
           merge-multiple: true
-          path: dist/faire-part
+          path: dist/faire-part/browser
       - name: Vérification artefact
-        run: ls -l dist/faire-part
+        run: ls -l dist/faire-part/browser
       - name: Copie du fallback SPA (404.html)
-        run: cp dist/faire-part/index.html dist/faire-part/404.html
+        run: cp dist/faire-part/browser/index.html dist/faire-part/browser/404.html
       - name: Injection des clés Supabase dans les meta tags
         run: |
           SB_URL="${{ secrets.VITE_SUPABASE_URL }}"
           SB_ANON="${{ secrets.VITE_SUPABASE_ANON_KEY }}"
           if [ -n "$SB_URL" ] && [ -n "$SB_ANON" ]; then
-            for f in ./dist/faire-part/index.html ./dist/faire-part/404.html; do \
+            for f in ./dist/faire-part/browser/index.html ./dist/faire-part/browser/404.html; do \
               sed -i -E 's|<meta name="supabase-url"[^>]*>|<meta name="supabase-url" content="'"$SB_URL"'"/>|g' "$f"; \
               sed -i -E 's|<meta name="supabase-anon-key"[^>]*>|<meta name="supabase-anon-key" content="'"$SB_ANON"'"/>|g' "$f"; \
             done
@@ -59,7 +59,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: spa-fallback-artifact
-          path: dist/faire-part
+          path: dist/faire-part/browser
 
   deploy:
     runs-on: ubuntu-latest
@@ -72,13 +72,13 @@ jobs:
         with:
           pattern: spa-fallback-artifact
           merge-multiple: true
-          path: dist/faire-part
+          path: dist/faire-part/browser
       - name: Vérification artefact final
-        run: ls -l dist/faire-part
+        run: ls -l dist/faire-part/browser
       - name: Déploiement sur GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist/faire-part
+          publish_dir: ./dist/faire-part/browser
           publish_branch: gh-pages
           force_orphan: true
