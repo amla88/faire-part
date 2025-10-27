@@ -19,7 +19,9 @@ jobs:
         run: npm ci
       - name: Build Angular app
         run: npm run build
-      - name: Upload build output
+      - name: Vérification du build
+        run: ls -l dist/faire-part
+      - name: Upload build output (artefact)
         uses: actions/upload-artifact@v4
         with:
           name: build-artifact
@@ -31,15 +33,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Download build output
+      - name: Download build output (artefact)
         uses: actions/download-artifact@v4
         with:
           pattern: build-artifact
           merge-multiple: true
           path: dist/faire-part
-      - name: Copy SPA fallback (404.html)
+      - name: Vérification artefact
+        run: ls -l dist/faire-part
+      - name: Copie du fallback SPA (404.html)
         run: cp dist/faire-part/index.html dist/faire-part/404.html
-      - name: Inject Supabase keys into meta tags
+      - name: Injection des clés Supabase dans les meta tags
         run: |
           SB_URL="${{ secrets.VITE_SUPABASE_URL }}"
           SB_ANON="${{ secrets.VITE_SUPABASE_ANON_KEY }}"
@@ -51,7 +55,7 @@ jobs:
           else
             echo "Skipping Supabase meta injection: secrets not set."
           fi
-      - name: Upload SPA fallback
+      - name: Upload SPA fallback (artefact)
         uses: actions/upload-artifact@v4
         with:
           name: spa-fallback-artifact
@@ -63,13 +67,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Download SPA fallback
+      - name: Download SPA fallback (artefact)
         uses: actions/download-artifact@v4
         with:
           pattern: spa-fallback-artifact
           merge-multiple: true
           path: dist/faire-part
-      - name: Deploy to GitHub Pages
+      - name: Vérification artefact final
+        run: ls -l dist/faire-part
+      - name: Déploiement sur GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
