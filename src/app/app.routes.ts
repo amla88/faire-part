@@ -41,6 +41,11 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/photos/upload/photo-upload.component').then((m) => m.PhotoUploadComponent),
         canActivate: [AuthGuard],
       },
+      {
+        path: 'photos/album',
+        loadComponent: () => import('./pages/photos/album/photo-album.component').then((m) => m.PhotoAlbumComponent),
+        canActivate: [AuthGuard],
+      },
     ],
   },
   {

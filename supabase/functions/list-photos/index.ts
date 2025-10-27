@@ -298,7 +298,7 @@ function parseListResponse(xml: string, prefix: string): ListedObject[] {
 }
 
 function extractTagValue(segment: string, tag: string): string | null {
-  const pattern = new RegExp(`<${tag}>([\s\S]*?)</${tag}>`, 'i');
+  const pattern = new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, 'i');
   const match = segment.match(pattern);
   if (!match) {
     return null;

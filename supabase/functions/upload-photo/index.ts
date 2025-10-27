@@ -1,15 +1,12 @@
 // deno-lint-ignore-file no-explicit-any
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
+// @ts-ignore - import résolu par Deno via jsr:namespace
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 // For editors that don't include Deno types in this workspace
 // deno-lint-ignore no-var
 declare const Deno: any;
 
-// Placeholder Edge Function for photo upload proxy.
-// Intended to accept a multipart/form-data request and forward the file to
-// Oracle Object Storage (S3 compatible endpoint) using SigV4 signing.
-// For now, this returns 501 until OCI credentials are configured and
-// the signing/forwarding is implemented.
+// Edge Function servant de proxy d'upload vers Oracle Object Storage.
 
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -142,16 +139,12 @@ Deno.serve(async (req: Request) => {
       return json(502, { error: 'OCI upload failed', status: putRes.status, body: text });
     }
 
-    // Enregistrer la photo côté DB
-    const fullUrl = PUBLIC_BASE_URL ? `${PUBLIC_BASE_URL}${encodeURIComponent(key)}` : `s3://${OCI_BUCKET}/${key}`;
-    try {
-      await supabase.rpc('submit_photo', { p_famille_id: familleId, p_file_path: fullUrl });
-    } catch (e) {
-      // Non bloquant
-      console.warn('submit_photo RPC error', e);
-    }
-
-    return json(200, { path: `${OCI_BUCKET}/${key}`, publicUrl: fullUrl });
+    const publicUrl = buildPublicUrl({ bucket: OCI_BUCKET, key, baseUrl: PUBLIC_BASE_URL });
+    return json(200, {
+      path: `${OCI_BUCKET}/${key}`,
+      publicUrl,
+      familleId,
+    });
   } catch (e) {
     return json(400, { error: 'Invalid multipart payload', details: String(e) });
   }
@@ -224,4 +217,13 @@ function toHex(bytes: Uint8Array): string {
 
 async function safeText(res: Response): Promise<string> {
   try { return await res.text(); } catch { return ''; }
+}
+
+function buildPublicUrl(options: { bucket: string; key: string; baseUrl?: string | null }): string {
+  const { bucket, key, baseUrl } = options;
+  if (baseUrl) {
+    const separator = baseUrl.endsWith('/') ? '' : '/';
+    return `${baseUrl}${separator}${key.split('/').map(encodeURIComponent).join('/')}`;
+  }
+  return `s3://${bucket}/${key}`;
 }

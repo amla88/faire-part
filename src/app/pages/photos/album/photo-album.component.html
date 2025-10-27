@@ -1,0 +1,46 @@
+<div class="page-wrapper">
+  <mat-card appearance="outlined">
+    <mat-card-header>
+      <mat-card-title>Mon album photo</mat-card-title>
+  <mat-card-subtitle>Retrouve toutes les photos envoyees par ta famille.</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-actions align="end" class="card-actions">
+      <button mat-stroked-button (click)="refresh()" [disabled]="loading()">
+        Rafraichir
+      </button>
+    </mat-card-actions>
+
+    <mat-card-content>
+      @if (loading()) {
+        <div class="loading">
+          <mat-progress-spinner diameter="32" mode="indeterminate"></mat-progress-spinner>
+          <span>Chargement...</span>
+        </div>
+      } @else {
+        @if (error()) {
+          <div class="error">{{ error() }}</div>
+        } @else {
+          @if (!hasPhotos()) {
+            <div class="empty">Aucune photo n'a encore ete transferee. Lance-toi&nbsp;!</div>
+          } @else {
+            <div class="album-grid">
+              @for (photo of photos(); track photo.key) {
+                <article class="photo-card">
+                  <a [href]="photo.url" target="_blank" rel="noopener" class="image-link">
+                    <img [src]="photo.url" [alt]="photo.name" loading="lazy" />
+                  </a>
+                  <div class="photo-meta">
+                    <strong class="photo-name">{{ photo.name }}</strong>
+                    <span class="photo-date">{{ formatDate(photo.lastModified) }}</span>
+                    <span class="photo-size">{{ formatSize(photo.size) }}</span>
+                  </div>
+                </article>
+              }
+            </div>
+          }
+        }
+      }
+    </mat-card-content>
+  </mat-card>
+</div>
