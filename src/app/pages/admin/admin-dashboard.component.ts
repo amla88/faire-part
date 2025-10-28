@@ -1,0 +1,15 @@
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+
+@Component({
+  selector: 'app-admin-dashboard',
+  imports: [CommonModule],
+  template: `
+    <div class="p-24">
+      <h2>Espace Administrateur</h2>
+      <p>Bienvenue dans l'interface d'administration. Les modules (assets, photos, musiques, stats) pourront être branchés ici.</p>
+    </div>
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class AdminDashboardComponent {}

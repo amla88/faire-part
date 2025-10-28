@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { BlankComponent } from './layouts/blank/blank.component';
 import { FullComponent } from './layouts/full/full.component';
 import { AuthGuard } from './services/auth.guard';
+import { adminGuard } from './services/admin.guard';
 
 export const routes: Routes = [
   {
@@ -60,11 +61,20 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'admin-login',
+        loadComponent: () => import('./pages/authentication/admin-login/admin-login.component').then((m) => m.AdminLoginComponent),
+      },
+      {
         path: 'person',
         loadComponent: () => import('./pages/person/person.component').then((m) => m.PersonComponent),
         canActivate: [AuthGuard],
       },
     ],
+  },
+  {
+    path: 'admin',
+    canMatch: [adminGuard],
+    loadComponent: () => import('./pages/admin/admin-dashboard.component').then((m) => m.AdminDashboardComponent),
   },
   {
     path: '**',

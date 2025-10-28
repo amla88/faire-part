@@ -1,0 +1,52 @@
+<div class="blank-layout-container justify-content-center align-items-center bg-light">
+  <div class="position-relative row w-100 h-100 bg-gredient justify-content-center">
+    <div class="col-lg-4 d-flex align-items-center">
+      <mat-card class="cardWithShadow boxed-auth">
+        <mat-card-content class="p-32">
+          <div class="text-center">
+            <img src="./assets/images/logos/dark-logo.svg" class="align-middle m-2" alt="logo" />
+          </div>
+
+          <div class="or-border m-t-30">Connexion administrateur</div>
+
+          <form [formGroup]="form" (ngSubmit)="submit()" class="m-t-30">
+            <mat-label class="f-s-14 f-w-600 m-b-12 d-block">Email</mat-label>
+            <mat-form-field appearance="outline" class="w-100" color="primary">
+              <input matInput formControlName="email" type="email" placeholder="admin@exemple.com" autocomplete="email" />
+              @if (f.email.hasError('required')) {
+                <mat-error>L'email est requis</mat-error>
+              }
+              @if (f.email.hasError('email')) {
+                <mat-error>Email invalide</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-label class="f-s-14 f-w-600 m-b-12 d-block">Mot de passe</mat-label>
+            <mat-form-field appearance="outline" class="w-100" color="primary">
+              <input matInput formControlName="password" type="password" placeholder="••••••" autocomplete="current-password" />
+              @if (f.password.hasError('required')) {
+                <mat-error>Le mot de passe est requis</mat-error>
+              }
+              @if (f.password.hasError('minlength')) {
+                <mat-error>Au moins 6 caractères</mat-error>
+              }
+            </mat-form-field>
+
+            <button mat-flat-button color="primary" class="w-100" type="submit" [disabled]="auth.loading() || form.invalid">
+              @if (!auth.loading()) {
+                <ng-container>Se connecter</ng-container>
+              }
+              @if (auth.loading()) {
+                <ng-container>
+                  <mat-progress-spinner diameter="18" mode="indeterminate" [strokeWidth]="3"></mat-progress-spinner>
+                  &nbsp;Connexion...
+                </ng-container>
+              }
+            </button>
+          </form>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+  
+</div>
