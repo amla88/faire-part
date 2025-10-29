@@ -32,13 +32,16 @@
       <mat-icon class="d-flex align-items-center"><i-tabler name="mail" class="icon-18 d-flex"></i-tabler></mat-icon>My
       Account
     </button>
+    <button mat-menu-item [routerLink]="['/person']">
+      <mat-icon class="d-flex align-items-center"><i-tabler name="users" class="icon-18 d-flex"></i-tabler></mat-icon>Changer de personne
+    </button>
     <button mat-menu-item>
       <mat-icon class="d-flex align-items-center"><i-tabler name="list-check"
           class="icon-18 d-flex"></i-tabler></mat-icon>My Task
     </button>
 
     <div class="p-x-12 m-t-12">
-      <a [routerLink]="['/authentication/login']" mat-stroked-button class="w-100">Logout</a>
+      <button (click)="logout()" mat-stroked-button class="w-100">Logout</button>
     </div>
   </mat-menu>
 </mat-toolbar>

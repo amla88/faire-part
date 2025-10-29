@@ -7,7 +7,7 @@ import { TablerIconsModule } from 'angular-tabler-icons';
 import { HeaderComponent } from './header/header.component';
 import { SidebarComponent } from './sidebar/sidebar.component';
 import { AppNavItemComponent } from './sidebar/nav-item/nav-item.component';
-import { navItems } from './sidebar/sidebar-data';
+import { navItemsAdmin } from './sidebar/sidebar-data-admin';
 import { AppTopstripComponent } from './top-strip/topstrip.component';
 import { FullBase } from './full-base';
 import { BreakpointObserver } from '@angular/cdk/layout';
@@ -16,7 +16,7 @@ import { Router } from '@angular/router';
 
 
 @Component({
-  selector: 'app-full',
+  selector: 'app-full-admin',
   imports: [
     RouterModule,
     AppNavItemComponent,
@@ -32,9 +32,9 @@ import { Router } from '@angular/router';
   styleUrls: [],
   encapsulation: ViewEncapsulation.None
 })
-export class FullComponent extends FullBase {
+export class FullAdminComponent extends FullBase {
   constructor(settings: CoreService, router: Router, breakpointObserver: BreakpointObserver) {
     super(settings, router, breakpointObserver);
-    this.navItems = navItems;
+    this.navItems = navItemsAdmin;
   }
 }

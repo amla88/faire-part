@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { StarterComponent } from './starter/starter.component';
+import { adminGuard } from '../services/admin.guard';
 
 export const PagesRoutes: Routes = [
   {
@@ -13,4 +14,5 @@ export const PagesRoutes: Routes = [
       ],
     },
   },
+  // Note: admin routes are exposed at top-level '/admin' (see app.routes.ts)
 ];

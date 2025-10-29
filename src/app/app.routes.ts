@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { BlankComponent } from './layouts/blank/blank.component';
 import { FullComponent } from './layouts/full/full.component';
+import { FullAdminComponent } from './layouts/full/full-admin.component';
 import { AuthGuard } from './services/auth.guard';
 import { adminGuard } from './services/admin.guard';
 
@@ -73,8 +74,18 @@ export const routes: Routes = [
   },
   {
     path: 'admin',
+    component: FullAdminComponent,
     canMatch: [adminGuard],
-    loadComponent: () => import('./pages/admin/admin-dashboard.component').then((m) => m.AdminDashboardComponent),
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./pages/admin/dashboard/admin-dashboard.component').then((m) => m.AdminDashboardComponent),
+      },
+      {
+        path: 'famille',
+        loadComponent: () => import('./pages/admin/famille/admin-famille.component').then((m) => m.AdminFamilleComponent),
+      },
+    ],
   },
   {
     path: '**',
