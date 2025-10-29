@@ -13,7 +13,7 @@ export const adminGuard: CanMatchFn = () => {
 
   const isLoggedIn = !!auth.session();
   if (!isLoggedIn) {
-    return router.parseUrl('/admin-login');
+    return router.parseUrl('/authentication/admin-login');
   }
   if (!auth.isAdmin()) {
     return router.parseUrl('/');

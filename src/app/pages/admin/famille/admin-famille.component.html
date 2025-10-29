@@ -1,21 +1,132 @@
 <div class="p-24 admin-famille">
   <h2>Ajouter une famille (table familles)</h2>
 
-  <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-12 w-full max-w-xl">
-    <div>
-      <label class="block mb-2">Nom de la famille</label>
-      <input type="text" formControlName="name" class="w-full p-2 border rounded" />
-      <div *ngIf="form.controls.name.invalid && form.controls.name.touched" class="text-red-600 text-sm mt-1">
-        Le nom est requis (max 255 caractères).
-      </div>
-    </div>
+  <mat-card class="cardWithShadow theme-card">
+    <mat-card-header>
+      <mat-card-title class="m-b-0">Famille</mat-card-title>
+    </mat-card-header>
+    <mat-card-content class="b-t-1">
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <div class="row">
+          <div class="col-lg-6">
+            <mat-label class="f-w-600 m-b-8 d-block">Nom de la famille</mat-label>
+            <mat-form-field appearance="outline" class="w-100">
+              <input matInput type="text" formControlName="name" placeholder="Nom de la famille" />
+              <mat-error *ngIf="form.controls.name.invalid && form.controls.name.touched">
+                Le nom est requis (max 255 caractères).
+              </mat-error>
+            </mat-form-field>
+          </div>
 
-    <div>
-      <button type="submit" [disabled]="form.invalid || loading" class="btn btn-primary">
-        {{ loading ? 'En cours...' : 'Ajouter' }}
-      </button>
-    </div>
-  </form>
+          <div class="col-lg-6">
+            <mat-label class="f-w-600 m-b-8 d-block">Rue</mat-label>
+            <mat-form-field appearance="outline" class="w-100">
+              <input matInput type="text" formControlName="rue" placeholder="Rue" />
+            </mat-form-field>
+          </div>
+
+          <div class="col-lg-3">
+            <mat-label class="f-w-600 m-b-8 d-block">Numéro</mat-label>
+            <mat-form-field appearance="outline" class="w-100">
+              <input matInput type="text" formControlName="numero" placeholder="Numéro" />
+            </mat-form-field>
+          </div>
+
+          <div class="col-lg-3">
+            <mat-label class="f-w-600 m-b-8 d-block">Boîte</mat-label>
+            <mat-form-field appearance="outline" class="w-100">
+              <input matInput type="text" formControlName="boite" placeholder="Boîte" />
+            </mat-form-field>
+          </div>
+
+          <div class="col-lg-3">
+            <mat-label class="f-w-600 m-b-8 d-block">Code postal</mat-label>
+            <mat-form-field appearance="outline" class="w-100">
+              <input matInput type="text" formControlName="cp" placeholder="CP" />
+            </mat-form-field>
+          </div>
+
+          <div class="col-lg-3">
+            <mat-label class="f-w-600 m-b-8 d-block">Ville</mat-label>
+            <mat-form-field appearance="outline" class="w-100">
+              <input matInput type="text" formControlName="ville" placeholder="Ville" />
+            </mat-form-field>
+          </div>
+
+          <div class="col-lg-6">
+            <mat-label class="f-w-600 m-b-8 d-block">Pays</mat-label>
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-select formControlName="pays">
+                <mat-option *ngFor="let option of countries" [value]="option.value">{{ option.viewValue }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <div class="m-t-12">
+          <button mat-flat-button color="primary" class="m-r-8" type="submit" [disabled]="form.invalid || loading">{{ loading ? 'En cours...' : 'Ajouter' }}</button>
+          <button mat-stroked-button color="warn" type="button" (click)="form.reset()">Annuler</button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Personnes: personne_principale obligatoire + FormArray dynamique -->
+  <mat-card class="cardWithShadow theme-card m-t-12">
+    <mat-card-header>
+      <mat-card-title class="m-b-0">Personnes</mat-card-title>
+    </mat-card-header>
+    <mat-card-content class="b-t-1">
+      <div [formGroup]="form">
+        <div formArrayName="persons">
+          <div *ngFor="let p of persons.controls; let i = index" [formGroupName]="i" class="person-item m-b-8 p-8 b-t-1">
+            <h3 class="m-0">Personne {{ i + 1 }} <small *ngIf="i === 0">(personne principale)</small></h3>
+            <div class="row m-t-8">
+              <div class="col-lg-4">
+                <mat-label class="f-w-600 m-b-8 d-block">Nom</mat-label>
+                <mat-form-field appearance="outline" class="w-100">
+                  <input matInput type="text" formControlName="nom" placeholder="Nom" />
+                  <mat-error *ngIf="p.get('nom')?.invalid && p.get('nom')?.touched">Le nom est requis.</mat-error>
+                </mat-form-field>
+              </div>
+              <div class="col-lg-4">
+                <mat-label class="f-w-600 m-b-8 d-block">Prénom</mat-label>
+                <mat-form-field appearance="outline" class="w-100">
+                  <input matInput type="text" formControlName="prenom" placeholder="Prénom" />
+                  <mat-error *ngIf="p.get('prenom')?.invalid && p.get('prenom')?.touched">Le prénom est requis.</mat-error>
+                </mat-form-field>
+              </div>
+              <div class="col-lg-4">
+                <mat-label class="f-w-600 m-b-8 d-block">Email</mat-label>
+                <mat-form-field appearance="outline" class="w-100">
+                  <input matInput type="email" formControlName="email" placeholder="Email" />
+                  <mat-error *ngIf="p.get('email')?.invalid && p.get('email')?.touched">Email invalide.</mat-error>
+                </mat-form-field>
+              </div>
+
+              <div class="col-lg-6">
+                <mat-label class="f-w-600 m-b-8 d-block">Invité pour</mat-label>
+                <div class="checkbox-group">
+                  <mat-checkbox formControlName="invite_reception">Réception</mat-checkbox>
+                  <mat-checkbox formControlName="invite_repas">Repas</mat-checkbox>
+                  <mat-checkbox formControlName="invite_soiree">Soirée</mat-checkbox>
+                </div>
+              </div>
+            </div>
+
+            <div class="m-t-8">
+              <button mat-mini-fab color="primary" type="button" (click)="addPerson()" aria-label="Ajouter personne"><mat-icon>add</mat-icon></button>
+              <button mat-mini-fab color="warn" type="button" (click)="removePerson(i)" [disabled]="persons.controls.length <= 1" aria-label="Supprimer personne"><mat-icon>remove</mat-icon></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="m-t-12">
+        <small>Minimum 1 personne obligatoire (personne principale). Vous pouvez en ajouter autant que nécessaire.</small>
+      </div>
+    </mat-card-content>
+  </mat-card>
 
   <div *ngIf="message" class="mt-4">{{ message }}</div>
 </div>

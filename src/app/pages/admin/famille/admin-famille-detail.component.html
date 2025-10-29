@@ -1,0 +1,120 @@
+<mat-card class="cardWithShadow">
+  <mat-card-content>
+    <mat-card-title>Détail Famille</mat-card-title>
+
+    <div *ngIf="loading()" class="d-flex justify-center p-24">
+      <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
+    </div>
+
+    <div *ngIf="!loading() && famille()">
+      <form [formGroup]="form">
+        <div class="row">
+          <div class="col-lg-6">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Nom de la famille</mat-label>
+              <input matInput formControlName="name" />
+              <mat-error *ngIf="form.get('name')?.invalid && form.get('name')?.touched">Le nom est requis.</mat-error>
+            </mat-form-field>
+          </div>
+
+          <div class="col-lg-6">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Pays</mat-label>
+              <mat-select formControlName="pays">
+                <mat-option *ngFor="let c of countries" [value]="c.value">{{ c.viewValue }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="col-lg-4">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Rue</mat-label>
+              <input matInput formControlName="rue" />
+            </mat-form-field>
+          </div>
+          <div class="col-lg-2">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Numéro</mat-label>
+              <input matInput formControlName="numero" />
+            </mat-form-field>
+          </div>
+          <div class="col-lg-2">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Boîte</mat-label>
+              <input matInput formControlName="boite" />
+            </mat-form-field>
+          </div>
+          <div class="col-lg-2">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>CP</mat-label>
+              <input matInput formControlName="cp" />
+            </mat-form-field>
+          </div>
+          <div class="col-lg-2">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Ville</mat-label>
+              <input matInput formControlName="ville" />
+            </mat-form-field>
+          </div>
+        </div>
+
+        <div class="m-t-12 d-flex gap-8">
+          <button mat-flat-button color="primary" type="button" (click)="saveFamille()">Sauvegarder famille</button>
+          <button mat-stroked-button color="accent" type="button" (click)="savePersons()">Sauvegarder personnes</button>
+          <button mat-stroked-button color="primary" type="button" (click)="savePersons(); saveFamille()">Sauvegarder tout</button>
+        </div>
+
+        <h4 class="m-t-16">Personnes</h4>
+        <div formArrayName="persons">
+          <div *ngFor="let p of persons.controls; let i = index" [formGroupName]="i" class="person-item p-8 b-t-1 d-flex align-center">
+            <div class="flex-grow-1">
+              <div class="row">
+                <div class="col-md-4">
+                  <mat-form-field appearance="outline" class="w-100">
+                    <mat-label>Prénom</mat-label>
+                    <input matInput formControlName="prenom" />
+                  </mat-form-field>
+                </div>
+                <div class="col-md-4">
+                  <mat-form-field appearance="outline" class="w-100">
+                    <mat-label>Nom</mat-label>
+                    <input matInput formControlName="nom" />
+                  </mat-form-field>
+                </div>
+                <div class="col-md-4">
+                  <mat-form-field appearance="outline" class="w-100">
+                    <mat-label>Email</mat-label>
+                    <input matInput formControlName="email" />
+                  </mat-form-field>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <mat-checkbox formControlName="invite_reception">Réception</mat-checkbox>
+                  <mat-checkbox formControlName="invite_repas">Repas</mat-checkbox>
+                  <mat-checkbox formControlName="invite_soiree">Soirée</mat-checkbox>
+                </div>
+                <div class="col-md-6 text-right">
+                  <mat-radio-group [value]="form.get('personne_principale')?.value" (change)="form.get('personne_principale')?.setValue(persons.at(i).get('id')?.value)">
+                    <mat-radio-button [checked]="persons.at(i).get('id')?.value === form.get('personne_principale')?.value">Personne principale</mat-radio-button>
+                  </mat-radio-group>
+                </div>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button mat-icon-button color="warn" (click)="removePerson(i)" aria-label="Supprimer personne"><mat-icon>delete</mat-icon></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="m-t-8">
+          <button mat-mini-fab color="primary" type="button" (click)="addPerson()"><mat-icon>add</mat-icon></button>
+        </div>
+      </form>
+    </div>
+
+    <div *ngIf="!loading() && !famille()" class="p-16 text-muted">Famille introuvable.</div>
+  </mat-card-content>
+</mat-card>

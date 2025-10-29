@@ -8,20 +8,8 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 @Component({
   selector: 'app-quick-login',
   imports: [CommonModule, RouterModule, MaterialModule],
-  template: `
-    <div class="blank-layout-container justify-content-center align-items-center bg-light">
-      <div class="position-relative row w-100 h-100 bg-gredient justify-content-center">
-        <div class="col-lg-4 d-flex align-items-center">
-          <mat-card class="cardWithShadow boxed-auth">
-            <mat-card-content class="p-32 text-center">
-              <mat-progress-spinner diameter="40" mode="indeterminate"></mat-progress-spinner>
-              <div class="m-t-16">Connexion en cours…</div>
-            </mat-card-content>
-          </mat-card>
-        </div>
-      </div>
-    </div>
-  `,
+  templateUrl: './quick-login.component.html',
+  styleUrls: ['./quick-login.component.scss'],
 })
 export class AppQuickLoginComponent implements OnInit {
   constructor(

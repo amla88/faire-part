@@ -1,0 +1,69 @@
+<mat-card class="cardWithShadow">
+  <mat-card-content>
+    <mat-card-title>Liste des familles</mat-card-title>
+
+    <div class="m-b-12">
+      <mat-form-field appearance="outline" class="w-50">
+        <mat-label>Rechercher familles / personnes</mat-label>
+        <input matInput placeholder="Nom, id ou personne..." (input)="filter.set($any($event.target).value)" />
+      </mat-form-field>
+      <div class="f-s-13 text-muted m-t-8">Résultats : {{ filteredFamilles().length }}</div>
+    </div>
+
+    <div class="table-responsive" *ngIf="!loading()">
+  <table mat-table [dataSource]="filteredFamilles()" class="w-100">
+
+        <!-- Name Column -->
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef class="f-w-600 f-s-14 p-l-0">Famille</th>
+          <td mat-cell *matCellDef="let element" class="p-l-0">
+            <div>
+              <h6 class="f-s-14 f-w-600">{{ element.name || element.nom || ('Famille #' + element.id) }}</h6>
+              <div class="f-s-13 text-muted">ID: {{ element.id }}</div>
+            </div>
+          </td>
+        </ng-container>
+
+        <!-- Persons Column -->
+        <ng-container matColumnDef="persons">
+          <th mat-header-cell *matHeaderCellDef class="f-w-600 f-s-14">Personnes</th>
+          <td mat-cell *matCellDef="let element">
+            <mat-chip-set>
+              <mat-chip *ngFor="let p of (element.personnes || [])" class="person-chip">
+                <img matChipAvatar [src]="p.avatar_url || 'assets/images/profile/user-1.jpg'" alt="avatar" />
+                {{ p.prenom }} {{ p.nom }}
+                <button mat-icon-button color="warn" aria-label="Supprimer personne" (click)="deletePerson(element.id, p.id)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </mat-chip>
+            </mat-chip-set>
+          </td>
+        </ng-container>
+
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef class="f-w-600 f-s-14"></th>
+          <td mat-cell *matCellDef="let element">
+            <button mat-icon-button color="primary" (click)="goToDetails(element)" aria-label="Détails de la famille">
+              <mat-icon>open_in_new</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" (click)="deleteFamille(element.id)" aria-label="Supprimer la famille">
+              <mat-icon>delete_forever</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+      </table>
+    </div>
+
+    <div *ngIf="loading()" class="d-flex justify-center p-24">
+      <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
+    </div>
+
+    <div *ngIf="!loading() && (!familles() || familles().length === 0)" class="p-16 text-muted">
+      Aucune famille trouvée.
+    </div>
+  </mat-card-content>
+</mat-card>

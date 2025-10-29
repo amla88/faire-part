@@ -1,0 +1,26 @@
+/* Styles minimaux pour quick-login. Adapter selon le thème global. */
+.blank-layout-container {
+  min-height: 100vh;
+  display: flex;
+}
+
+.bg-gredient {
+  /* small, safe gradient utility (original had `bg-gredient`) */
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.boxed-auth {
+  width: 100%;
+}
+
+.m-t-16 {
+  margin-top: 16px;
+}
+
+/* Adjust spinner centering inside the card */
+mat-card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}

@@ -1,5 +1,12 @@
 - Utilises toujours le mcp contexte 7 pour la documentation. Vérifies les bonnes versions de mon application avant de répondre. Va lire le fichier package.json au démarage de chaque session pour vérifier les dépendances et versions utilisées.
 
+      {
+        path: 'ui-components',
+        loadChildren: () =>
+          import('./pages/admin/ui-components/ui-components.routes').then(
+            (m) => m.UiComponentsRoutes
+          ),
+      },
 - Dans le dossier .exemple\modernize-free-angular-v5\main, tu trouveras un modèle à suivre pour le design. Suis l'apparence et le style de ce modèle pour mon application.
 
 - Remplacer <i-tabler> par <ng-icon> dans mes fichiers Angular de mon projet pour les icônes Tabler lorsque tu reprend des éléments du template exemple.

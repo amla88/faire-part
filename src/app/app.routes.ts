@@ -22,13 +22,6 @@ export const routes: Routes = [
           import('./pages/pages.routes').then((m) => m.PagesRoutes),
       },
       {
-        path: 'ui-components',
-        loadChildren: () =>
-          import('./pages/ui-components/ui-components.routes').then(
-            (m) => m.UiComponentsRoutes
-          ),
-      },
-      {
         path: 'extra',
         loadChildren: () =>
           import('./pages/extra/extra.routes').then((m) => m.ExtraRoutes),
@@ -62,10 +55,6 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'admin-login',
-        loadComponent: () => import('./pages/authentication/admin-login/admin-login.component').then((m) => m.AdminLoginComponent),
-      },
-      {
         path: 'person',
         loadComponent: () => import('./pages/person/person.component').then((m) => m.PersonComponent),
         canActivate: [AuthGuard],
@@ -79,16 +68,15 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        loadComponent: () => import('./pages/admin/dashboard/admin-dashboard.component').then((m) => m.AdminDashboardComponent),
-      },
-      {
-        path: 'famille',
-        loadComponent: () => import('./pages/admin/famille/admin-famille.component').then((m) => m.AdminFamilleComponent),
-      },
+        loadChildren: () =>
+          import('./pages/admin/admin.routes').then(
+            (m) => m.AdminRoutes
+          ),
+      }
     ],
   },
   {
     path: '**',
-    redirectTo: 'authentication/error',
+    redirectTo: '/',
   },
 ];

@@ -1,0 +1,17 @@
+.person-chip {
+  display: inline-flex;
+  align-items: center;
+  margin: 4px;
+}
+
+.person-chip img[matChipAvatar] {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 8px;
+}
+
+.table-responsive table td {
+  vertical-align: middle;
+}
