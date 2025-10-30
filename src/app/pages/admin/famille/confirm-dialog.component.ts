@@ -1,41 +1,66 @@
 import { ChangeDetectionStrategy, Component, Inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { 
+  MatDialogModule, 
+  MatDialogRef, 
+  MAT_DIALOG_DATA,
+  MatDialogActions,
+  MatDialogClose,
+  MatDialogTitle,
+  MatDialogContent
+} from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
+
+export interface ConfirmDialogData {
+  title: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+  isDanger?: boolean;
+}
 
 @Component({
   selector: 'app-confirm-dialog',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule],
+  imports: [
+    CommonModule, 
+    MatDialogModule, 
+    MatDialogActions,
+    MatDialogClose,
+    MatDialogTitle,
+    MatDialogContent,
+    MatButtonModule, 
+    MatIconModule
+  ],
   template: `
-    <div class="confirm-dialog">
-      <div class="confirm-body">
-        <mat-icon class="confirm-icon">warning</mat-icon>
-        <div>
-          <h3 class="m-0">{{ data?.title || 'Confirmer' }}</h3>
-          <p class="m-0">{{ data?.message || '' }}</p>
-        </div>
-      </div>
-      <div class="confirm-actions">
-        <button mat-stroked-button (click)="onClose(false)">Annuler</button>
-        <button mat-flat-button color="warn" (click)="onClose(true)">Confirmer</button>
-      </div>
+    <h5 mat-dialog-title class="mat-subtitle-1 d-flex align-items-center">
+      <mat-icon [class]="data.isDanger ? 'text-error' : 'text-warning'" class="m-r-8">
+        {{ data.isDanger ? 'warning' : 'help_outline' }}
+      </mat-icon>
+      {{ data.title }}
+    </h5>
+    <div mat-dialog-content class="f-s-14 lh-16 p-t-8">
+      {{ data.message }}
+    </div>
+    <div mat-dialog-actions class="p-24 p-t-0 d-flex justify-end gap-8">
+      <button mat-flat-button mat-dialog-close class="m-r-8">
+        {{ data.cancelText || 'Annuler' }}
+      </button>
+      <button 
+        mat-flat-button 
+        [mat-dialog-close]="true" 
+        [class]="data.isDanger ? 'bg-error text-white' : 'bg-primary text-white'"
+        cdkFocusInitial>
+        {{ data.confirmText || 'Confirmer' }}
+      </button>
     </div>
   `,
-  styles: [
-    `
-      .confirm-body { display:flex; gap:12px; align-items:center; }
-      .confirm-icon { font-size:36px; color:var(--warn, #d32f2f); }
-      .confirm-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
-    `,
-  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConfirmDialogComponent {
-  constructor(private dialogRef: MatDialogRef<ConfirmDialogComponent>, @Inject(MAT_DIALOG_DATA) public data: any) {}
-
-  onClose(ok: boolean) {
-    this.dialogRef.close(ok);
-  }
+  constructor(
+    private dialogRef: MatDialogRef<ConfirmDialogComponent>, 
+    @Inject(MAT_DIALOG_DATA) public data: ConfirmDialogData
+  ) {}
 }

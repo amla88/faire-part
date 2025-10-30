@@ -75,20 +75,40 @@ export class AdminAuthService {
       this.profile.set(null);
       return;
     }
-    // Lire son propre profil (policy déjà en place)
-    const { data, error } = await this.supabase
-      .from('profiles')
-      .select('id, role')
-      .eq('id', u.id)
-      .maybeSingle();
-    if (error) {
-      // Pas de profil = rôle inconnu → traiter comme non-admin
-      this.profile.set(null);
-      return;
-    }
-    if (data) {
-      this.profile.set({ id: data.id as string, role: (data.role as any) ?? 'invite' });
-    } else {
+    
+    try {
+      // Lire son propre profil (policy déjà en place)
+      const { data, error } = await this.supabase
+        .from('profiles')
+        .select('id, role')
+        .eq('id', u.id)
+        .maybeSingle();
+        
+      if (error) {
+        console.error('[AdminAuthService] Erreur lors du chargement du profil:', error);
+        
+        // Si c'est une erreur de permission sur la table users/profiles
+        if (error.code === '42501' || error.message.includes('permission denied')) {
+          console.warn('[AdminAuthService] Permissions manquantes - voir ADMIN_CONFIGURATION.md pour la configuration des tables');
+          this.error.set('Permissions insuffisantes. Veuillez configurer les tables profiles et leurs politiques RLS.');
+        } else {
+          this.error.set(`Erreur de profil: ${error.message}`);
+        }
+        
+        // Pas de profil = rôle inconnu → traiter comme non-admin
+        this.profile.set(null);
+        return;
+      }
+      
+      if (data) {
+        this.profile.set({ id: data.id as string, role: (data.role as any) ?? 'invite' });
+        this.error.set(null); // Réinitialiser l'erreur en cas de succès
+      } else {
+        this.profile.set(null);
+      }
+    } catch (err) {
+      console.error('[AdminAuthService] Exception lors du chargement du profil:', err);
+      this.error.set('Erreur inattendue lors du chargement du profil');
       this.profile.set(null);
     }
   }

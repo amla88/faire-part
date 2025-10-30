@@ -8,13 +8,15 @@
     <mat-card-content class="b-t-1">
       <form [formGroup]="form" (ngSubmit)="submit()">
         <div class="row">
+          <!-- Supprimé le champ nom famille car il n'existe pas dans la DB -->
+          <!-- Le nom sera automatiquement dérivé de la première personne -->
+          
           <div class="col-lg-6">
-            <mat-label class="f-w-600 m-b-8 d-block">Nom de la famille</mat-label>
+            <mat-label class="f-w-600 m-b-8 d-block">Pays</mat-label>
             <mat-form-field appearance="outline" class="w-100">
-              <input matInput type="text" formControlName="name" placeholder="Nom de la famille" />
-              <mat-error *ngIf="form.controls.name.invalid && form.controls.name.touched">
-                Le nom est requis (max 255 caractères).
-              </mat-error>
+              <mat-select formControlName="pays">
+                <mat-option *ngFor="let c of countries" [value]="c.value">{{ c.viewValue }}</mat-option>
+              </mat-select>
             </mat-form-field>
           </div>
 

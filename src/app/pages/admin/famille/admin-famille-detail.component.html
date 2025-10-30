@@ -1,6 +1,6 @@
 <mat-card class="cardWithShadow">
   <mat-card-content>
-    <mat-card-title>Détail Famille</mat-card-title>
+    <mat-card-title>{{ familyDisplayName() }}</mat-card-title>
 
     <div *ngIf="loading()" class="d-flex justify-center p-24">
       <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
@@ -9,14 +9,9 @@
     <div *ngIf="!loading() && famille()">
       <form [formGroup]="form">
         <div class="row">
-          <div class="col-lg-6">
-            <mat-form-field appearance="outline" class="w-100">
-              <mat-label>Nom de la famille</mat-label>
-              <input matInput formControlName="name" />
-              <mat-error *ngIf="form.get('name')?.invalid && form.get('name')?.touched">Le nom est requis.</mat-error>
-            </mat-form-field>
-          </div>
-
+          <!-- Supprimé le champ nom de famille car il n'existe pas dans la DB -->
+          <!-- Le nom est maintenant affiché via familyDisplayName() dans le titre -->
+          
           <div class="col-lg-6">
             <mat-form-field appearance="outline" class="w-100">
               <mat-label>Pays</mat-label>
@@ -61,7 +56,7 @@
         <div class="m-t-12 d-flex gap-8">
           <button mat-flat-button color="primary" type="button" (click)="saveFamille()">Sauvegarder famille</button>
           <button mat-stroked-button color="accent" type="button" (click)="savePersons()">Sauvegarder personnes</button>
-          <button mat-stroked-button color="primary" type="button" (click)="savePersons(); saveFamille()">Sauvegarder tout</button>
+          <button mat-stroked-button color="primary" type="button" (click)="saveAll()">Sauvegarder tout</button>
         </div>
 
         <h4 class="m-t-16">Personnes</h4>
@@ -73,18 +68,24 @@
                   <mat-form-field appearance="outline" class="w-100">
                     <mat-label>Prénom</mat-label>
                     <input matInput formControlName="prenom" />
+                    <mat-error *ngIf="p.get('prenom')?.hasError('required') && p.get('prenom')?.touched">Le prénom est requis.</mat-error>
+                    <mat-error *ngIf="p.get('prenom')?.hasError('maxlength') && p.get('prenom')?.touched">Le prénom ne peut pas dépasser 100 caractères.</mat-error>
                   </mat-form-field>
                 </div>
                 <div class="col-md-4">
                   <mat-form-field appearance="outline" class="w-100">
                     <mat-label>Nom</mat-label>
                     <input matInput formControlName="nom" />
+                    <mat-error *ngIf="p.get('nom')?.hasError('required') && p.get('nom')?.touched">Le nom est requis.</mat-error>
+                    <mat-error *ngIf="p.get('nom')?.hasError('maxlength') && p.get('nom')?.touched">Le nom ne peut pas dépasser 100 caractères.</mat-error>
                   </mat-form-field>
                 </div>
                 <div class="col-md-4">
                   <mat-form-field appearance="outline" class="w-100">
                     <mat-label>Email</mat-label>
-                    <input matInput formControlName="email" />
+                    <input matInput formControlName="email" type="email" />
+                    <mat-error *ngIf="p.get('email')?.hasError('email') && p.get('email')?.touched">Format d'email invalide.</mat-error>
+                    <mat-error *ngIf="p.get('email')?.hasError('maxlength') && p.get('email')?.touched">L'email ne peut pas dépasser 255 caractères.</mat-error>
                   </mat-form-field>
                 </div>
               </div>
@@ -96,9 +97,13 @@
                   <mat-checkbox formControlName="invite_soiree">Soirée</mat-checkbox>
                 </div>
                 <div class="col-md-6 text-right">
-                  <mat-radio-group [value]="form.get('personne_principale')?.value" (change)="form.get('personne_principale')?.setValue(persons.at(i).get('id')?.value)">
-                    <mat-radio-button [checked]="persons.at(i).get('id')?.value === form.get('personne_principale')?.value">Personne principale</mat-radio-button>
-                  </mat-radio-group>
+                  <mat-radio-button 
+                    name="personne_principale_group"
+                    [value]="persons.at(i).get('id')?.value"
+                    [checked]="persons.at(i).get('id')?.value === form.get('personne_principale')?.value"
+                    (change)="form.get('personne_principale')?.setValue(persons.at(i).get('id')?.value)">
+                    Personne principale
+                  </mat-radio-button>
                 </div>
               </div>
             </div>

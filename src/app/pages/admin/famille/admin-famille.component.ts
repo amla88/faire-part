@@ -44,7 +44,8 @@ export class AdminFamilleComponent {
   ];
 
   form = this.fb.group({
-    name: ['', [Validators.required, Validators.maxLength(255)]],
+    // Supprimé le champ nom car il n'existe pas dans la table familles
+    // Le nom de la famille sera dérivé de la personne principale
     rue: [''],
     numero: [''],
     boite: [''],

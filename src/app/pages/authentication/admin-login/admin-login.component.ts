@@ -18,8 +18,8 @@ export class AdminLoginComponent {
   readonly auth = inject(AdminAuthService);
 
   readonly form = new FormGroup({
-    email: new FormControl('', [Validators.required, Validators.email]),
-    password: new FormControl('', [Validators.required, Validators.minLength(6)]),
+    email: new FormControl('larive.amaury@gmail.com', [Validators.required, Validators.email]),
+    password: new FormControl('cr3ui5n', [Validators.required, Validators.minLength(6)]),
   });
 
   get f() {

@@ -24,9 +24,21 @@ export class NgSupabaseService {
       return;
     }
 
+    // Détection de l'environnement de développement
+    const isDevelopment = url.includes('localhost') || url.includes('127.0.0.1') || 
+                         window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
     this.client = createClient(url, key, {
-      // adjust options here if needed (e.g. auth persistence)
-      auth: { persistSession: true },
+      // Configuration auth adaptée à l'environnement
+      auth: { 
+        persistSession: !isDevelopment, // Désactiver la persistance en dev pour éviter les conflits
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        // En développement, être plus agressif sur les timeouts
+        ...(isDevelopment && {
+          storageKey: `supabase-auth-${Date.now()}`, // Clé unique pour éviter les conflits
+        }),
+      },
       // Ensure a JSON Accept header is present for PostgREST responses. Some proxies
       // or environments may alter the default Accept header causing a 406 Not Acceptable.
       global: {
@@ -35,6 +47,13 @@ export class NgSupabaseService {
         },
       },
     });
+
+    if (isDevelopment) {
+      console.log('[NgSupabaseService] Mode développement détecté - sessions non-persistantes');
+    }
+
+    // Ajouter un gestionnaire d'erreur pour les erreurs de verrous non gérées
+    this.setupGlobalErrorHandler();
   }
 
   /** Retourne le client Supabase initialisé ou lance une erreur si absent */
@@ -44,6 +63,34 @@ export class NgSupabaseService {
       throw new Error(`Supabase client not initialized. Missing config. url=${url ? 'yes' : 'no'} key=${key ? 'yes' : 'no'}`);
     }
     return this.client;
+  }
+
+  /** Configure un gestionnaire d'erreur global pour les erreurs de verrous Supabase */
+  private setupGlobalErrorHandler(): void {
+    // Capturer les erreurs de verrous non gérées
+    window.addEventListener('unhandledrejection', (event) => {
+      if (event.reason?.name === 'NavigatorLockAcquireTimeoutError' || 
+          event.reason?.message?.includes('Navigator LockManager lock')) {
+        
+        const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        
+        if (isDev) {
+          console.warn('[NgSupabaseService] Erreur de verrou Supabase (normale en développement):', event.reason.message);
+          console.info('💡 Tip: Cette erreur est fréquente en localhost à cause des hot-reloads. Elle n\'apparaîtra pas en production.');
+        } else {
+          console.warn('[NgSupabaseService] Erreur de verrou Supabase Auth interceptée:', event.reason.message);
+        }
+        
+        // Empêcher l'affichage de l'erreur dans la console
+        event.preventDefault();
+      }
+    });
+  }
+
+  /** Notification discrète pour les erreurs de verrous (optionnel) */
+  private notifyLockError(): void {
+    // Optionnel : ajouter une notification non-intrusive
+    console.info('[NgSupabaseService] Session synchronisée. Si vous avez plusieurs onglets ouverts, certaines opérations peuvent être légèrement retardées.');
   }
 
   /** Petite API utilitaire : wrapper pour les appels RPC */

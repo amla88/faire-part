@@ -18,7 +18,7 @@
           <th mat-header-cell *matHeaderCellDef class="f-w-600 f-s-14 p-l-0">Famille</th>
           <td mat-cell *matCellDef="let element" class="p-l-0">
             <div>
-              <h6 class="f-s-14 f-w-600">{{ element.name || element.nom || ('Famille #' + element.id) }}</h6>
+              <h6 class="f-s-14 f-w-600">{{ getFamilyDisplayName(element) }}</h6>
               <div class="f-s-13 text-muted">ID: {{ element.id }}</div>
             </div>
           </td>
@@ -29,10 +29,10 @@
           <th mat-header-cell *matHeaderCellDef class="f-w-600 f-s-14">Personnes</th>
           <td mat-cell *matCellDef="let element">
             <mat-chip-set>
-              <mat-chip *ngFor="let p of (element.personnes || [])" class="person-chip">
+              <mat-chip *ngFor="let p of (element.personnes || [])" class="f-s-14">
                 <img matChipAvatar [src]="p.avatar_url || 'assets/images/profile/user-1.jpg'" alt="avatar" />
                 {{ p.prenom }} {{ p.nom }}
-                <button mat-icon-button color="warn" aria-label="Supprimer personne" (click)="deletePerson(element.id, p.id)">
+                <button matChipRemove color="warn" [attr.aria-label]="'Supprimer ' + p.prenom + ' ' + p.nom" (click)="deletePerson(element.id, p.id)">
                   <mat-icon>delete</mat-icon>
                 </button>
               </mat-chip>

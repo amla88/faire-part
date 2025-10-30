@@ -8,7 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
-import { ConfirmDialogComponent } from './confirm-dialog.component';
+import { ConfirmDialogComponent, ConfirmDialogData } from './confirm-dialog.component';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { firstValueFrom } from 'rxjs';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -36,8 +36,8 @@ export class AdminFamilleListComponent implements OnInit {
     const q = (this.filter() || '').toLowerCase().trim();
     if (!q) return this.familles();
     return this.familles().filter((f: any) => {
-      const name = (f.name || f.nom || '') + '';
-      if (name.toLowerCase().includes(q)) return true;
+      const familyName = this.getFamilyDisplayName(f);
+      if (familyName.toLowerCase().includes(q)) return true;
       if ((f.id + '').includes(q)) return true;
       // check persons
       if (Array.isArray(f.personnes)) {
@@ -49,6 +49,27 @@ export class AdminFamilleListComponent implements OnInit {
       return false;
     });
   });
+
+  // Fonction helper pour obtenir le nom d'affichage de la famille
+  getFamilyDisplayName(famille: any): string {
+    if (!famille) return 'Famille';
+    
+    const principaleId = famille.personne_principale;
+    if (principaleId && Array.isArray(famille.personnes)) {
+      const principale = famille.personnes.find((p: any) => p.id === principaleId);
+      if (principale) {
+        return `Famille ${principale.prenom} ${principale.nom}`;
+      }
+    }
+    
+    // Fallback : utiliser la première personne ou l'ID
+    if (Array.isArray(famille.personnes) && famille.personnes.length > 0) {
+      const first = famille.personnes[0];
+      return `Famille ${first.prenom} ${first.nom}`;
+    }
+    
+    return `Famille #${famille.id}`;
+  }
 
   constructor(private ngSupabase: NgSupabaseService, private router: Router, private dialog: MatDialog, private snackBar: MatSnackBar) {}
 
@@ -83,9 +104,23 @@ export class AdminFamilleListComponent implements OnInit {
   }
 
   async deletePerson(familleId: number, personId: number) {
-  const ref = this.dialog.open(ConfirmDialogComponent, { data: { title: 'Supprimer la personne', message: 'Supprimer cette personne ? Cette action est irréversible.' } });
-  const closed = await firstValueFrom(ref.afterClosed());
-  if (!closed) return;
+    const dialogData: ConfirmDialogData = {
+      title: 'Supprimer la personne',
+      message: 'Êtes-vous sûr de vouloir supprimer cette personne ? Cette action est irréversible.',
+      confirmText: 'Supprimer',
+      cancelText: 'Annuler',
+      isDanger: true
+    };
+    
+    const ref = this.dialog.open(ConfirmDialogComponent, { 
+      width: '400px',
+      data: dialogData,
+      enterAnimationDuration: '300ms',
+      exitAnimationDuration: '200ms'
+    });
+    
+    const closed = await firstValueFrom(ref.afterClosed());
+    if (!closed) return;
     try {
       const client = this.ngSupabase.getClient();
       const res = await client.from('personnes').delete().eq('id', personId);
@@ -99,9 +134,23 @@ export class AdminFamilleListComponent implements OnInit {
   }
 
   async deleteFamille(familleId: number) {
-  const ref = this.dialog.open(ConfirmDialogComponent, { data: { title: 'Supprimer la famille', message: 'Supprimer cette famille et toutes ses personnes ? Cette action est irréversible.' } });
-  const closed = await firstValueFrom(ref.afterClosed());
-  if (!closed) return;
+    const dialogData: ConfirmDialogData = {
+      title: 'Supprimer la famille',
+      message: 'Êtes-vous sûr de vouloir supprimer cette famille et toutes ses personnes ? Cette action est irréversible.',
+      confirmText: 'Supprimer',
+      cancelText: 'Annuler',
+      isDanger: true
+    };
+    
+    const ref = this.dialog.open(ConfirmDialogComponent, { 
+      width: '450px',
+      data: dialogData,
+      enterAnimationDuration: '300ms',
+      exitAnimationDuration: '200ms'
+    });
+    
+    const closed = await firstValueFrom(ref.afterClosed());
+    if (!closed) return;
     try {
       const client = this.ngSupabase.getClient();
       const res = await client.from('familles').delete().eq('id', familleId);
