@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormArray, FormGroup } from '@angular/forms';
-import { NgSupabaseService } from '../../../services/ng-supabase.service';
+import { NgSupabaseService } from '../../../../services/ng-supabase.service';
 // Angular Material imports used in the template
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';

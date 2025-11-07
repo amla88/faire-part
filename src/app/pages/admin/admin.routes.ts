@@ -16,15 +16,15 @@ export const AdminRoutes: Routes = [
   },
   {
     path: 'famille',
-    loadComponent: () => import('./famille/admin-famille.component').then((m) => m.AdminFamilleComponent),
+    loadComponent: () => import('./famille/admin-famille/admin-famille.component').then((m) => m.AdminFamilleComponent),
   },
   {
     path: 'famille/:id',
-    loadComponent: () => import('./famille/admin-famille-detail.component').then((m) => m.AdminFamilleDetailComponent),
+    loadComponent: () => import('./famille/admin-famille-detail/admin-famille-detail.component').then((m) => m.AdminFamilleDetailComponent),
   },
   {
     path: 'familles',
-    loadComponent: () => import('./famille/admin-famille-list.component').then((m) => m.AdminFamilleListComponent),
+    loadComponent: () => import('./famille/admin-famille-list/admin-famille-list.component').then((m) => m.AdminFamilleListComponent),
   },
   {
     path: 'ui-components',

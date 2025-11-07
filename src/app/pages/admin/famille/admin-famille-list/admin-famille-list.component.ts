@@ -1,16 +1,15 @@
 import { ChangeDetectionStrategy, Component, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { NgSupabaseService } from '../../../services/ng-supabase.service';
+import { NgSupabaseService } from '../../../../services/ng-supabase.service';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatDialogModule, MatDialog } from '@angular/material/dialog';
-import { ConfirmDialogComponent, ConfirmDialogData } from './confirm-dialog.component';
+import { ConfirmDialogService } from '../../../../shared/dialogs/confirm-dialog/confirm-dialog.service';
+import { ConfirmDialogData } from '../../../../shared/dialogs/confirm-dialog/confirm-dialog.component';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
-import { firstValueFrom } from 'rxjs';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Router, RouterModule } from '@angular/router';
@@ -18,7 +17,7 @@ import { Router, RouterModule } from '@angular/router';
 @Component({
   selector: 'app-admin-famille-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, MatCardModule, MatTableModule, MatChipsModule, MatIconModule, MatButtonModule, MatProgressSpinnerModule, MatDialogModule, MatSnackBarModule, MatFormFieldModule, MatInputModule],
+  imports: [CommonModule, RouterModule, MatCardModule, MatTableModule, MatChipsModule, MatIconModule, MatButtonModule, MatProgressSpinnerModule, MatSnackBarModule, MatFormFieldModule, MatInputModule],
   templateUrl: './admin-famille-list.component.html',
   styleUrls: ['./admin-famille-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -71,7 +70,7 @@ export class AdminFamilleListComponent implements OnInit {
     return `Famille #${famille.id}`;
   }
 
-  constructor(private ngSupabase: NgSupabaseService, private router: Router, private dialog: MatDialog, private snackBar: MatSnackBar) {}
+  constructor(private ngSupabase: NgSupabaseService, private router: Router, private confirmDialog: ConfirmDialogService, private snackBar: MatSnackBar) {}
 
   ngOnInit(): void {
     this.loadFamilles();
@@ -112,14 +111,7 @@ export class AdminFamilleListComponent implements OnInit {
       isDanger: true
     };
     
-    const ref = this.dialog.open(ConfirmDialogComponent, { 
-      width: '400px',
-      data: dialogData,
-      enterAnimationDuration: '300ms',
-      exitAnimationDuration: '200ms'
-    });
-    
-    const closed = await firstValueFrom(ref.afterClosed());
+    const closed = await this.confirmDialog.confirm(dialogData);
     if (!closed) return;
     try {
       const client = this.ngSupabase.getClient();
@@ -142,14 +134,7 @@ export class AdminFamilleListComponent implements OnInit {
       isDanger: true
     };
     
-    const ref = this.dialog.open(ConfirmDialogComponent, { 
-      width: '450px',
-      data: dialogData,
-      enterAnimationDuration: '300ms',
-      exitAnimationDuration: '200ms'
-    });
-    
-    const closed = await firstValueFrom(ref.afterClosed());
+    const closed = await this.confirmDialog.confirm(dialogData);
     if (!closed) return;
     try {
       const client = this.ngSupabase.getClient();

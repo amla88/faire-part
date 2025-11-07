@@ -1,16 +1,14 @@
 import { ChangeDetectionStrategy, Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
-import { NgSupabaseService } from '../../../services/ng-supabase.service';
+import { NgSupabaseService } from '../../../../services/ng-supabase.service';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { firstValueFrom } from 'rxjs';
-import { ConfirmDialogComponent } from './confirm-dialog.component';
 import { ReactiveFormsModule, FormBuilder, Validators, FormArray, FormGroup } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -34,7 +32,6 @@ import { MatRadioModule } from '@angular/material/radio';
     MatIconModule,
     MatButtonModule,
     MatProgressSpinnerModule,
-    MatDialogModule,
     MatSnackBarModule,
   ],
   templateUrl: './admin-famille-detail.component.html',
@@ -94,7 +91,6 @@ export class AdminFamilleDetailComponent implements OnInit {
   constructor(
     private route: ActivatedRoute, 
     private ngSupabase: NgSupabaseService, 
-    private dialog: MatDialog, 
     private snackBar: MatSnackBar, 
     private fb: FormBuilder
   ) {}
