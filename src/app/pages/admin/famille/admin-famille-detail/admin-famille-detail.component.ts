@@ -41,6 +41,8 @@ import { MatRadioModule } from '@angular/material/radio';
 export class AdminFamilleDetailComponent implements OnInit {
   famille = signal<any | null>(null);
   loading = signal(false);
+  // Token courant affiché dans le détail
+  currentToken = signal<string | null>(null);
 
   // Computed pour obtenir le nom de la famille basé sur la personne principale
   familyDisplayName = computed(() => {
@@ -163,6 +165,8 @@ export class AdminFamilleDetailComponent implements OnInit {
       if (res.error) throw res.error;
       const data = res.data as any;
       this.famille.set(data);
+  // mémoriser le token courant si présent
+  this.currentToken.set(data.login_token || null);
 
       this.form.patchValue({
         // Supprimé le champ nom car il n'existe pas dans la table familles
@@ -230,6 +234,44 @@ export class AdminFamilleDetailComponent implements OnInit {
     } catch (err) {
       console.error('Erreur update famille', err);
       this.snackBar.open('Erreur lors de la mise à jour', 'Fermer', { duration: 5000 });
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  /** Génère un token unique de 8 lettres majuscules (vérifié côté familles.login_token) */
+  private async generateUniqueLoginToken(client: any): Promise<string> {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    for (let attempt = 0; attempt < 25; attempt++) {
+      let token = '';
+      for (let i = 0; i < 8; i++) token += alphabet[Math.floor(Math.random() * alphabet.length)];
+
+      const { data, error } = await client.from('familles').select('id').eq('login_token', token).limit(1);
+      if (error) throw new Error('Erreur vérification token: ' + (error.message || JSON.stringify(error)));
+      if (!data || data.length === 0) return token;
+    }
+    throw new Error('Impossible de générer un token unique après plusieurs tentatives');
+  }
+
+  /** Régénère le login_token pour la famille chargée (confirmation simple) */
+  async regenerateToken() {
+    const familleId = this.famille()?.id;
+    if (!familleId) return;
+    if(this.currentToken()) {
+      if (!confirm('Régénérer le code d\'accès ?\nL\'ancien ne sera plus valide.')) return;
+    }
+    this.loading.set(true);
+    try {
+      const client = this.ngSupabase.getClient();
+      const newToken = await this.generateUniqueLoginToken(client);
+      const upd = await client.from('familles').update({ login_token: newToken }).eq('id', familleId);
+      if (upd.error) throw upd.error;
+      this.currentToken.set(newToken);
+      this.snackBar.open('Nouveau code: ' + newToken, 'Fermer', { duration: 5000 });
+      await this.loadFamille(familleId);
+    } catch (err: any) {
+      console.error('Erreur régénération token', err);
+      this.snackBar.open('Erreur régénération: ' + (err?.message || String(err)), 'Fermer', { duration: 6000 });
     } finally {
       this.loading.set(false);
     }

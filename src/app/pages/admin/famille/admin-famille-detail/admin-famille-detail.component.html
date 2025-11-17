@@ -59,6 +59,29 @@
           <button mat-stroked-button color="primary" type="button" (click)="saveAll()">Sauvegarder tout</button>
         </div>
 
+        <!-- Bloc code d'accès + régénération -->
+        <div class="m-t-12">
+          <mat-card class="p-12">
+            <ng-container *ngIf="currentToken()">
+              <div class="d-flex align-items-center justify-content-between">
+                <div>
+                  <strong>Code d'accès actuel:</strong>
+                  <span class="f-w-600 m-l-4">{{ currentToken() }}</span>
+                </div>
+                <div>
+                  <button mat-stroked-button color="warn" type="button" (click)="regenerateToken()" [disabled]="loading()">Regénérer le code</button>
+                </div>
+              </div>
+            </ng-container>
+            <ng-container *ngIf="!currentToken()">
+              <div  class="text-muted m-t-8">Aucun code d'accès généré pour cette famille.</div>
+              <div>
+                <button mat-stroked-button color="warn" type="button" (click)="regenerateToken()" [disabled]="loading()">Générer le code</button>
+              </div>
+            </ng-container>
+          </mat-card>
+        </div>
+
         <h4 class="m-t-16">Personnes</h4>
         <div formArrayName="persons">
           <div *ngFor="let p of persons.controls; let i = index" [formGroupName]="i" class="person-item p-8 b-t-1 d-flex align-center">

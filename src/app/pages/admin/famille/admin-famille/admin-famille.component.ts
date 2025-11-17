@@ -58,7 +58,24 @@ export class AdminFamilleComponent {
   loading = false;
   message = '';
 
+  // On privilégie inject() pour se rapprocher des bonnes pratiques, sans refactor lourd
   constructor(private fb: FormBuilder, private ngSupabase: NgSupabaseService, private snackBar: MatSnackBar) {}
+
+  /** Génère un login_token de 8 lettres capitales UNIQUE dans la table familles. */
+  private async generateUniqueLoginToken(client: any): Promise<string> {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    for (let attempt = 0; attempt < 25; attempt++) {
+      let token = '';
+      for (let i = 0; i < 8; i++) token += alphabet[Math.floor(Math.random() * alphabet.length)];
+
+      const { data, error } = await client.from('familles').select('id').eq('login_token', token).limit(1);
+      if (error) throw new Error('Erreur vérification token: ' + (error.message || JSON.stringify(error)));
+      if (!data || data.length === 0) return token;
+    }
+    throw new Error('Impossible de générer un token unique après plusieurs tentatives');
+  }
+
+  
 
   // Helpers pour le FormArray
   createPersonGroup(): FormGroup {
@@ -133,16 +150,21 @@ export class AdminFamilleComponent {
       if (insertPersons.error) throw insertPersons.error;
       const firstPersonId = insertPersons.data?.[0]?.id;
 
-      // Mettre à jour la famille avec la personne_principale (première personne)
+      // Mettre à jour la famille avec la personne_principale (première personne) et créer le login_token
+      let loginToken: string | null = null;
       if (firstPersonId) {
-        const upd = await client.from('familles').update({ personne_principale: firstPersonId }).eq('id', familleId);
+        loginToken = await this.generateUniqueLoginToken(client);
+        const upd = await client
+          .from('familles')
+          .update({ personne_principale: firstPersonId, login_token: loginToken })
+          .eq('id', familleId);
         if (upd.error) throw upd.error;
       }
 
-      this.message = 'Famille et personnes ajoutées.';
+  this.message = 'Famille et personnes ajoutées.' + (loginToken ? ` (code: ${loginToken})` : '');
       // SnackBar confirmation
       try {
-        this.snackBar.open('Famille et personnes ajoutées.', 'Fermer', { duration: 4000 });
+        this.snackBar.open('Famille et personnes ajoutées.' + (loginToken ? `\nCode: ${loginToken}` : ''), 'Fermer', { duration: 6000 });
       } catch (e) {
         // ignore if snackBar cannot open in some environments
       }
@@ -161,4 +183,6 @@ export class AdminFamilleComponent {
       this.loading = false;
     }
   }
+
+  
 }
