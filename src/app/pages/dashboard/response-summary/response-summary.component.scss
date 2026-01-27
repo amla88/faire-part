@@ -1,0 +1,127 @@
+:host {
+	display: block;
+}
+
+.cardWithShadow {
+	box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+	border-radius: 12px;
+	padding: 8px;
+}
+
+.person-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 4px;
+	border-bottom: 1px dashed rgba(0,0,0,0.06);
+}
+
+.person-name {
+	font-weight: 600;
+	color: #222;
+}
+
+.person-events {
+	display: flex;
+	gap: 10px;
+	align-items: center;
+	/* Make the events block take a fixed portion so columns align with header */
+	min-width: 260px;
+	justify-content: space-between;
+}
+
+.event-icon {
+	font-size: 28px;
+	color: #b00000;
+	transition: transform 220ms ease, color 220ms ease;
+}
+
+.event-icon.present {
+	color: #00b42d;
+	transform: translateY(-2px) scale(1.1);
+	text-shadow: 0 2px 6px rgba(240,98,146,0.25);
+}
+
+.sr-only {
+	position: absolute !important;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0,0,0,0);
+	white-space: nowrap;
+	border: 0;
+}
+
+/* Header and layout for aligned columns */
+.card-actions {
+	display: flex;
+	justify-content: space-between;
+	margin-bottom: 8px;
+}
+
+.summary-header {
+	display: flex;
+	align-items: center;
+	padding: 6px 4px;
+	border-bottom: 1px solid rgba(0,0,0,0.06);
+	margin-bottom: 6px;
+}
+
+.header-name {
+	font-weight: 700;
+	flex: 1 1 auto;
+	color: rgba(0,0,0,0.8);
+}
+
+.header-events {
+	display: flex;
+	gap: 10px;
+	min-width: 260px;
+	justify-content: space-between;
+}
+
+.header-event {
+	font-size: 13px;
+	color: rgba(0,0,0,0.6);
+	text-align: center;
+	width: 72px; /* reserve space similar to icons */
+}
+
+.header-event.hidden {
+	visibility: hidden; /* keep width but hide text to preserve alignment */
+}
+
+/* Make person-name take the same space as header-name */
+.person-name {
+	flex: 1 1 auto;
+}
+
+/* Ensure icons align centered within their column */
+.event-icon {
+	width: 72px;
+	text-align: center;
+	display: inline-flex;
+	justify-content: center;
+}
+
+@media (max-width: 600px) {
+	.summary-header, .person-row {
+		flex-direction: column;
+		align-items: stretch;
+	}
+	.header-events, .person-events {
+		min-width: 0;
+		justify-content: flex-start;
+		gap: 12px;
+		padding-top: 6px;
+	}
+	.header-event, .event-icon {
+		width: auto;
+	}
+	.card-actions {
+		justify-content: flex-start;
+	}
+}
+

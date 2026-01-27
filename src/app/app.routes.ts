@@ -18,8 +18,13 @@ export const routes: Routes = [
       },
       {
         path: 'dashboard',
-        loadChildren: () =>
-          import('./pages/pages.routes').then((m) => m.PagesRoutes),
+        loadComponent: () =>
+          import('./pages/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+      },
+      {
+        path: 'rsvp',
+        loadComponent: () =>
+          import('./pages/rsvp/rsvp.component').then((m) => m.RsvpComponent),
       },
       {
         path: 'avatar',

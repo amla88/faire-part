@@ -1,18 +1,10 @@
 import { Routes } from '@angular/router';
-import { StarterComponent } from '../starter/starter.component';
+import { AdminDashboardComponent } from './dashboard/admin-dashboard.component';
 
 export const AdminRoutes: Routes = [
   {
     path: '',
-    component: StarterComponent,
-    data: {
-      title: 'Starter Page',
-      urls: [
-        { title: 'Dashboard', url: '/dashboards/dashboard1' },
-        { title: 'Starter Page' },
-      ],
-    },
-    
+    component: AdminDashboardComponent
   },
   {
     path: 'famille',

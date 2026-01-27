@@ -1,0 +1,15 @@
+<mat-card class="cardWithShadow">
+    <mat-card-content>
+        <mat-card-title>Réponses aux invitations</mat-card-title>
+        <apx-chart
+            #chart
+            [series]="series()"
+            [chart]="chartOptions.chart"
+            [plotOptions]="chartOptions.plotOptions"
+            [labels]="chartOptions.labels"
+            [colors]="chartOptions.colors!"
+            [responsive]="chartOptions.responsive!"
+            [legend]="chartOptions.legend!">
+        </apx-chart>
+    </mat-card-content>
+</mat-card>

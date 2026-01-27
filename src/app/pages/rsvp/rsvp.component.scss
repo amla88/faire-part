@@ -1,0 +1,27 @@
+:host{display:block}
+
+.cardWithShadow{box-shadow:0 6px 18px rgba(0,0,0,0.08);border-radius:10px;padding:8px}
+
+.rsvp-grid{display:block}
+
+.rsvp-header{display:flex;align-items:center;padding:8px 6px;border-bottom:1px solid rgba(0,0,0,0.06);font-weight:600}
+.rsvp-header .person-col{flex:1}
+.rsvp-header .events-col{display:flex;gap:18px;min-width:240px;justify-content:space-between}
+.event-title{font-size:13px;color:rgba(0,0,0,0.6);text-align:center}
+
+.person-row{display:flex;align-items:center;padding:10px 6px;border-bottom:1px dashed rgba(0,0,0,0.04)}
+.person-col{display:flex;align-items:center;gap:12px;flex:1}
+.avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#f0f0f0,#e8e8e8);display:inline-flex;align-items:center;justify-content:center;font-weight:700;color:#444}
+.person-name{font-weight:600}
+
+.events-col{display:flex;gap:18px;min-width:240px;justify-content:space-between}
+.event-checkbox{display:flex;align-items:center;justify-content:center}
+
+.form-actions{display:flex;gap:12px;justify-content:flex-end;padding:12px 6px}
+
+@media (max-width:640px){
+  .rsvp-header,.person-row{flex-direction:column;align-items:stretch}
+  .rsvp-header .events-col,.events-col{min-width:0;gap:8px;padding-top:8px;justify-content:flex-start}
+  .events-col .event-checkbox{margin-right:8px}
+  .form-actions{justify-content:flex-start}
+}
