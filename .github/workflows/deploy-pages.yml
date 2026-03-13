@@ -1,41 +1,31 @@
-name: Build and Deploy to GitHub Pages
+name: Deploy to IONOS
 
 on:
   push:
     branches:
       - main
-      - v2
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pages: write
-      id-token: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
+
       - name: Install dependencies
         run: npm ci
+
       - name: Build Angular app
-        run: npm run build -- --configuration production --base-href=/faire-part/
-      - name: Affiche la version de Node.js
-        run: node --version
-      - name: Affiche la version de npm
-        run: npm --version
-      - name: Affiche la version d’Angular CLI
-        run: npx ng version
-      - name: Vérification du build
-        run: ls -l dist/faire-part/browser
-      - name: Affiche le contenu du dossier dist/faire-part/browser
-        run: ls -lR dist/faire-part/browser
+        run: npm run build -- --configuration production
+
       - name: Copie du fallback SPA (404.html)
         run: cp -f dist/faire-part/browser/index.html dist/faire-part/browser/404.html
+
       - name: Injection des clés Supabase dans les meta tags
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -53,23 +43,13 @@ jobs:
               sed -i "1,/<\/head>/s|</head>|  <meta name=\"supabase-anon-key\" content=\"${SUPABASE_ANON_KEY}\">\n</head>|" $f
             fi
           done
-      - name: Affiche la version de l’action upload-pages-artifact
-        run: echo "Using actions/upload-pages-artifact@v4"
-      - name: Upload artifact for GitHub Pages
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: dist/faire-part/browser
 
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    permissions:
-      pages: write
-      id-token: write
-    steps:
-      - name: Déploiement sur GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Deploy via SFTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.SFTP_SERVER }}
+          username: ${{ secrets.SFTP_USERNAME }}
+          password: ${{ secrets.SFTP_PASSWORD }}
+          port: 22
+          local-dir: ./dist/faire-part/browser/
+          server-dir: ./
