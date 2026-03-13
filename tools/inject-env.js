@@ -25,16 +25,22 @@ const env = parseEnv(envRaw);
 
 const supabaseUrl = env.SUPABASE_URL;
 const supabaseKey = env.SUPABASE_ANON_KEY;
+const qrCodeBaseUrl = env.QR_CODE_BASE_URL;
 
 if (!supabaseUrl || !supabaseKey) {
   console.warn('SUPABASE_URL or SUPABASE_ANON_KEY not found in .env.local');
   process.exit(0);
 }
 
+if (!qrCodeBaseUrl) {
+  console.warn('QR_CODE_BASE_URL not found in .env.local');
+  process.exit(0);
+}
+
 let index = fs.readFileSync(indexPath, 'utf8');
 
 function upsertMeta(name, content) {
-  const re = new RegExp(`<meta\\s+name=\"${name}\"\\s+content=\"[^\"]*\">`, 'i');
+  const re = new RegExp(`<meta\\s+name="${name}"\\s+content="[^"]*">`, 'i');
   const tag = `<meta name="${name}" content="${content}">`;
   if (re.test(index)) {
     index = index.replace(re, tag);
@@ -45,6 +51,7 @@ function upsertMeta(name, content) {
 
 upsertMeta('supabase-url', supabaseUrl);
 upsertMeta('supabase-anon-key', supabaseKey);
+upsertMeta('qr-code-base-url', qrCodeBaseUrl);
 
 fs.writeFileSync(indexPath, index, 'utf8');
-console.log('Injected SUPABASE meta tags into src/index.html');
+console.log('Injected SUPABASE and QR code meta tags into src/index.html');

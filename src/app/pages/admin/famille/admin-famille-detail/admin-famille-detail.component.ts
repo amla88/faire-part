@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnInit, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, OnInit, signal, computed, Inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { NgSupabaseService } from '../../../../services/ng-supabase.service';
 import { MatCardModule } from '@angular/material/card';
@@ -8,13 +8,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
-import { firstValueFrom } from 'rxjs';
 import { ReactiveFormsModule, FormBuilder, Validators, FormArray, FormGroup } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatRadioModule } from '@angular/material/radio';
+import { QRCodeComponent } from 'angularx-qrcode';
 
 @Component({
   selector: 'app-admin-famille-detail',
@@ -33,6 +33,7 @@ import { MatRadioModule } from '@angular/material/radio';
     MatButtonModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
+    QRCodeComponent,
   ],
   templateUrl: './admin-famille-detail.component.html',
   styleUrls: ['./admin-famille-detail.component.scss'],
@@ -41,10 +42,16 @@ import { MatRadioModule } from '@angular/material/radio';
 export class AdminFamilleDetailComponent implements OnInit {
   famille = signal<any | null>(null);
   loading = signal(false);
-  // Token courant affiché dans le détail
   currentToken = signal<string | null>(null);
+  
+  private qrCodeBaseUrl = '';
 
-  // Computed pour obtenir le nom de la famille basé sur la personne principale
+  qrCodeUrl = computed(() => {
+    const token = this.currentToken();
+    if (!token || !this.qrCodeBaseUrl) return null;
+    return `${this.qrCodeBaseUrl}${token}`;
+  });
+
   familyDisplayName = computed(() => {
     const fam = this.famille();
     if (!fam) return 'Famille';
@@ -57,7 +64,6 @@ export class AdminFamilleDetailComponent implements OnInit {
       }
     }
     
-    // Fallback : utiliser la première personne ou l'ID
     if (Array.isArray(fam.personnes) && fam.personnes.length > 0) {
       const first = fam.personnes[0];
       return `Famille ${first.prenom} ${first.nom}`;
@@ -67,8 +73,6 @@ export class AdminFamilleDetailComponent implements OnInit {
   });
 
   form = this.fb.group({
-    // Supprimé le champ 'nom' car il n'existe pas dans la table familles
-    // Le nom de la famille est dérivé de la personne principale
     rue: [''],
     numero: [''],
     boite: [''],
@@ -94,8 +98,14 @@ export class AdminFamilleDetailComponent implements OnInit {
     private route: ActivatedRoute, 
     private ngSupabase: NgSupabaseService, 
     private snackBar: MatSnackBar, 
-    private fb: FormBuilder
-  ) {}
+    private fb: FormBuilder,
+    @Inject(DOCUMENT) private document: Document,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {
+    if (isPlatformBrowser(this.platformId)) {
+      this.qrCodeBaseUrl = this.document.head.querySelector('meta[name="qr-code-base-url"]')?.getAttribute('content') ?? '';
+    }
+  }
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id')) || null;
@@ -122,15 +132,12 @@ export class AdminFamilleDetailComponent implements OnInit {
     const newPerson = this.createPersonGroup(data);
     this.persons.push(newPerson);
     
-    // Si c'est la première personne et qu'aucune personne principale n'est définie,
-    // définir automatiquement cette personne comme principale
     if (this.persons.length === 1 && !this.form.get('personne_principale')?.value && data?.id) {
       this.form.get('personne_principale')?.setValue(data.id);
     }
   }
 
   removePerson(index: number) {
-    // Empêcher la suppression si c'est la dernière personne
     if (this.persons.length <= 1) {
       this.snackBar.open('Une famille doit contenir au moins une personne', 'Fermer', { duration: 5000 });
       return;
@@ -140,7 +147,6 @@ export class AdminFamilleDetailComponent implements OnInit {
     const id = g.get('id')?.value;
     const currentPersonnePrincipale = this.form.get('personne_principale')?.value;
     
-    // Si on supprime la personne principale, réinitialiser le champ
     if (id && id === currentPersonnePrincipale) {
       this.form.get('personne_principale')?.setValue(null);
     }
@@ -148,7 +154,6 @@ export class AdminFamilleDetailComponent implements OnInit {
     if (id) this.deletedPersonIds.push(id);
     this.persons.removeAt(index);
 
-    // Si après suppression il ne reste qu'une personne, la définir automatiquement comme principale
     if (this.persons.length === 1 && !this.form.get('personne_principale')?.value) {
       const remainingPersonId = this.persons.at(0).get('id')?.value;
       if (remainingPersonId) {
@@ -169,7 +174,6 @@ export class AdminFamilleDetailComponent implements OnInit {
   this.currentToken.set(data.login_token || null);
 
       this.form.patchValue({
-        // Supprimé le champ nom car il n'existe pas dans la table familles
         rue: data.rue || '',
         numero: data.numero || '',
         boite: data.boite || '',
@@ -185,8 +189,6 @@ export class AdminFamilleDetailComponent implements OnInit {
           this.addPerson(p);
         }
         
-        // Si aucune personne principale n'est définie mais qu'il y a des personnes,
-        // définir automatiquement la première comme principale
         if (!data.personne_principale && data.personnes.length > 0) {
           const firstPersonId = data.personnes[0].id;
           if (firstPersonId) {
@@ -200,6 +202,18 @@ export class AdminFamilleDetailComponent implements OnInit {
       this.snackBar.open('Erreur chargement famille', 'Fermer', { duration: 5000 });
     } finally {
       this.loading.set(false);
+    }
+  }
+  
+  downloadQrCode() {
+    const qrCanvas = this.document.querySelector('qrcode canvas') as HTMLCanvasElement;
+    if (qrCanvas) {
+      const a = this.document.createElement('a');
+      a.href = qrCanvas.toDataURL('image/png');
+      a.download = `QR_Code_Famille_${this.familyDisplayName().replace(/\s+/g, '_')}.png`;
+      this.document.body.appendChild(a);
+      a.click();
+      this.document.body.removeChild(a);
     }
   }
 
@@ -216,7 +230,6 @@ export class AdminFamilleDetailComponent implements OnInit {
       if (!familleId) throw new Error('ID famille manquant');
 
       const payload: any = {
-        // Supprimé le champ nom car il n'existe pas dans la table familles
         rue: this.form.value.rue || null,
         numero: this.form.value.numero || null,
         boite: this.form.value.boite || null,
@@ -241,7 +254,7 @@ export class AdminFamilleDetailComponent implements OnInit {
 
   /** Génère un token unique de 8 lettres majuscules (vérifié côté familles.login_token) */
   private async generateUniqueLoginToken(client: any): Promise<string> {
-    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     for (let attempt = 0; attempt < 25; attempt++) {
       let token = '';
       for (let i = 0; i < 8; i++) token += alphabet[Math.floor(Math.random() * alphabet.length)];

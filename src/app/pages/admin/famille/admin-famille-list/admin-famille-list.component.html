@@ -7,7 +7,9 @@
         <mat-label>Rechercher familles / personnes</mat-label>
         <input matInput placeholder="Nom, id ou personne..." (input)="filter.set($any($event.target).value)" />
       </mat-form-field>
-      <div class="f-s-13 text-muted m-t-8">Résultats : {{ filteredFamilles().length }}</div>
+      <div class="f-s-13 text-muted m-t-8">
+  Résultats : {{ filteredFamilles().length }} familles ({{ totalPersonnes() }} personnes)
+</div>
     </div>
 
     <div class="table-responsive" *ngIf="!loading()">

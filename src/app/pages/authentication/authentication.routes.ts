@@ -21,7 +21,6 @@ export const AuthenticationRoutes: Routes = [
         path: 'admin-login',
         component: AdminLoginComponent,
       },
-      // registration route removed
     ],
   },
 ];

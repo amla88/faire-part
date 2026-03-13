@@ -25,6 +25,7 @@
     "@ng-matero/extensions": "^20.3.1",
     "@supabase/supabase-js": "^2.55.0",
     "angular-tabler-icons": "^3.26.0",
+    "angularx-qrcode": "^21.0.4",
     "apexcharts": "^5.3.5",
     "ng-apexcharts": "^2.0.3",
     "ngx-scrollbar": "^18.0.0",

@@ -49,6 +49,10 @@ export class AdminFamilleListComponent implements OnInit {
     });
   });
 
+  totalPersonnes = computed(() => {
+    return this.filteredFamilles().reduce((acc, f) => acc + (f.personnes?.length || 0), 0);
+  });
+
   // Fonction helper pour obtenir le nom d'affichage de la famille
   getFamilyDisplayName(famille: any): string {
     if (!famille) return 'Famille';
