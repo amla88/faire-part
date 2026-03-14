@@ -44,14 +44,13 @@ jobs:
             fi
           done
 
-      - name: Deploy via SFTP (SCP)
-        uses: appleboy/scp-action@v0.1.7
+      - name: Deploy to IONOS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          host: ${{ secrets.SFTP_SERVER }}
+          server: ${{ secrets.SFTP_SERVER }}
           username: ${{ secrets.SFTP_USERNAME }}
           password: ${{ secrets.SFTP_PASSWORD }}
           port: 22
-          source: "dist/faire-part/browser/*"
-          target: "./"
-          strip_components: 3
-          overwrite: true
+          local-dir: ./dist/faire-part/browser/
+          server-dir: ./
+          dangerous-clean-slate: false
