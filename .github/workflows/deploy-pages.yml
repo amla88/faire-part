@@ -44,13 +44,11 @@ jobs:
             fi
           done
 
-      - name: Deploy to IONOS
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.SFTP_SERVER }}
-          username: ${{ secrets.SFTP_USERNAME }}
-          password: ${{ secrets.SFTP_PASSWORD }}
-          port: 22
-          local-dir: ./dist/faire-part/browser/
-          server-dir: ./
-          dangerous-clean-slate: false
+      - name: Deploy to IONOS via LFTP
+        env:
+          FTP_SERVER: ${{ secrets.SFTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.SFTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+        run: |
+          sudo apt-get install -y lftp
+          lftp -e "set sftp:auto-confirm yes; open -u $FTP_USERNAME,$FTP_PASSWORD sftp://$FTP_SERVER:22; mirror -R ./dist/faire-part/browser/ ./; quit"
