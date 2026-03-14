@@ -54,3 +54,4 @@ jobs:
           source: "dist/faire-part/browser/*"
           target: "./"
           strip_components: 3
+          overwrite: true
