@@ -45,12 +45,11 @@ jobs:
           done
 
       - name: Deploy via SFTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        uses: lwojtaszak/sftp-action@v2.0.2
         with:
-          server: ${{ secrets.SFTP_SERVER }}
-          username: ${{ secrets.SFTP_USERNAME }}
-          password: ${{ secrets.SFTP_PASSWORD }}
+          host: ${{ secrets.SFTP_SERVER }}
+          user: ${{ secrets.SFTP_USERNAME }}
+          pass: ${{ secrets.SFTP_PASSWORD }}
+          localDir: ./dist/faire-part/browser/
+          remoteDir: ./
           port: 22
-          protocol: sftp
-          local-dir: ./dist/faire-part/browser/
-          server-dir: ./
