@@ -44,12 +44,13 @@ jobs:
             fi
           done
 
-      - name: Deploy via SFTP
-        uses: lwojtaszak/sftp-action@v2.0.2
+      - name: Deploy via SFTP (SCP)
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SFTP_SERVER }}
-          user: ${{ secrets.SFTP_USERNAME }}
-          pass: ${{ secrets.SFTP_PASSWORD }}
-          localDir: ./dist/faire-part/browser/
-          remoteDir: ./
+          username: ${{ secrets.SFTP_USERNAME }}
+          password: ${{ secrets.SFTP_PASSWORD }}
           port: 22
+          source: "dist/faire-part/browser/*"
+          target: "./"
+          strip_components: 3
