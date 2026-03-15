@@ -4,7 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "node ./tools/inject-env.js && ng serve",
-    "build": "ng build --base-href=/faire-part/",
+    "build": "ng build --base-href=/",
     "watch": "ng build --watch --configuration development",
     "spa-fallback": "copy dist\\faire-part\\browser\\index.html dist\\faire-part\\browser\\404.html"
   },
