@@ -1,11 +1,6 @@
-import { Injectable, computed, effect, signal } from '@angular/core';
+import { Injectable, computed, signal } from '@angular/core';
 import type { Session, User } from '@supabase/supabase-js';
 import { NgSupabaseService } from './ng-supabase.service';
-
-export interface AdminProfile {
-  id: string; // auth.users.id (uuid)
-  role: 'admin' | 'invite';
-}
 
 @Injectable({ providedIn: 'root' })
 export class AdminAuthService {
@@ -14,8 +9,7 @@ export class AdminAuthService {
   // Etat d'auth admin (Supabase Auth)
   readonly session = signal<Session | null>(null);
   readonly user = computed<User | null>(() => this.session()?.user ?? null);
-  readonly profile = signal<AdminProfile | null>(null);
-  readonly isAdmin = computed<boolean>(() => this.profile()?.role === 'admin');
+  readonly isAdmin = computed<boolean>(() => this.user() !== null);
   readonly loading = signal<boolean>(false);
   readonly error = signal<string | null>(null);
 
@@ -28,17 +22,10 @@ export class AdminAuthService {
     try {
       const { data } = await this.supabase.auth.getSession();
       this.session.set(data.session ?? null);
-      if (data.session?.user) {
-        await this.loadProfile();
-      }
+      
       // Abonnement aux changements de session
-      this.supabase.auth.onAuthStateChange(async (_event, sess) => {
+      this.supabase.auth.onAuthStateChange((_event, sess) => {
         this.session.set(sess ?? null);
-        if (sess?.user) {
-          await this.loadProfile();
-        } else {
-          this.profile.set(null);
-        }
       });
     } catch (e: any) {
       this.error.set(e?.message || 'Erreur d\'initialisation de la session');
@@ -52,7 +39,6 @@ export class AdminAuthService {
       const { data, error } = await this.supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       this.session.set(data.session ?? null);
-      await this.loadProfile();
       return { success: true } as const;
     } catch (e: any) {
       const msg = e?.message || 'Identifiants invalides';
@@ -66,50 +52,5 @@ export class AdminAuthService {
   async signOut() {
     await this.supabase.auth.signOut();
     this.session.set(null);
-    this.profile.set(null);
-  }
-
-  private async loadProfile() {
-    const u = this.session()?.user;
-    if (!u) {
-      this.profile.set(null);
-      return;
-    }
-    
-    try {
-      // Lire son propre profil (policy déjà en place)
-      const { data, error } = await this.supabase
-        .from('profiles')
-        .select('id, role')
-        .eq('id', u.id)
-        .maybeSingle();
-        
-      if (error) {
-        console.error('[AdminAuthService] Erreur lors du chargement du profil:', error);
-        
-        // Si c'est une erreur de permission sur la table users/profiles
-        if (error.code === '42501' || error.message.includes('permission denied')) {
-          console.warn('[AdminAuthService] Permissions manquantes - voir ADMIN_CONFIGURATION.md pour la configuration des tables');
-          this.error.set('Permissions insuffisantes. Veuillez configurer les tables profiles et leurs politiques RLS.');
-        } else {
-          this.error.set(`Erreur de profil: ${error.message}`);
-        }
-        
-        // Pas de profil = rôle inconnu → traiter comme non-admin
-        this.profile.set(null);
-        return;
-      }
-      
-      if (data) {
-        this.profile.set({ id: data.id as string, role: (data.role as any) ?? 'invite' });
-        this.error.set(null); // Réinitialiser l'erreur en cas de succès
-      } else {
-        this.profile.set(null);
-      }
-    } catch (err) {
-      console.error('[AdminAuthService] Exception lors du chargement du profil:', err);
-      this.error.set('Erreur inattendue lors du chargement du profil');
-      this.profile.set(null);
-    }
   }
 }

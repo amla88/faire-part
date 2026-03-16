@@ -1,7 +1,6 @@
 import { Routes } from '@angular/router';
 import { BlankComponent } from './layouts/blank/blank.component';
 import { FullComponent } from './layouts/full/full.component';
-import { FullAdminComponent } from './layouts/full/full-admin.component';
 import { AuthGuard } from './services/auth.guard';
 import { adminGuard } from './services/admin.guard';
 
