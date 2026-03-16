@@ -63,7 +63,7 @@ export const routes: Routes = [
   },
   {
     path: 'admin',
-    component: FullAdminComponent,
+    component: FullComponent,
     canMatch: [adminGuard],
     children: [
       {

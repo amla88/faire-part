@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, signal, computed, Inject, P
 import { CommonModule, DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { NgSupabaseService } from '../../../../services/ng-supabase.service';
+import { AdminAuthService } from '../../../../services/admin-auth.service';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
@@ -99,6 +100,7 @@ export class AdminFamilleDetailComponent implements OnInit {
     private ngSupabase: NgSupabaseService, 
     private snackBar: MatSnackBar, 
     private fb: FormBuilder,
+    private adminAuth: AdminAuthService,
     @Inject(DOCUMENT) private document: Document,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
@@ -108,6 +110,13 @@ export class AdminFamilleDetailComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    if (!this.adminAuth.isAdmin()) {
+      console.error('Security violation: non-admin user tried to access admin-famille-detail');
+      // Ideally, we'd redirect, but for now, just don't load data.
+      // A guard should prevent this from happening in the first place.
+      this.snackBar.open('Accès non autorisé', 'Fermer', { duration: 5000 });
+      return;
+    }
     const id = Number(this.route.snapshot.paramMap.get('id')) || null;
     if (id) this.loadFamille(id);
   }

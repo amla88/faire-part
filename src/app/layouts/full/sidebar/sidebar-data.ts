@@ -20,3 +20,15 @@ export const navItems: NavItem[] = [
     route: '/person',
   },
 ];
+
+export const navItemsAdmin: NavItem[] = [
+  { navCap: 'Home' },
+  {
+    displayName: 'Dashboard',
+    iconName: 'layout-grid-add',
+    route: '/admin/dashboard',
+  },
+
+  { navCap: 'Gestion' },
+  { displayName: 'Familles', iconName: 'users', route: '/admin/familles' },
+];

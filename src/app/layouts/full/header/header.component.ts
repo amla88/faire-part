@@ -36,30 +36,32 @@ export class HeaderComponent {
   adminAuth = inject(AdminAuthService);
   private router = inject(Router);
 
+  get isAdminContext(): boolean {
+    return this.router.url.startsWith('/admin');
+  }
+
   /**
    * Logout handler that works for both normal users (token-based local session)
    * and admin users (Supabase session).
    */
   async logout(): Promise<void> {
-    // If admin session exists, sign out from Supabase and clear admin profile
+    const isAdminContext = this.router.url.startsWith('/admin');
+
     try {
-      if (this.adminAuth.session()) {
+      if (isAdminContext) {
+        // Admin context: sign out from Supabase and clear admin profile
         await this.adminAuth.signOut();
-        // redirect to admin login
-        await this.router.navigate(['/admin-login']);
-        return;
+        await this.router.navigate(['/authentication/admin-login']);
+      } else {
+        // Public context: clear local storage and go to public login
+        this.auth.logout();
+        await this.router.navigate(['/authentication/login']);
       }
     } catch (e) {
-      // continue with normal logout if admin signOut fails
-      console.error('Admin signOut failed', e);
+      console.error(`Logout failed in ${isAdminContext ? 'admin' : 'public'} context`, e);
+      // As a fallback, try to navigate to the appropriate login page
+      const fallbackUrl = isAdminContext ? '/authentication/admin-login' : '/authentication/login';
+      await this.router.navigate([fallbackUrl]);
     }
-
-    // Normal app user logout: clear local storage and go to auth login
-    try {
-      this.auth.logout();
-    } catch (e) {
-      console.error('AuthService.logout failed', e);
-    }
-    await this.router.navigate(['/authentication/login']);
   }
 }

@@ -4,6 +4,11 @@ import { AdminDashboardComponent } from './dashboard/admin-dashboard.component';
 export const AdminRoutes: Routes = [
   {
     path: '',
+    redirectTo: 'dashboard',
+    pathMatch: 'full',
+  },
+  {
+    path: 'dashboard',
     component: AdminDashboardComponent
   },
   {

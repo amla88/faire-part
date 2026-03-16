@@ -21,24 +21,26 @@
   <!-- profile Dropdown -->
   <!-- --------------------------------------------------------------- -->
   <button mat-mini-fab [matMenuTriggerFor]="profilemenu" aria-label="Notifications">
-  <img [src]="auth.avatarDataUri() || 'assets/images/profile/user-1.jpg'" class="rounded-circle object-cover d-block" width="35" />
+  <img [src]="isAdminContext ? 'assets/images/profile/user-1.jpg' : (auth.avatarDataUri() || 'assets/images/profile/user-1.jpg')" class="rounded-circle object-cover d-block" width="35" />
   </button>
   <mat-menu #profilemenu="matMenu" class="cardWithShadow topbar-dd">
-    <button mat-menu-item>
-      <mat-icon class="d-flex align-items-center"><i-tabler name="user" class="icon-18 d-flex"></i-tabler></mat-icon>My
-      Profile
-    </button>
-    <button mat-menu-item>
-      <mat-icon class="d-flex align-items-center"><i-tabler name="mail" class="icon-18 d-flex"></i-tabler></mat-icon>My
-      Account
-    </button>
-    <button mat-menu-item [routerLink]="['/person']">
-      <mat-icon class="d-flex align-items-center"><i-tabler name="users" class="icon-18 d-flex"></i-tabler></mat-icon>Changer de personne
-    </button>
-    <button mat-menu-item>
-      <mat-icon class="d-flex align-items-center"><i-tabler name="list-check"
-          class="icon-18 d-flex"></i-tabler></mat-icon>My Task
-    </button>
+    <ng-container *ngIf="!isAdminContext">
+      <button mat-menu-item>
+        <mat-icon class="d-flex align-items-center"><i-tabler name="user" class="icon-18 d-flex"></i-tabler></mat-icon>My
+        Profile
+      </button>
+      <button mat-menu-item>
+        <mat-icon class="d-flex align-items-center"><i-tabler name="mail" class="icon-18 d-flex"></i-tabler></mat-icon>My
+        Account
+      </button>
+      <button mat-menu-item [routerLink]="['/person']">
+        <mat-icon class="d-flex align-items-center"><i-tabler name="users" class="icon-18 d-flex"></i-tabler></mat-icon>Changer de personne
+      </button>
+      <button mat-menu-item>
+        <mat-icon class="d-flex align-items-center"><i-tabler name="list-check"
+            class="icon-18 d-flex"></i-tabler></mat-icon>My Task
+      </button>
+    </ng-container>
 
     <div class="p-x-12 m-t-12">
       <button (click)="logout()" mat-stroked-button class="w-100">Logout</button>
