@@ -110,7 +110,7 @@ export class AdminFamilleDetailComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    if (!this.adminAuth.isAdmin()) {
+    if (!this.adminAuth.isAuthenticated()) {
       console.error('Security violation: non-admin user tried to access admin-famille-detail');
       // Ideally, we'd redirect, but for now, just don't load data.
       // A guard should prevent this from happening in the first place.

@@ -9,7 +9,7 @@ export class AdminAuthService {
   // Etat d'auth admin (Supabase Auth)
   readonly session = signal<Session | null>(null);
   readonly user = computed<User | null>(() => this.session()?.user ?? null);
-  readonly isAdmin = computed<boolean>(() => this.user() !== null);
+  readonly isAuthenticated = computed<boolean>(() => this.session() !== null);
   readonly loading = signal<boolean>(false);
   readonly error = signal<string | null>(null);
 

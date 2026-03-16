@@ -34,10 +34,6 @@ export class AdminLoginComponent {
       this.snack.open(this.auth.error() || 'Échec de la connexion', 'OK', { duration: 4000 });
       return;
     }
-    if (!this.auth.isAdmin()) {
-      this.snack.open('Accès réservé aux administrateurs', 'OK', { duration: 4000 });
-      return;
-    }
     await this.router.navigate(['/admin']);
   }
 }
