@@ -13,9 +13,11 @@ export class AdminAuthService {
   readonly loading = signal<boolean>(false);
   readonly error = signal<string | null>(null);
 
+  readonly initialized: Promise<void>;
+
   constructor(private sb: NgSupabaseService) {
     // Charger la session à l'init et s'abonner aux changements
-    this.init();
+    this.initialized = this.init();
   }
 
   private async init() {

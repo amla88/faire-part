@@ -31,13 +31,10 @@ export class NgSupabaseService {
     this.client = createClient(url, key, {
       // Configuration auth adaptée à l'environnement
       auth: { 
-        persistSession: !isDevelopment, // Désactiver la persistance en dev pour éviter les conflits
+        persistSession: true, // Persister la session même en environnement de développement
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        // En développement, être plus agressif sur les timeouts
-        ...(isDevelopment && {
-          storageKey: `supabase-auth-${Date.now()}`, // Clé unique pour éviter les conflits
-        }),
+        storageKey: 'faire-part-supabase-auth', // Clé de stockage fixe
       },
       // Ensure a JSON Accept header is present for PostgREST responses. Some proxies
       // or environments may alter the default Accept header causing a 406 Not Acceptable.

@@ -1,0 +1,30 @@
+.table-responsive {
+  overflow-x: auto;
+}
+
+.w-100 {
+  width: 100%;
+}
+
+.flex-center {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.error-msg {
+  color: #f44336;
+  padding: 1rem 0;
+}
+
+.empty-msg {
+  color: #666;
+  padding: 1rem 0;
+  font-style: italic;
+}
+
+.p-t-24 { padding-top: 24px !important; }
+.p-l-0 { padding-left: 0 !important; }
+.f-w-600 { font-weight: 600 !important; }
+.f-s-14 { font-size: 14px !important; }
+.json-preview { font-size: 0.75rem; background: #f5f5f5; padding: 4px; border-radius: 4px; margin: 0; max-height: 100px; overflow-y: auto; }

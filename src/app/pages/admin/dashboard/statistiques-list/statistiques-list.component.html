@@ -1,0 +1,35 @@
+<mat-card class="cardWithShadow">
+  <mat-card-header>
+    <mat-card-title>Tableau de statistiques</mat-card-title>
+    <mat-card-subtitle>Aperçu en temps réel de la vue "stats_rapides"</mat-card-subtitle>
+  </mat-card-header>
+  
+  <mat-card-content class="p-t-24">
+    @if (loading()) {
+      <div class="flex-center">
+        <mat-spinner diameter="40"></mat-spinner>
+      </div>
+    } @else if (error()) {
+      <div class="error-msg">
+        Erreur de chargement: {{ error() }}
+      </div>
+    } @else if (stats().length === 0) {
+      <div class="empty-msg">Aucune donnée trouvée dans cette vue.</div>
+    } @else {
+      <div class="table-responsive">
+        <table mat-table [dataSource]="stats()" class="w-100">
+          @for (col of displayedColumns(); track col) {
+            <ng-container [matColumnDef]="col">
+              <th mat-header-cell *matHeaderCellDef class="f-w-600 mat-subtitle-1 f-s-14 p-l-0">{{ col | titlecase }}</th>
+              <td mat-cell *matCellDef="let element" class="p-l-0">
+                @if (isObject(element[col])) { <pre class="json-preview">{{ element[col] | json }}</pre> } @else { {{ element[col] }} }
+              </td>
+            </ng-container>
+          }
+          <tr mat-header-row *matHeaderRowDef="displayedColumns()"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns()"></tr>
+        </table>
+      </div>
+    }
+  </mat-card-content>
+</mat-card>
