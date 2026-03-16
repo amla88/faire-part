@@ -11,15 +11,6 @@
         <div class="row">
           <!-- Supprimé le champ nom de famille car il n'existe pas dans la DB -->
           <!-- Le nom est maintenant affiché via familyDisplayName() dans le titre -->
-          
-          <div class="col-lg-6">
-            <mat-form-field appearance="outline" class="w-100">
-              <mat-label>Pays</mat-label>
-              <mat-select formControlName="pays">
-                <mat-option *ngFor="let c of countries" [value]="c.value">{{ c.viewValue }}</mat-option>
-              </mat-select>
-            </mat-form-field>
-          </div>
 
           <div class="col-lg-4">
             <mat-form-field appearance="outline" class="w-100">
@@ -51,12 +42,19 @@
               <input matInput formControlName="ville" />
             </mat-form-field>
           </div>
+          
+          <div class="col-lg-6">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Pays</mat-label>
+              <mat-select formControlName="pays">
+                <mat-option *ngFor="let c of countries" [value]="c.value">{{ c.viewValue }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
         </div>
 
         <div class="m-t-12 d-flex gap-8">
-          <button mat-flat-button color="primary" type="button" (click)="saveFamille()">Sauvegarder famille</button>
-          <button mat-stroked-button color="accent" type="button" (click)="savePersons()">Sauvegarder personnes</button>
-          <button mat-stroked-button color="primary" type="button" (click)="saveAll()">Sauvegarder tout</button>
+          <button mat-flat-button color="primary" type="button" (click)="saveAll()">Sauvegarder les modifications</button>
         </div>
 
         <!-- Bloc code d'accès + régénération -->

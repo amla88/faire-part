@@ -217,39 +217,23 @@ export class AdminFamilleDetailComponent implements OnInit {
     }
   }
 
-  async saveFamille() {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      this.snackBar.open('Formulaire invalide', 'Fermer', { duration: 3000 });
-      return;
-    }
-    this.loading.set(true);
-    try {
-      const client = this.ngSupabase.getClient();
-      const familleId = this.famille()?.id;
-      if (!familleId) throw new Error('ID famille manquant');
+  private async saveFamille(): Promise<void> {
+    const client = this.ngSupabase.getClient();
+    const familleId = this.famille()?.id;
+    if (!familleId) throw new Error('ID famille manquant');
 
-      const payload: any = {
-        rue: this.form.value.rue || null,
-        numero: this.form.value.numero || null,
-        boite: this.form.value.boite || null,
-        cp: this.form.value.cp || null,
-        ville: this.form.value.ville || null,
-        pays: this.form.value.pays || null,
-        personne_principale: this.form.value.personne_principale || null,
-      };
+    const payload: any = {
+      rue: this.form.value.rue || null,
+      numero: this.form.value.numero || null,
+      boite: this.form.value.boite || null,
+      cp: this.form.value.cp || null,
+      ville: this.form.value.ville || null,
+      pays: this.form.value.pays || null,
+      personne_principale: this.form.value.personne_principale || null,
+    };
 
-      const res = await client.from('familles').update(payload).eq('id', familleId);
-      if (res.error) throw res.error;
-      
-      this.snackBar.open('Famille mise à jour', 'Fermer', { duration: 3000 });
-      await this.loadFamille(familleId);
-    } catch (err) {
-      console.error('Erreur update famille', err);
-      this.snackBar.open('Erreur lors de la mise à jour', 'Fermer', { duration: 5000 });
-    } finally {
-      this.loading.set(false);
-    }
+    const res = await client.from('familles').update(payload).eq('id', familleId);
+    if (res.error) throw res.error;
   }
 
   /** Génère un token unique de 8 lettres majuscules (vérifié côté familles.login_token) */
@@ -290,111 +274,79 @@ export class AdminFamilleDetailComponent implements OnInit {
     }
   }
 
-  async savePersons() {
-    // Validation : au moins une personne doit être présente
-    if (this.persons.length === 0) {
-      this.snackBar.open('Une famille doit contenir au moins une personne', 'Fermer', { duration: 5000 });
-      return;
+  private async savePersons(): Promise<void> {
+    const client = this.ngSupabase.getClient();
+    const familleId = this.famille()?.id;
+    if (!familleId) throw new Error('ID famille manquant');
+
+    const toUpsert = this.persons.controls.map((ctrl) => {
+      const g = ctrl as FormGroup;
+      const id = g.get('id')?.value;
+      
+      const personData: any = {
+        nom: g.get('nom')?.value,
+        prenom: g.get('prenom')?.value,
+        email: g.get('email')?.value || null,
+        invite_reception: !!g.get('invite_reception')?.value,
+        invite_repas: !!g.get('invite_repas')?.value,
+        invite_soiree: !!g.get('invite_soiree')?.value,
+        famille_id: familleId,
+      };
+      
+      // N'inclure l'ID que s'il existe (personne existante)
+      if (id) {
+        personData.id = id;
+      }
+      
+      return personData;
+    });
+
+    const existingPersons = toUpsert.filter(p => p.id);
+    const newPersons = toUpsert.filter(p => !p.id);
+
+    if (existingPersons.length > 0) {
+      const updateRes = await client.from('personnes').upsert(existingPersons, { onConflict: 'id' }).select();
+      if (updateRes.error) throw updateRes.error;
     }
 
-    // Validation des formulaires de personnes
-    const invalidPersons = this.persons.controls.filter(ctrl => ctrl.invalid);
-    if (invalidPersons.length > 0) {
-      this.persons.controls.forEach(ctrl => ctrl.markAllAsTouched());
-      this.snackBar.open('Veuillez corriger les erreurs dans les informations des personnes', 'Fermer', { duration: 5000 });
-      return;
+    if (newPersons.length > 0) {
+      const insertRes = await client.from('personnes').insert(newPersons).select();
+      if (insertRes.error) throw insertRes.error;
     }
 
-    this.loading.set(true);
-    try {
-      const client = this.ngSupabase.getClient();
-      const familleId = this.famille()?.id;
-      if (!familleId) throw new Error('ID famille manquant');
-
-      const toUpsert = this.persons.controls.map((ctrl) => {
-        const g = ctrl as FormGroup;
-        const id = g.get('id')?.value;
-        
-        const personData: any = {
-          nom: g.get('nom')?.value,
-          prenom: g.get('prenom')?.value,
-          email: g.get('email')?.value || null,
-          invite_reception: !!g.get('invite_reception')?.value,
-          invite_repas: !!g.get('invite_repas')?.value,
-          invite_soiree: !!g.get('invite_soiree')?.value,
-          famille_id: familleId,
-        };
-        
-        // N'inclure l'ID que s'il existe (personne existante)
-        if (id) {
-          personData.id = id;
-        }
-        
-        return personData;
-      });
-
-      // Séparer les nouvelles personnes des personnes existantes
-      const existingPersons = toUpsert.filter(p => p.id);
-      const newPersons = toUpsert.filter(p => !p.id);
-
-      // Traiter les personnes existantes (mise à jour)
-      if (existingPersons.length > 0) {
-        const updateRes = await client.from('personnes').upsert(existingPersons, { onConflict: 'id' }).select();
-        if (updateRes.error) throw updateRes.error;
-      }
-
-      // Traiter les nouvelles personnes (insertion)
-      if (newPersons.length > 0) {
-        const insertRes = await client.from('personnes').insert(newPersons).select();
-        if (insertRes.error) throw insertRes.error;
-      }
-
-      if (this.deletedPersonIds.length > 0) {
-        const del = await client.from('personnes').delete().in('id', this.deletedPersonIds);
-        if (del.error) throw del.error;
-        this.deletedPersonIds = [];
-      }
-
-      this.snackBar.open('Personnes sauvegardées', 'Fermer', { duration: 3000 });
-      await this.loadFamille(familleId);
-    } catch (err) {
-      console.error('Erreur save persons', err);
-      this.snackBar.open('Erreur lors de la sauvegarde des personnes', 'Fermer', { duration: 5000 });
-    } finally {
-      this.loading.set(false);
+    if (this.deletedPersonIds.length > 0) {
+      const del = await client.from('personnes').delete().in('id', this.deletedPersonIds);
+      if (del.error) throw del.error;
+      this.deletedPersonIds = [];
     }
   }
 
   async saveAll() {
-    // Validation globale du formulaire
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       this.snackBar.open('Formulaire invalide', 'Fermer', { duration: 3000 });
       return;
     }
 
-    // Validation : au moins une personne doit être présente
     if (this.persons.length === 0) {
       this.snackBar.open('Une famille doit contenir au moins une personne', 'Fermer', { duration: 5000 });
       return;
     }
 
-    // Validation des formulaires de personnes
-    const invalidPersons = this.persons.controls.filter(ctrl => ctrl.invalid);
-    if (invalidPersons.length > 0) {
-      this.persons.controls.forEach(ctrl => ctrl.markAllAsTouched());
-      this.snackBar.open('Veuillez corriger les erreurs dans les informations des personnes', 'Fermer', { duration: 5000 });
-      return;
-    }
-
-    // Sauvegarder d'abord les personnes, puis la famille
+    this.loading.set(true);
     try {
       await this.savePersons();
       await this.saveFamille();
       this.snackBar.open('Famille et personnes sauvegardées avec succès', 'Fermer', { duration: 3000 });
+      
+      const familleId = this.famille()?.id;
+      if(familleId) await this.loadFamille(familleId);
+
     } catch (err) {
       console.error('Erreur lors de la sauvegarde complète', err);
       this.snackBar.open('Erreur lors de la sauvegarde complète', 'Fermer', { duration: 5000 });
+    } finally {
+      this.loading.set(false);
     }
   }
 }
