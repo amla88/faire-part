@@ -1,17 +1,17 @@
-.person-chip {
+.person-invites {
   display: inline-flex;
   align-items: center;
-  margin: 4px;
-}
+  margin-left: 8px;
+  gap: 2px;
 
-.person-chip img[matChipAvatar] {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin-right: 8px;
-}
+  .invite-icon {
+    font-size: 14px;
+    height: 14px;
+    width: 14px;
+    line-height: 14px;
 
-.table-responsive table td {
-  vertical-align: middle;
+    &.clickable {
+      cursor: pointer;
+    }
+  }
 }

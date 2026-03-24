@@ -2,15 +2,25 @@
   <mat-card-content>
     <mat-card-title>Liste des familles</mat-card-title>
 
-    <div class="m-b-12">
+    <div class="m-b-12 d-flex align-center gap-16">
       <mat-form-field appearance="outline" class="w-50">
         <mat-label>Rechercher familles / personnes</mat-label>
         <input matInput placeholder="Nom, id ou personne..." (input)="filter.set($any($event.target).value)" />
       </mat-form-field>
-      <div class="f-s-13 text-muted m-t-8">
+      <a mat-flat-button color="primary" routerLink="/admin/export-invitations">
+        <mat-icon>save_alt</mat-icon>
+        Export
+      </a>
+    </div>
+    <div class="f-s-13 text-muted m-t-8">
   Résultats : {{ filteredFamilles().length }} familles ({{ totalPersonnes() }} personnes)
 </div>
-    </div>
+
+<div class="legend-container f-s-13 text-muted m-t-16 m-b-8">
+  <b>Légende des invitations :</b>
+  1er point : Réception, 2ème : Repas, 3ème : Soirée.
+  (<mat-icon style="color:#4CAF50; font-size: 12px; width:12px; height:12px;">lens</mat-icon>: Invité, <mat-icon style="color:#F44336; font-size: 12px; width:12px; height:12px;">lens</mat-icon>: Non invité)
+</div>
 
     <div class="table-responsive" *ngIf="!loading()">
   <table mat-table [dataSource]="filteredFamilles()" class="w-100">
@@ -34,6 +44,11 @@
               <mat-chip *ngFor="let p of (element.personnes || [])" class="f-s-14">
                 <img matChipAvatar [src]="p.avatar_url || 'assets/images/profile/user-1.jpg'" alt="avatar" />
                 {{ p.prenom }} {{ p.nom }}
+                <span class="person-invites">
+                  <mat-icon (click)="toggleInvite(p, 'invite_reception', element.id)" [style.color]="p.invite_reception ? '#4CAF50' : '#F44336'" matTooltip="Réception" class="invite-icon clickable">lens</mat-icon>
+                  <mat-icon (click)="toggleInvite(p, 'invite_repas', element.id)" [style.color]="p.invite_repas ? '#4CAF50' : '#F44336'" matTooltip="Repas" class="invite-icon clickable">lens</mat-icon>
+                  <mat-icon (click)="toggleInvite(p, 'invite_soiree', element.id)" [style.color]="p.invite_soiree ? '#4CAF50' : '#F44336'" matTooltip="Soirée" class="invite-icon clickable">lens</mat-icon>
+                </span>
                 <button matChipRemove color="warn" [attr.aria-label]="'Supprimer ' + p.prenom + ' ' + p.nom" (click)="deletePerson(element.id, p.id)">
                   <mat-icon>delete</mat-icon>
                 </button>

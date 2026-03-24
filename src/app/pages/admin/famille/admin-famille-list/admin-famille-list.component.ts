@@ -12,12 +12,13 @@ import { ConfirmDialogData } from '../../../../shared/dialogs/confirm-dialog/con
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router, RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-admin-famille-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, MatCardModule, MatTableModule, MatChipsModule, MatIconModule, MatButtonModule, MatProgressSpinnerModule, MatSnackBarModule, MatFormFieldModule, MatInputModule],
+  imports: [CommonModule, RouterModule, MatCardModule, MatTableModule, MatChipsModule, MatIconModule, MatButtonModule, MatProgressSpinnerModule, MatSnackBarModule, MatFormFieldModule, MatInputModule, MatTooltipModule],
   templateUrl: './admin-famille-list.component.html',
   styleUrls: ['./admin-famille-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -149,6 +150,52 @@ export class AdminFamilleListComponent implements OnInit {
     } catch (err) {
       console.error('Erreur suppression famille', err);
       this.snackBar.open('Erreur lors de la suppression de la famille', 'Fermer', { duration: 5000 });
+    }
+  }
+
+  async toggleInvite(person: any, inviteType: 'invite_reception' | 'invite_repas' | 'invite_soiree', familleId: number) {
+    const newValue = !person[inviteType];
+    const originalValue = person[inviteType];
+
+    // Optimistic UI Update
+    this.familles.update(currentFamilles =>
+      currentFamilles.map(famille =>
+        famille.id === familleId
+          ? {
+              ...famille,
+              personnes: famille.personnes.map((p: any) =>
+                p.id === person.id ? { ...p, [inviteType]: newValue } : p
+              ),
+            }
+          : famille
+      )
+    );
+
+    try {
+      const { error } = await this.ngSupabase
+        .getClient()
+        .from('personnes')
+        .update({ [inviteType]: newValue })
+        .eq('id', person.id);
+
+      if (error) throw error;
+    } catch (err) {
+      console.error('Erreur mise à jour invitation', err);
+      this.snackBar.open("Erreur: Le statut n'a pas pu être mis à jour.", 'Fermer', { duration: 5000 });
+
+      // Rollback UI on error
+      this.familles.update(currentFamilles =>
+        currentFamilles.map(famille =>
+          famille.id === familleId
+            ? {
+                ...famille,
+                personnes: famille.personnes.map((p: any) =>
+                  p.id === person.id ? { ...p, [inviteType]: originalValue } : p
+                ),
+              }
+            : famille
+        )
+      );
     }
   }
 }
