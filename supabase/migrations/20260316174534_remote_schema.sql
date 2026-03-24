@@ -339,14 +339,17 @@ $function$
 
 CREATE OR REPLACE FUNCTION public.get_famille_by_token(p_token text)
  RETURNS SETOF public.familles
- LANGUAGE sql
+ LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
-  select *
-  from public.familles
-  where login_token = p_token
-  limit 1
+BEGIN
+  RETURN QUERY
+    UPDATE public.familles
+    SET connexion = now()
+    WHERE login_token = p_token
+    RETURNING *;
+END;
 $function$
 ;
 
