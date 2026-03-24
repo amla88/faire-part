@@ -4,11 +4,12 @@
     <mat-card-subtitle>Exporter les données pour le publipostage.</mat-card-subtitle>
 
     <div class="m-t-24 m-b-12 d-flex align-center gap-16">
-      <mat-checkbox [(ngModel)]="filterReception" (change)="filterReception.set($event.checked)">Invité à la réception</mat-checkbox>
-      <mat-checkbox [(ngModel)]="filterRepas" (change)="filterRepas.set($event.checked)">Invité au repas</mat-checkbox>
-      <mat-checkbox [(ngModel)]="filterSoiree" (change)="filterSoiree.set($event.checked)">Invité à la soirée</mat-checkbox>
+      <mat-checkbox [checked]="activeFilter() === 'reception'" (change)="updateFilter('reception', $event.checked)">QUE Invité à la réception</mat-checkbox>
+      <mat-checkbox [checked]="activeFilter() === 'soiree'" (change)="updateFilter('soiree', $event.checked)">QUE Invité à la soirée</mat-checkbox>
+      <mat-checkbox [checked]="activeFilter() === 'reception_soiree'" (change)="updateFilter('reception_soiree', $event.checked)">Invité à la réception ET à la soirée</mat-checkbox>
+      <mat-checkbox [checked]="activeFilter() === 'tout'" (change)="updateFilter('tout', $event.checked)">Invité à TOUT</mat-checkbox>
       <span class="flex-grow"></span>
-      <mat-slide-toggle [(ngModel)]="showQrCodes" (change)="showQrCodes.set($event.checked)">Afficher les QR Codes</mat-slide-toggle>
+      <mat-slide-toggle [checked]="showQrCodes()" (change)="showQrCodes.set($event.checked)">Afficher les QR Codes</mat-slide-toggle>
       <button mat-flat-button color="primary" (click)="exportToZip()" [disabled]="loading()">
         <mat-icon>archive</mat-icon>
         Exporter en ZIP

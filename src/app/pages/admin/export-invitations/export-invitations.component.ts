@@ -32,6 +32,8 @@ export interface Famille {
   personnes: Personne[];
 }
 
+type FilterType = 'reception' | 'soiree' | 'reception_soiree' | 'tout';
+
 @Component({
   selector: 'app-export-invitations',
   templateUrl: './export-invitations.component.html',
@@ -57,36 +59,39 @@ export class ExportInvitationsComponent {
   familles = signal<Famille[]>([]);
   
   // Filters
-  filterReception = signal(false);
-  filterRepas = signal(false);
-  filterSoiree = signal(false);
+  activeFilter = signal<FilterType | null>(null);
   showQrCodes = signal(false);
 
   filteredFamilles = computed(() => {
-    let familles = this.familles();
+    const allFamilles = this.familles();
+    const currentFilter = this.activeFilter();
 
-    if (this.filterReception()) {
-      familles = familles.map(f => ({
-        ...f,
-        personnes: f.personnes.filter(p => p.invite_reception)
-      })).filter(f => f.personnes.length > 0);
+    if (!currentFilter) {
+      return allFamilles;
     }
 
-    if (this.filterRepas()) {
-      familles = familles.map(f => ({
-        ...f,
-        personnes: f.personnes.filter(p => p.invite_repas)
-      })).filter(f => f.personnes.length > 0);
-    }
-    
-    if (this.filterSoiree()) {
-      familles = familles.map(f => ({
-        ...f,
-        personnes: f.personnes.filter(p => p.invite_soiree)
-      })).filter(f => f.personnes.length > 0);
-    }
-    
-    return familles;
+    return allFamilles.map(f => {
+      let personnes: Personne[];
+
+      switch (currentFilter) {
+        case 'reception':
+          personnes = f.personnes.filter(p => p.invite_reception && !p.invite_repas && !p.invite_soiree);
+          break;
+        case 'soiree':
+          personnes = f.personnes.filter(p => !p.invite_reception && !p.invite_repas && p.invite_soiree);
+          break;
+        case 'reception_soiree':
+          personnes = f.personnes.filter(p => p.invite_reception && !p.invite_repas && p.invite_soiree);
+          break;
+        case 'tout':
+          personnes = f.personnes.filter(p => p.invite_reception && p.invite_repas && p.invite_soiree);
+          break;
+        default:
+          personnes = f.personnes;
+          break;
+      }
+      return { ...f, personnes };
+    }).filter(f => f.personnes.length > 0);
   });
 
   totalPersonnes = computed(() => {
@@ -108,6 +113,14 @@ export class ExportInvitationsComponent {
         }
       }
     });
+  }
+
+  updateFilter(filter: FilterType, isChecked: boolean) {
+    if (isChecked) {
+      this.activeFilter.set(filter);
+    } else if (this.activeFilter() === filter) {
+      this.activeFilter.set(null);
+    }
   }
 
   async fetchFamilles() {
