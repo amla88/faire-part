@@ -150,124 +150,28 @@ mat-card {
   flex-direction: column;
 }
 
-.setting-group {
-  margin-bottom: 1.5rem;
+.grid-settings {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
 
-  &:last-child {
-    margin-bottom: 0;
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
   }
 }
 
-.setting-label {
-  display: block;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #2c3e50;
-  margin-bottom: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.color-preview {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+  border: 1px solid #ccc;
 }
 
 .full-width {
   width: 100%;
-}
-
-// Seed input
-.seed-input-group {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.seed-input {
-  flex: 1;
-  padding: 0.75rem;
-  border: 2px solid #e0e0e0;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  transition: border-color 0.2s ease;
-
-  &:focus {
-    outline: none;
-    border-color: #3f51b5;
-  }
-
-  &::placeholder {
-    color: #bdbdbd;
-  }
-}
-
-// Taille slider
-.size-slider {
-  width: 100%;
-  height: 6px;
-  border-radius: 3px;
-  background: linear-gradient(to right, #e0e0e0 0%, #bdbdbd 100%);
-  outline: none;
-  -webkit-appearance: none;
-  appearance: none;
-  margin: 1rem 0;
-
-  &::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #3f51b5;
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(63, 81, 181, 0.4);
-    transition: box-shadow 0.2s ease;
-
-    &:hover {
-      box-shadow: 0 4px 12px rgba(63, 81, 181, 0.6);
-    }
-  }
-
-  &::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #3f51b5;
-    cursor: pointer;
-    border: none;
-    box-shadow: 0 2px 8px rgba(63, 81, 181, 0.4);
-    transition: box-shadow 0.2s ease;
-
-    &:hover {
-      box-shadow: 0 4px 12px rgba(63, 81, 181, 0.6);
-    }
-  }
-}
-
-// Taille presets
-.size-presets {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.5rem;
-  margin-top: 1rem;
-
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-.preset-btn {
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-
-  &.active {
-    background-color: #3f51b5;
-    color: white;
-    border-color: #3f51b5;
-  }
-
-  &:hover:not(.active) {
-    border-color: #3f51b5;
-    color: #3f51b5;
-  }
 }
 
 // Dividers
@@ -279,37 +183,6 @@ mat-card {
 
 .my-4 {
   margin: 1.5rem 0;
-}
-
-// Info style
-.style-info {
-  background: #f5f7fa;
-  padding: 1rem;
-  border-radius: 6px;
-  border-left: 4px solid #3f51b5;
-
-  h3 {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #2c3e50;
-    margin: 0 0 0.5rem 0;
-  }
-
-  p {
-    font-size: 0.9rem;
-    color: #7f8c8d;
-    margin: 0.25rem 0;
-
-    strong {
-      color: #2c3e50;
-      font-weight: 600;
-    }
-  }
-
-  .info-text {
-    margin-top: 0.75rem;
-    line-height: 1.5;
-  }
 }
 
 // Responsive adjustments

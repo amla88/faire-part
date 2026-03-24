@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { NgSupabaseService } from './ng-supabase.service';
 import { createAvatar } from '@dicebear/core';
-import { personas, avataaars, dylan, openPeeps, pixelArt } from '@dicebear/collection';
+import { avataaars } from '@dicebear/collection';
 
 export interface AvatarRow {
   id?: number;
@@ -20,22 +20,16 @@ export class AvatarService {
   public avatarDataUri = signal<string | null>(null);
   // central DiceBear collections map (used by generateDataUri)
   private readonly collectionsMap: Record<string, any> = {
-    personas,
     avataaars,
-    dylan,
-    openPeeps,
-    pixelArt,
   };
 
   /**
    * Génère une dataURI PNG via DiceBear pour le style/seed/size donnés.
    * Retourne null en cas d'erreur.
    */
-  public generateDataUri(styleName: string | undefined, seed?: string | null, size = 35): string | null {
+  public generateDataUri(options?: any): string | null {
     try {
-      const style = styleName || 'personas';
-      const collection = this.collectionsMap[style] || this.collectionsMap['personas'];
-      const avatar = createAvatar(collection as any, { seed: seed ?? undefined, size });
+      const avatar = createAvatar(avataaars, options);
       return avatar.toDataUri();
     } catch (e) {
       console.debug('AvatarService.generateDataUri failed', e);
@@ -141,25 +135,10 @@ export class AvatarService {
 
       // If RPC returned seed/options but no imageDataUri, generate a preview client-side
       try {
-        const seed = rowFromRpc.seed || (rowFromRpc.options && (rowFromRpc.options as any).seed) || undefined;
-        const opts = (rowFromRpc.options as any) || {};
-        const styleName = typeof opts.style === 'string' ? opts.style : 'personas';
-        const size = typeof opts.size === 'number' ? opts.size : 35;
-
-        const collectionsMap: Record<string, any> = {
-          personas,
-          avataaars,
-          dylan,
-          openPeeps,
-          pixelArt,
-        };
-        const collection = collectionsMap[styleName] || personas;
-
-        if (!rowFromRpc.imageDataUri && (rowFromRpc.seed || opts)) {
-          const generated = this.generateDataUri(styleName, rowFromRpc.seed ?? undefined, size);
+        if (!rowFromRpc.imageDataUri && rowFromRpc.options) {
+          const generated = this.generateDataUri(rowFromRpc.options);
           if (generated) rowFromRpc.imageDataUri = generated;
         }
-
       } catch (e) {
         console.debug('AvatarService: failed to generate preview', e);
       }
@@ -211,34 +190,21 @@ export class AvatarService {
       if (!user) return;
       // For each cached avatar entry, generate a preview image if missing.
       const avatars = user.avatars || {};
-      const collectionsMap: Record<string, any> = {
-        personas,
-        avataaars,
-        dylan,
-        openPeeps,
-        pixelArt,
-      };
 
       let updated = false;
       for (const k of Object.keys(avatars)) {
         const id = Number(k);
         const entry = avatars[id] || avatars[k];
-        if (!entry) continue;
-        // If imageDataUri is already present, skip
-        if (entry.imageDataUri) continue;
-
-        const seed = entry.seed ?? undefined;
-        const opts = (entry.options as any) || {};
-        const styleName = typeof opts.style === 'string' ? opts.style : 'personas';
-        const size = typeof opts.size === 'number' ? opts.size : 35;
-        const collection = collectionsMap[styleName] || personas;
+        if (!entry || entry.imageDataUri) continue;
 
         try {
-          const generated = this.generateDataUri(styleName, seed, size);
-          if (generated) {
-            entry.imageDataUri = generated;
-            avatars[id] = entry;
-            updated = true;
+          if (entry.options) {
+            const generated = this.generateDataUri(entry.options);
+            if (generated) {
+              entry.imageDataUri = generated;
+              avatars[id] = entry;
+              updated = true;
+            }
           }
         } catch (e) {
           console.debug('AvatarService.initFromUser: generation failed for', id, e);

@@ -18,7 +18,7 @@
           } @else {
             <img
               [src]="avatarDataUri()"
-              [alt]="'Avatar - ' + currentStyle()?.label"
+              alt="Aperçu de l'avatar"
               class="avatar-preview"
             />
           }
@@ -27,7 +27,7 @@
         <!-- Actions rapides -->
         <div class="preview-actions">
           <button
-            mat-raised-button
+            mat-stroked-button
             color="primary"
             (click)="generateRandomSeed()"
             class="action-btn"
@@ -36,7 +36,7 @@
             Générer aléatoire
           </button>
           <button
-            mat-raised-button
+            mat-stroked-button
             color="accent"
             (click)="downloadAvatar()"
             class="action-btn"
@@ -45,12 +45,12 @@
             Télécharger
           </button>
           <button
-            mat-raised-button
-            (click)="copyToClipboard()"
+            mat-stroked-button
+            (click)="resetAvatar()"
             class="action-btn"
           >
-            <mat-icon>content_copy</mat-icon>
-            Copier
+            <mat-icon>restart_alt</mat-icon>
+            Réinitialiser
           </button>
           <button
             mat-raised-button
@@ -71,112 +71,129 @@
       <mat-card-header>
         <mat-card-title>Paramètres</mat-card-title>
       </mat-card-header>
-      <mat-card-content>
-        <!-- Sélection du style -->
-        <div class="setting-group">
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Style d'avatar</mat-label>
-            <mat-select
-              [value]="selectedStyle()"
-              (selectionChange)="onStyleChange($event.value)"
-            >
-              @for (style of styles; track style.name) {
-                <mat-option [value]="style.name">
-                  {{ style.label }}
-                </mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-        </div>
+      <mat-card-content class="grid-settings">
+        <!-- Top -->
+        <mat-form-field appearance="outline">
+          <mat-label>Cheveux/Chapeau</mat-label>
+          <mat-select [value]="top()" (selectionChange)="top.set($event.value)">
+            @for (option of topOptions; track option.value) {
+              <mat-option [value]="option.value">{{ option.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
 
-        <mat-divider class="my-4"></mat-divider>
+        <!-- Accessories -->
+        <mat-form-field appearance="outline">
+          <mat-label>Accessoires</mat-label>
+          <mat-select [value]="accessories()" (selectionChange)="accessories.set($event.value)">
+            @for (option of accessoriesOptions; track option.value) {
+              <mat-option [value]="option.value">{{ option.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
 
-        <!-- Seed -->
-        <div class="setting-group">
-          <label class="setting-label">Seed (identifiant unique)</label>
-          <div class="seed-input-group">
-            <input
-              type="text"
-              [(ngModel)]="seed"
-              (change)="onSeedChange($event.target.value)"
-              class="seed-input"
-              placeholder="Entrez une seed unique"
-            />
-            <button
-              mat-icon-button
-              (click)="generateRandomSeed()"
-              title="Générer une seed aléatoire"
-            >
-              <mat-icon>refresh</mat-icon>
-            </button>
-          </div>
-        </div>
+        <!-- Hair Color -->
+        <mat-form-field appearance="outline">
+          <mat-label>Couleur de cheveux</mat-label>
+          <mat-select [value]="hairColor()" (selectionChange)="hairColor.set($event.value)">
+            @for (option of hairColorOptions; track option.value) {
+              <mat-option [value]="option.value">
+                <span class="color-preview" [style.background]="'#' + option.value"></span>
+                {{ option.label }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
 
-        <mat-divider class="my-4"></mat-divider>
+        <!-- Facial Hair -->
+        <mat-form-field appearance="outline">
+          <mat-label>Poils faciaux</mat-label>
+          <mat-select [value]="facialHair()" (selectionChange)="facialHair.set($event.value)">
+            @for (option of facialHairOptions; track option.value) {
+              <mat-option [value]="option.value">{{ option.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
 
-        <!-- Taille -->
-        <div class="setting-group">
-          <label class="setting-label">Taille: {{ size() }}px</label>
-          <input
-            type="range"
-            [value]="size()"
-            (input)="onSizeChange(+$event.target.value)"
-            min="64"
-            max="512"
-            step="32"
-            class="size-slider"
-          />
-          <div class="size-presets">
-            <button
-              mat-stroked-button
-              (click)="onSizeChange(96)"
-              [class.active]="size() === 96"
-              class="preset-btn"
-            >
-              96px
-            </button>
-            <button
-              mat-stroked-button
-              (click)="onSizeChange(128)"
-              [class.active]="size() === 128"
-              class="preset-btn"
-            >
-              128px
-            </button>
-            <button
-              mat-stroked-button
-              (click)="onSizeChange(256)"
-              [class.active]="size() === 256"
-              class="preset-btn"
-            >
-              256px
-            </button>
-            <button
-              mat-stroked-button
-              (click)="onSizeChange(512)"
-              [class.active]="size() === 512"
-              class="preset-btn"
-            >
-              512px
-            </button>
-          </div>
-        </div>
+        <!-- Clothes -->
+        <mat-form-field appearance="outline">
+          <mat-label>Vêtements</mat-label>
+          <mat-select [value]="clothing()" (selectionChange)="clothing.set($event.value)">
+            @for (option of clothingOptions; track option.value) {
+              <mat-option [value]="option.value">{{ option.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
 
-        <mat-divider class="my-4"></mat-divider>
+        <!-- Clothing Graphic -->
+        <mat-form-field appearance="outline">
+          <mat-label>Graphique Vêtement</mat-label>
+          <mat-select [value]="clothingGraphic()" (selectionChange)="clothingGraphic.set($event.value)">
+            @for (option of clothingGraphicOptions; track option.value) {
+              <mat-option [value]="option.value">{{ option.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
 
-        <!-- Info style -->
-        @if (currentStyle()) {
-          <div class="style-info">
-            <h3>{{ currentStyle()?.label }}</h3>
-            <p>
-              Style actuellement sélectionné: <strong>{{ selectedStyle() }}</strong>
-            </p>
-            <p class="info-text">
-              Utilisez cet éditeur pour créer et personnaliser votre avatar. Les
-              modifications sont appliquées en temps réel.
-            </p>
-          </div>
-        }
+        <!-- Eyes -->
+        <mat-form-field appearance="outline">
+          <mat-label>Yeux</mat-label>
+          <mat-select [value]="eyes()" (selectionChange)="eyes.set($event.value)">
+            @for (option of eyesOptions; track option.value) {
+              <mat-option [value]="option.value">{{ option.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Eyebrows -->
+        <mat-form-field appearance="outline">
+          <mat-label>Sourcils</mat-label>
+          <mat-select [value]="eyebrows()" (selectionChange)="eyebrows.set($event.value)">
+            @for (option of eyebrowsOptions; track option.value) {
+              <mat-option [value]="option.value">{{ option.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Mouth -->
+        <mat-form-field appearance="outline">
+          <mat-label>Bouche</mat-label>
+          <mat-select [value]="mouth()" (selectionChange)="mouth.set($event.value)">
+            @for (option of mouthOptions; track option.value) {
+              <mat-option [value]="option.value">{{ option.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Skin Color -->
+        <mat-form-field appearance="outline">
+          <mat-label>Couleur de peau</mat-label>
+          <mat-select [value]="skinColor()" (selectionChange)="skinColor.set($event.value)">
+            @for (option of skinColorOptions; track option.value) {
+              <mat-option [value]="option.value">
+                <span class="color-preview" [style.background]="'#' + option.value"></span>
+                {{ option.label }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        
+        <!-- Background Color -->
+        <mat-form-field appearance="outline">
+          <mat-label>Couleur de fond</mat-label>
+          <mat-select [value]="backgroundColor()" (selectionChange)="backgroundColor.set($event.value)">
+            @for (option of backgroundColorOptions; track option.value) {
+              <mat-option [value]="option.value">
+                @if(option.value !== 'transparent') {
+                  <span class="color-preview" [style.background]="'#' + option.value"></span>
+                  {{ option.label }}
+                } @else {
+                  {{ option.label }}
+                }
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
       </mat-card-content>
     </mat-card>
   </div>
