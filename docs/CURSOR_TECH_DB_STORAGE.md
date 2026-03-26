@@ -36,30 +36,28 @@
 ## 5) Storage photos (actuel)
 - Front:
   - `PhotoService.uploadGuestPhoto(file)`
-    - envoie `multipart/form-data` à:
-      - `${SUPABASE_URL}/functions/v1/upload-photo`
-    - headers:
-      - `Authorization: Bearer <SUPABASE_ANON_KEY>` (actuel code)
-      - `apikey: <SUPABASE_ANON_KEY>`
-      - `x-app-token: <token invité>`
-  - `PhotoService.listFamilyPhotos()`
-    - envoie `POST` à:
-      - `${SUPABASE_URL}/functions/v1/list-photos`
-    - body `{}` + `x-app-token`.
-- Edge function `upload-photo`:
-  - attend `x-app-token`
-  - valide via RPC `get_famille_by_token`
-  - upload vers un endpoint S3-compatible (Oracle Object Storage) via SigV4
-  - construit URL publique via `PUBLIC_BASE_URL`
-- Edge function `list-photos`:
-  - valide token via `get_famille_by_token`
-  - fait un listing S3 (ListObjectsV2) signé et renvoie une liste d’objets
+    - envoie `multipart/form-data` à `POST /api/photos-upload.php`
+    - headers: `x-app-token: <token invité>`
+    - body: `file` + `personneId` (id de la personne sélectionnée)
+  - `PhotoService.listFamilyPhotos()` (nom historique, mais scoped personne)
+    - envoie `POST /api/photos-list.php`
+    - headers: `x-app-token`
+    - body JSON: `{ "personneId": <id> }`
+  - `PhotoService.deleteFamilyPhoto(key)` (nom historique, mais scoped personne)
+    - envoie `POST /api/photos-delete.php`
+    - headers: `x-app-token`
+    - body JSON: `{ "key": "personne-<id>/<filename>", "personneId": <id> }`
+- Serveur IONOS (PHP, sous `public/api/`):
+  - `photos-upload.php`:
+    - valide `x-app-token` via RPC Supabase (`get_famille_by_token`)
+    - vérifie que `personneId` appartient à la famille (`get_personnes_by_famille`)
+    - redimensionne/convertit l’image puis écrit sous `public/assets-mariage/personne-<id>/...`
+  - `photos-list.php`:
+    - liste `public/assets-mariage/personne-<id>/...` et renvoie `{ items: [...] }`
+  - `photos-delete.php`:
+    - supprime un fichier uniquement si `key` et `personneId` correspondent et appartiennent à la famille du token
 
-## 6) Objectif futur (IONOS)
-- Tu veux stocker les images sur ton serveur/stockage IONOS (250GB).
-- Pour le remplacer proprement:
-  - garder le même “contrat” (mêmes requêtes/headers edge ↔ front)
-  - substituer le provider S3-compatible dans `upload-photo`/`list-photos`
-    - si IONOS fournit un endpoint S3 compatible: c’est surtout un changement de secrets + endpoint publicUrl
-    - sinon: il faudra adapter les signatures/URL et éventuellement la stratégie (PAR / upload direct)
+## 6) Notes
+- Les images sont servies publiquement sous `https://amaurythibaud.be/assets-mariage/...`
+- Les HEIC/HEIF (iPhone) sont converties côté navigateur avant upload.
 

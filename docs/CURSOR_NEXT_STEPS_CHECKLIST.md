@@ -1,16 +1,17 @@
 # Next steps (checklist) — pour le prompt Cursor
 
 ## A) Photos sur IONOS (priorité technique)
-1. Clarifier avec toi:
-   - IONOS: as-tu un storage “Object Storage” S3-compatible ou uniquement SFTP/FTP?
-   - Les URLs doivent-elles être publiques ou privées (URLs signées)?
-2. Cibler les fichiers à modifier:
-   - `supabase/functions/upload-photo/index.ts`
-   - `supabase/functions/list-photos/index.ts`
-   - `src/app/services/photo.service.ts` (uniquement si besoin de headers/contrat de réponse)
-3. Conserver:
-   - contrat auth via `x-app-token` et RPC `get_famille_by_token`
-   - convention de clés `famille-<id>/...`
+1. Déjà fait (implémenté):
+   - API PHP IONOS sous `public/api/`:
+     - `POST /api/photos-upload.php` (upload + resize/convert + rename)
+     - `POST /api/photos-list.php` (listing)
+     - `POST /api/photos-delete.php` (suppression)
+   - Stockage sous `public/assets-mariage/personne-<id>/...` (photos associées à une personne)
+   - Contrat auth: `x-app-token` + RPC Supabase (`get_famille_by_token`, `get_personnes_by_famille`)
+   - Conversion HEIC/HEIF côté navigateur avant upload
+2. À faire ensuite:
+   - (Optionnel) rate limit / anti-spam côté API
+   - (Optionnel) modération admin (flag DB + UI admin)
 
 ## B) Collecte RSVP + données invités (phases produit)
 1. Cartographier exactement:

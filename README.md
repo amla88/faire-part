@@ -27,21 +27,19 @@ Si vous voulez, je peux :
 
 ## Upload de photos — configuration rapide
 
-Deux options de stockage sont supportées :
+Stockage actuel :
 
-1) Supabase Storage (simple, prêt à l’emploi)
-	- Créez un bucket `photos` (public ou restreint selon vos besoins).
-	- Ajoutez une policy pour autoriser les utilisateurs authentifiés à uploader dans un sous-dossier par famille, par ex. `famille-<id>/*`.
-	- Le front uploade directement dans `photos/` puis appelle la RPC `submit_photo` pour créer l’entrée en base.
-	- Déjà implémenté côté front : page `/photos/upload`.
-
-	Exemple de policy (à adapter) :
-	- Autoriser `insert` si l’utilisateur est authentifié ET si le chemin commence par `famille-<famille_id>/` dérivé du contexte (voir RLS/claims).
-
-2) Oracle Object Storage (OCI) via Edge Function (avancé)
-	- Implémentez la signature AWS SigV4 dans `supabase/functions/upload-photo/index.ts` et configurez les secrets (voir `supabase/functions/upload-photo/README.md`).
-	- Le client envoie `multipart/form-data` à l’edge function avec `x-app-token` pour associer la famille.
-	- L’edge function stream le fichier vers OCI et appelle `submit_photo`.
+- API PHP IONOS sous `public/api/` :
+  - `POST /api/photos-upload.php` (upload + resize/convert + renommage)
+  - `POST /api/photos-list.php` (listing)
+  - `POST /api/photos-delete.php` (suppression)
+- Les photos sont stockées sur le serveur dans :
+  - `public/assets-mariage/personne-<id>/...`
+- Auth :
+  - header `x-app-token` (token invité)
+  - validation côté serveur via RPC Supabase `get_famille_by_token` + `get_personnes_by_famille`
+- HEIC/HEIF (iPhone) :
+  - conversion côté navigateur en JPEG avant upload
 
 Page front disponible :
 - Route: `#/photos/upload`

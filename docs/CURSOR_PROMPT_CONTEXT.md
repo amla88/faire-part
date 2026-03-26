@@ -49,12 +49,10 @@
     - `/photos/album` → `PhotoAlbumComponent`
   - Front:
     - `src/app/services/photo.service.ts`
-    - Upload via Edge Function `upload-photo`
-    - Liste via Edge Function `list-photos`
-  - Edge Functions (Deno):
-    - `supabase/functions/upload-photo/index.ts`
-    - `supabase/functions/list-photos/index.ts`
-  - Stockage actuel: Object Storage Oracle (S3-compatible) via signature SigV4 dans les edge functions.
+    - Upload via API IONOS `POST /api/photos-upload.php` (avec `x-app-token` + `personneId`)
+    - Liste via API IONOS `POST /api/photos-list.php` (scopée à la personne sélectionnée)
+    - Suppression via API IONOS `POST /api/photos-delete.php`
+  - Stockage actuel: IONOS (fichiers sous `public/assets-mariage/personne-<id>/...`)
 
 ## 4) Techtack / framework (côté app)
 - Frontend:
@@ -99,12 +97,13 @@
   - tableaux `familles`, `personnes` etc via le client Supabase côté admin.
 
 ## 8) Stockage images: points techniques importants
-- Les edge functions:
-  - valident le token via RPC `get_famille_by_token`
-  - calculent `familleId`
-  - construisent une clé: `famille-<id>/<timestamp>-<rand>.<ext>`
-  - signent et font un `PUT` S3-compatible vers l’Object Storage Oracle (ou listing via S3 list)
-  - renvoient au front un `publicUrl` basé sur `PUBLIC_BASE_URL` (si fournie)
+- L’API PHP IONOS (`public/api/`) :
+  - valide le token via RPC `get_famille_by_token`
+  - vérifie que `personneId` appartient à la famille (`get_personnes_by_famille`)
+  - stocke sous `assets-mariage/personne-<id>/<timestamp>_<rand>_<hash>.webp` (ou `.jpg` fallback)
+  - renvoie au front une URL publique `https://amaurythibaud.be/assets-mariage/...`
+  - redimensionne et ré-encode (suppression des métadonnées)
+  - HEIC/HEIF est converti côté navigateur avant envoi (front)
 
 ## 9) Exclusions / conventions pour Cursor
 - Ne pas modifier `/.exemple` (référence design seulement).
