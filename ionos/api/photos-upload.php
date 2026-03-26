@@ -8,6 +8,8 @@ if (!function_exists('str_starts_with')) {
 }
 
 header('content-type: application/json; charset=utf-8');
+header('cache-control: no-store, no-cache, must-revalidate, max-age=0');
+header('pragma: no-cache');
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
   // Same-origin in practice; keep headers explicit (avoid wildcard).

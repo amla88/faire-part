@@ -10,6 +10,21 @@
 
 .card-actions {
   padding: 0 16px 8px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex: 1 1 auto;
+}
+
+.sort-field {
+  width: 180px;
 }
 
 .loading {
@@ -51,6 +66,7 @@
   overflow: hidden;
   background: var(--mat-card-background-color, #fff);
   box-shadow: 0 1px 3px rgba(16, 24, 40, 0.12);
+  position: relative;
 }
 
 .image-link {
@@ -66,6 +82,18 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.photo-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(6px);
+  border-radius: 999px;
+  padding: 2px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
 }
 
 .photo-meta {
@@ -93,5 +121,9 @@
 
   .album-grid {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+
+  .sort-field {
+    width: 150px;
   }
 }

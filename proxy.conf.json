@@ -1,0 +1,9 @@
+{
+  "/api": {
+    "target": "https://amaurythibaud.be",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "warn"
+  }
+}
+

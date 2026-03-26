@@ -52,6 +52,7 @@ jobs:
           mkdir -p dist/faire-part/browser/api
           cp -f ionos/api/photos-upload.php dist/faire-part/browser/api/photos-upload.php
           cp -f ionos/api/photos-list.php dist/faire-part/browser/api/photos-list.php
+          cp -f ionos/api/photos-delete.php dist/faire-part/browser/api/photos-delete.php
           sed "s|\"supabase-url\": \"\"|\"supabase-url\": \"${SUPABASE_URL}\"|; s|\"supabase-anon-key\": \"\"|\"supabase-anon-key\": \"${SUPABASE_ANON_KEY}\"|" ionos/api/supabase-meta.json > dist/faire-part/browser/api/supabase-meta.json
 
       - name: Deploy to IONOS via LFTP

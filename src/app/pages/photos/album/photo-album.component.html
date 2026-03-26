@@ -6,6 +6,24 @@
     </mat-card-header>
 
     <mat-card-actions align="end" class="card-actions">
+      <div class="toolbar">
+        <mat-form-field appearance="outline" class="sort-field">
+          <mat-label>Trier par</mat-label>
+          <mat-select [value]="sortBy()" (selectionChange)="sortBy.set($event.value)">
+            <mat-option value="date">Date</mat-option>
+            <mat-option value="name">Nom</mat-option>
+            <mat-option value="size">Taille</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="sort-field">
+          <mat-label>Ordre</mat-label>
+          <mat-select [value]="sortDir()" (selectionChange)="sortDir.set($event.value)">
+            <mat-option value="desc">Décroissant</mat-option>
+            <mat-option value="asc">Croissant</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
       <button mat-stroked-button (click)="refresh()" [disabled]="loading()">
         Rafraichir
       </button>
@@ -25,11 +43,21 @@
             <div class="empty">Aucune photo n'a encore ete transferee. Lance-toi&nbsp;!</div>
           } @else {
             <div class="album-grid">
-              @for (photo of photos(); track photo.key) {
+              @for (photo of sortedPhotos(); track photo.key) {
                 <article class="photo-card">
                   <a [href]="photo.url" target="_blank" rel="noopener" class="image-link">
                     <img [src]="photo.url" [alt]="photo.name" loading="lazy" />
                   </a>
+                  <div class="photo-actions">
+                    <button
+                      mat-icon-button
+                      type="button"
+                      aria-label="Supprimer"
+                      (click)="deletePhoto(photo)"
+                      [disabled]="isDeleting(photo) || loading()">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
                   <div class="photo-meta">
                     <strong class="photo-name">{{ photo.name }}</strong>
                     <span class="photo-date">{{ formatDate(photo.lastModified) }}</span>

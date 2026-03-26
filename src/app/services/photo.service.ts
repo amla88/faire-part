@@ -42,6 +42,7 @@ export class PhotoService {
         'x-app-token': token,
       },
       body: fd,
+      cache: 'no-store',
     });
 
     let data: any = null;
@@ -72,6 +73,7 @@ export class PhotoService {
         'content-type': 'application/json',
       },
       body: '{}',
+      cache: 'no-store',
     });
 
     let payload: any = null;
@@ -90,6 +92,32 @@ export class PhotoService {
       .filter((photo: FamilyPhoto | null): photo is FamilyPhoto => !!photo);
 
     return this.sortByDateDesc(mapped);
+  }
+
+  async deleteFamilyPhoto(key: string): Promise<void> {
+    const user = this.auth.getUser();
+    const token = this.auth.getToken();
+    if (!user?.famille_id) throw new Error('Utilisateur non authentifié');
+    if (!token) throw new Error("Jeton d'invitation introuvable");
+    if (!key) throw new Error('Clé photo manquante');
+
+    const endpoint = this.resolveApiUrl('/api/photos-delete.php');
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'x-app-token': token,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ key }),
+      cache: 'no-store',
+    });
+
+    let payload: any = null;
+    try { payload = await res.json(); } catch {}
+    if (!res.ok) {
+      const message = payload?.error || `Suppression impossible (HTTP ${res.status})`;
+      throw new Error(message);
+    }
   }
 
   private resolveApiUrl(path: string): string {

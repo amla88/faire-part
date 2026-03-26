@@ -1,12 +1,6 @@
 <?php
 declare(strict_types=1);
 
-if (!function_exists('str_starts_with')) {
-  function str_starts_with(string $haystack, string $needle): bool {
-    return $needle === '' || strncmp($haystack, $needle, strlen($needle)) === 0;
-  }
-}
-
 header('content-type: application/json; charset=utf-8');
 header('cache-control: no-store, no-cache, must-revalidate, max-age=0');
 header('pragma: no-cache');
@@ -37,6 +31,29 @@ if (!isValidToken($token)) {
   exit;
 }
 
+$raw = file_get_contents('php://input');
+$payload = is_string($raw) ? json_decode($raw, true) : null;
+if (!is_array($payload)) {
+  http_response_code(400);
+  echo json_encode(['error' => 'Invalid JSON body']);
+  exit;
+}
+$key = isset($payload['key']) && is_string($payload['key']) ? $payload['key'] : '';
+if ($key === '') {
+  http_response_code(400);
+  echo json_encode(['error' => 'Missing key']);
+  exit;
+}
+
+// Key expected format: famille-<id>/<filename>
+if (!preg_match('/^famille-(\d+)\/([A-Za-z0-9._-]+\.(webp|jpg|jpeg|png|gif))$/i', $key, $m)) {
+  http_response_code(400);
+  echo json_encode(['error' => 'Invalid key format']);
+  exit;
+}
+$keyFamilleId = (int)$m[1];
+$filename = $m[2];
+
 $supabaseUrl = getSupabaseMeta('supabase-url');
 $supabaseAnonKey = getSupabaseMeta('supabase-anon-key');
 if (!$supabaseUrl || !$supabaseAnonKey) {
@@ -52,59 +69,40 @@ if (!$famille || !isset($famille['id'])) {
   exit;
 }
 $familleId = (int)$famille['id'];
+if ($familleId !== $keyFamilleId) {
+  http_response_code(403);
+  echo json_encode(['error' => 'Forbidden']);
+  exit;
+}
 
 $baseDir = realpath(__DIR__ . '/../assets-mariage');
 if ($baseDir === false) {
-  echo json_encode(['items' => []]);
+  http_response_code(404);
+  echo json_encode(['error' => 'Not found']);
   exit;
 }
-$familyDir = $baseDir . DIRECTORY_SEPARATOR . "famille-{$familleId}";
-if (!is_dir($familyDir)) {
-  echo json_encode(['items' => []]);
+$filePath = $baseDir . DIRECTORY_SEPARATOR . "famille-{$familleId}" . DIRECTORY_SEPARATOR . $filename;
+
+if (!is_file($filePath)) {
+  http_response_code(404);
+  echo json_encode(['error' => 'Not found']);
   exit;
 }
 
-$publicBaseUrl = publicBaseUrl();
-$items = [];
-$familyDirReal = $familyDir;
-clearstatcache(true, $familyDirReal);
-$files = @scandir($familyDir);
-if (is_array($files)) {
-  foreach ($files as $name) {
-    if (!is_string($name) || $name === '.' || $name === '..') continue;
-    if (str_starts_with($name, '.')) continue;
-    $path = $familyDir . DIRECTORY_SEPARATOR . $name;
-    if (!is_file($path)) continue;
-    // Only list expected formats
-    $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-    if (!in_array($ext, ['webp', 'jpg', 'jpeg', 'png', 'gif'], true)) continue;
-    $size = @filesize($path);
-    if ($size === false) $size = 0;
-    $mtime = @filemtime($path);
-    $lastModified = $mtime ? gmdate('c', $mtime) : null;
-    $key = "famille-{$familleId}/{$name}";
-    $url = rtrim($publicBaseUrl, '/') . '/assets-mariage/' . rawurlencode("famille-{$familleId}") . '/' . rawurlencode($name);
-    if ($mtime) {
-      $url .= '?v=' . (string)$mtime;
-    }
-    $items[] = [
-      'key' => $key,
-      'name' => $name,
-      'url' => $url,
-      'size' => (int)$size,
-      'lastModified' => $lastModified,
-    ];
-  }
+if (!@unlink($filePath)) {
+  http_response_code(500);
+  echo json_encode(['error' => 'Delete failed']);
+  exit;
 }
 
-// Sort by lastModified desc when possible
-usort($items, function ($a, $b) {
-  $ta = isset($a['lastModified']) && is_string($a['lastModified']) ? strtotime($a['lastModified']) : 0;
-  $tb = isset($b['lastModified']) && is_string($b['lastModified']) ? strtotime($b['lastModified']) : 0;
-  return $tb <=> $ta;
-});
+clearstatcache(true, $filePath);
+if (file_exists($filePath)) {
+  http_response_code(500);
+  echo json_encode(['error' => 'Delete did not remove file']);
+  exit;
+}
 
-echo json_encode(['items' => $items]);
+echo json_encode(['ok' => true, 'deleted' => $key]);
 
 function publicBaseUrl(): string {
   $host = $_SERVER['HTTP_HOST'] ?? '';
