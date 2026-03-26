@@ -52,7 +52,7 @@ export class ResponseSummaryComponent implements OnInit {
         return;
       }
 
-      // RPC may return only id/nom/prenom; ensure invite_/present_ fields exist with defaults
+      // RPC may return only id/nom/prenom; ensure invite_/present_ fields exist with defaults.
       this.personnes = (data || []).map((r: any) => ({
         id: r.id,
         nom: r.nom,
@@ -64,17 +64,17 @@ export class ResponseSummaryComponent implements OnInit {
         invite_soiree: r.invite_soiree ?? false,
         present_soiree: r.present_soiree ?? false,
       }));
-  // Compute which headers should be shown: at least one personne invited
-  this.showReceptionHeader = this.personnes.some((pp: any) => this.isTrue(pp.invite_reception));
-  this.showRepasHeader = this.personnes.some((pp: any) => this.isTrue(pp.invite_repas));
-  this.showSoireeHeader = this.personnes.some((pp: any) => this.isTrue(pp.invite_soiree));
+      // Compute which headers should be shown: at least one personne invited.
+      this.showReceptionHeader = this.personnes.some((pp: any) => this.isTrue(pp.invite_reception));
+      this.showRepasHeader = this.personnes.some((pp: any) => this.isTrue(pp.invite_repas));
+      this.showSoireeHeader = this.personnes.some((pp: any) => this.isTrue(pp.invite_soiree));
     } catch (err) {
       console.error('Erreur lors de la récupération des personnes :', err);
       this.personnes = [];
     } finally {
       this.loading = false;
       // Ensure view updates even if host uses OnPush
-      try { this.cd.detectChanges(); } catch (e) { /* ignore */ }
+      try { this.cd.detectChanges(); } catch {}
     }
   }
 }

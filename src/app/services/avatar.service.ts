@@ -27,8 +27,7 @@ export class AvatarService {
     try {
       const avatar = createAvatar(avataaars, options);
       return avatar.toDataUri();
-    } catch (e) {
-      console.debug('AvatarService.generateDataUri failed', e);
+    } catch {
       return null;
     }
   }
@@ -135,8 +134,8 @@ export class AvatarService {
           const generated = this.generateDataUri(rowFromRpc.options);
           if (generated) rowFromRpc.imageDataUri = generated;
         }
-      } catch (e) {
-        console.debug('AvatarService: failed to generate preview', e);
+      } catch {
+        // ignore preview generation failures
       }
 
       this.setAvatarInCache(personneId, rowFromRpc);
@@ -202,8 +201,8 @@ export class AvatarService {
               updated = true;
             }
           }
-        } catch (e) {
-          console.debug('AvatarService.initFromUser: generation failed for', id, e);
+        } catch {
+          // ignore generation failures for individual entries
         }
       }
 

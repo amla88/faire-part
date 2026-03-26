@@ -200,9 +200,7 @@ export class AuthService {
       const cached = this.avatar.getAvatarDataUri(personneId);
       if (cached) {
         // non-blocking refresh
-        this.avatar.loadAvatarFromRpc(personneId).catch((err) => {
-          console.debug('Avatar background refresh failed', err);
-        });
+        this.avatar.loadAvatarFromRpc(personneId).catch(() => undefined);
         return;
       }
 

@@ -24,10 +24,6 @@ export class NgSupabaseService {
       return;
     }
 
-    // Détection de l'environnement de développement
-    const isDevelopment = url.includes('localhost') || url.includes('127.0.0.1') || 
-                         window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-
     this.client = createClient(url, key, {
       // Configuration auth adaptée à l'environnement
       auth: { 
@@ -44,10 +40,6 @@ export class NgSupabaseService {
         },
       },
     });
-
-    if (isDevelopment) {
-      console.log('[NgSupabaseService] Mode développement détecté - sessions non-persistantes');
-    }
 
     // Ajouter un gestionnaire d'erreur pour les erreurs de verrous non gérées
     this.setupGlobalErrorHandler();
@@ -73,7 +65,6 @@ export class NgSupabaseService {
         
         if (isDev) {
           console.warn('[NgSupabaseService] Erreur de verrou Supabase (normale en développement):', event.reason.message);
-          console.info('💡 Tip: Cette erreur est fréquente en localhost à cause des hot-reloads. Elle n\'apparaîtra pas en production.');
         } else {
           console.warn('[NgSupabaseService] Erreur de verrou Supabase Auth interceptée:', event.reason.message);
         }
@@ -111,7 +102,7 @@ export class NgSupabaseService {
         const key = win.__env.SUPABASE_ANON_KEY || win.__env.supabaseAnonKey || win.__env.SUPABASE_ANON;
         if (url && key) return { url, key };
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
 
@@ -120,7 +111,7 @@ export class NgSupabaseService {
       const metaUrl = document.querySelector('meta[name="supabase-url"]')?.getAttribute('content') || undefined;
       const metaKey = document.querySelector('meta[name="supabase-anon-key"]')?.getAttribute('content') || undefined;
       if (metaUrl && metaKey) return { url: metaUrl, key: metaKey };
-    } catch (e) {
+    } catch {
       // ignore
     }
 
@@ -130,7 +121,7 @@ export class NgSupabaseService {
       const url = win.SUPABASE_URL || win.supabaseUrl;
       const key = win.SUPABASE_ANON_KEY || win.supabaseAnonKey;
       if (url && key) return { url, key };
-    } catch (e) {
+    } catch {
       // ignore
     }
 

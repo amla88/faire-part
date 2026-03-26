@@ -1,5 +1,5 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { OnDestroy, OnInit, ViewChild, Directive } from '@angular/core';
+import { OnDestroy, ViewChild, Directive } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { MatSidenav, MatSidenavContent } from '@angular/material/sidenav';
 import { CoreService } from 'src/app/services/core.service';
@@ -17,7 +17,7 @@ const TABLET_VIEW = 'screen and (min-width: 769px) and (max-width: 1024px)';
  * Angular's compiler accepts property decorators on the base class.
  */
 @Directive()
-export abstract class FullBase implements OnInit, OnDestroy {
+export abstract class FullBase implements OnDestroy {
   navItems: any[] = [];
 
   @ViewChild('leftsidenav')
@@ -63,8 +63,6 @@ export abstract class FullBase implements OnInit, OnDestroy {
     });
   }
 
-  ngOnInit(): void {}
-
   ngOnDestroy() {
     this.layoutChangesSubscription.unsubscribe();
   }
@@ -76,9 +74,6 @@ export abstract class FullBase implements OnInit, OnDestroy {
 
   resetCollapsedState(timer = 400) {
     setTimeout(() => this.settings.setOptions(this.options), timer);
-  }
-
-  onSidenavClosedStart() {
   }
 
   onSidenavOpenedChange(isOpened: boolean) {
