@@ -1,18 +1,13 @@
-import { Component, OnInit, inject, ViewChild, signal, WritableSignal } from '@angular/core';
+import { Component, OnInit, inject, signal, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { NgSupabaseService } from '../../../../services/ng-supabase.service';
 
 import {
   NgApexchartsModule,
-  ChartComponent,
-  ApexAxisChartSeries,
   ApexChart,
   ApexPlotOptions,
   ApexNonAxisChartSeries,
-  ApexFill,
-  ApexStroke,
-  ApexDataLabels,
   ApexLegend,
   ApexResponsive
 } from 'ng-apexcharts';
@@ -26,7 +21,6 @@ import {
 })
 export class TotalResponseComponent implements OnInit {
   private supabase = inject(NgSupabaseService);
-  @ViewChild('chart') chart?: ChartComponent;
 
   // signal for dynamic series values (présents Réception, Repas, Soirée, totalPresentAny)
   series: WritableSignal<number[]> = signal([0, 0, 0, 0]);

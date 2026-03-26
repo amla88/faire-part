@@ -25,8 +25,6 @@ export class ResponseSummaryComponent implements OnInit {
   showRepasHeader = false;
   showSoireeHeader = false;
 
-  constructor() {}
-
   public isTrue(v: any): boolean {
     return v === true || v === 'true' || v === 1 || v === '1';
   }
@@ -54,8 +52,6 @@ export class ResponseSummaryComponent implements OnInit {
         return;
       }
 
-      console.log('[ResponseSummary] raw data from rpc:', data);
-
       // RPC may return only id/nom/prenom; ensure invite_/present_ fields exist with defaults
       this.personnes = (data || []).map((r: any) => ({
         id: r.id,
@@ -72,7 +68,6 @@ export class ResponseSummaryComponent implements OnInit {
   this.showReceptionHeader = this.personnes.some((pp: any) => this.isTrue(pp.invite_reception));
   this.showRepasHeader = this.personnes.some((pp: any) => this.isTrue(pp.invite_repas));
   this.showSoireeHeader = this.personnes.some((pp: any) => this.isTrue(pp.invite_soiree));
-      console.log('[ResponseSummary] mapped personnes (rpc):', this.personnes);
     } catch (err) {
       console.error('Erreur lors de la récupération des personnes :', err);
       this.personnes = [];
@@ -80,7 +75,6 @@ export class ResponseSummaryComponent implements OnInit {
       this.loading = false;
       // Ensure view updates even if host uses OnPush
       try { this.cd.detectChanges(); } catch (e) { /* ignore */ }
-      console.log('[ResponseSummary] loading set to false');
     }
   }
 }
