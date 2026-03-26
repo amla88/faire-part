@@ -51,7 +51,4 @@ jobs:
           FTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
         run: |
           sudo apt-get install -y lftp
-          lftp -e "set sftp:auto-confirm yes; \
-          open -u $FTP_USERNAME,$FTP_PASSWORD sftp://$FTP_SERVER:22; \
-          mirror -R --exclude-glob 'assets-mariage/' --exclude-glob 'assets-mariage/*' ./dist/faire-part/browser/ public; \
-          quit"
+          lftp -u "$FTP_USERNAME,$FTP_PASSWORD" "sftp://$FTP_SERVER:22" -e "set sftp:auto-confirm yes; mirror -R --exclude-glob assets-mariage/ --exclude-glob assets-mariage/* ./dist/faire-part/browser/ public; quit"
