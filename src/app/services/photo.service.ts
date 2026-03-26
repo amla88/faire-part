@@ -1,5 +1,4 @@
 import { Injectable, inject } from '@angular/core';
-import { NgSupabaseService } from './ng-supabase.service';
 import { AuthService } from './auth.service';
 
 export interface PhotoUploadResult {
@@ -18,12 +17,11 @@ export interface FamilyPhoto {
 
 @Injectable({ providedIn: 'root' })
 export class PhotoService {
-  private supabase = inject(NgSupabaseService);
   private auth = inject(AuthService);
 
   /**
-   * Upload une image vers Oracle Object Storage via l'Edge Function `upload-photo`.
-   * L'edge signe la requête (S3 SigV4) après avoir validé le token invité.
+   * Upload une image vers le serveur IONOS (PHP) sous /api/.
+   * Le serveur revalide le token invité via une RPC Supabase (clé anon).
    */
   async uploadGuestPhoto(file: File): Promise<PhotoUploadResult> {
     if (!file) throw new Error('Aucun fichier fourni');
@@ -31,21 +29,16 @@ export class PhotoService {
     const user = this.auth.getUser();
     if (!user?.famille_id) throw new Error('Utilisateur non authentifié');
 
-    const { url, key } = this.resolveSupabaseConfig();
-    if (!url || !key) throw new Error('Configuration Supabase manquante');
-
     const token = this.auth.getToken();
     if (!token) throw new Error('Token invité manquant');
 
     const fd = new FormData();
     fd.append('file', file, file.name);
 
-    const endpoint = `${url.replace(/\/$/, '')}/functions/v1/upload-photo`;
+    const endpoint = this.resolveApiUrl('/api/photos-upload.php');
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${key}`,
-        apikey: key,
         'x-app-token': token,
       },
       body: fd,
@@ -63,7 +56,7 @@ export class PhotoService {
   }
 
   /**
-   * Liste les photos d'une famille en interrogeant l'Edge Function `list-photos` (Oracle Object Storage).
+   * Liste les photos d'une famille via le serveur IONOS (PHP) sous /api/.
    */
   async listFamilyPhotos(): Promise<FamilyPhoto[]> {
     const user = this.auth.getUser();
@@ -71,15 +64,10 @@ export class PhotoService {
     if (!user?.famille_id) throw new Error('Utilisateur non authentifié');
     if (!token) throw new Error("Jeton d'invitation introuvable");
 
-    const { url, key } = this.resolveSupabaseConfig();
-    if (!url || !key) throw new Error('Configuration Supabase manquante');
-
-    const endpoint = `${url.replace(/\/$/, '')}/functions/v1/list-photos`;
+    const endpoint = this.resolveApiUrl('/api/photos-list.php');
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${key}`,
-        apikey: key,
         'x-app-token': token,
         'content-type': 'application/json',
       },
@@ -104,27 +92,10 @@ export class PhotoService {
     return this.sortByDateDesc(mapped);
   }
 
-  private resolveSupabaseConfig(): { url?: string; key?: string } {
-    try {
-      const win = window as any;
-      if (win && win.__env) {
-        const url = win.__env.SUPABASE_URL || win.__env.supabaseUrl || win.__env.SUPABASE_API_URL;
-        const key = win.__env.SUPABASE_ANON_KEY || win.__env.supabaseAnonKey || win.__env.SUPABASE_ANON;
-        if (url && key) return { url, key };
-      }
-    } catch {}
-    try {
-      const metaUrl = document.querySelector('meta[name="supabase-url"]')?.getAttribute('content') || undefined;
-      const metaKey = document.querySelector('meta[name="supabase-anon-key"]')?.getAttribute('content') || undefined;
-      if (metaUrl && metaKey) return { url: metaUrl, key: metaKey };
-    } catch {}
-    try {
-      const win = window as any;
-      const url = win.SUPABASE_URL || win.supabaseUrl;
-      const key = win.SUPABASE_ANON_KEY || win.supabaseAnonKey;
-      if (url && key) return { url, key };
-    } catch {}
-    return {};
+  private resolveApiUrl(path: string): string {
+    const base = (typeof window !== 'undefined' && window.location?.origin) ? window.location.origin : '';
+    const p = path.startsWith('/') ? path : `/${path}`;
+    return `${base}${p}`;
   }
 
   private normalizeEdgePhoto(row: any): FamilyPhoto | null {

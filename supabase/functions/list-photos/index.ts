@@ -108,8 +108,15 @@ Deno.serve(async (req: Request) => {
   }
 
   let conn: Client | null = null;
+  const authProbe: { called?: boolean; method?: unknown; allowed?: unknown } = { called: false };
   try {
     conn = new Client();
+    conn.on('keyboard-interactive', (_name: string, _instructions: string, _lang: string, prompts: Array<{ prompt: string; echo: boolean }>, finish: (responses: string[]) => void) => {
+      authProbe.called = true;
+      authProbe.method = 'keyboard-interactive';
+      authProbe.allowed = ['keyboard-interactive'];
+      finish(prompts.map(() => SFTP_PASSWORD));
+    });
     await conn.connect({
       host: SFTP_SERVER,
       port: SFTP_PORT,
@@ -134,7 +141,7 @@ Deno.serve(async (req: Request) => {
     return json(200, { items } satisfies ListResponse);
   } catch (err) {
     console.error('[list-photos] SFTP listing error', err);
-    return json(502, { error: 'Impossible de lister les photos', details: extractErrorDetails(err) });
+    return json(502, { error: 'Impossible de lister les photos', details: extractErrorDetails(err), auth: authProbe });
   } finally {
     if (conn) {
       try { conn.end(); } catch {}
@@ -418,3 +425,5 @@ function mapSftpEntryToPhoto(
     lastModified,
   };
 }
+
+// Note: keyboard-interactive géré via event client.

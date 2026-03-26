@@ -51,6 +51,7 @@ Deno.serve(async (req: Request) => {
     return json(400, { error: 'Invalid multipart payload', details: String(e) });
   }
 
+  const authProbe: { called?: boolean; method?: unknown; allowed?: unknown } = { called: false };
   try {
     // ENV
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
@@ -105,13 +106,20 @@ Deno.serve(async (req: Request) => {
     const remoteFamilyDir = `${normalizeRemotePath(SFTP_REMOTE_ASSETS_DIR)}/famille-${familleId}`;
 
     const conn = new Client();
+    // Si IONOS demande un keyboard-interactive, répondre avec le password.
     try {
+      conn.on('keyboard-interactive', (_name: string, _instructions: string, _lang: string, prompts: Array<{ prompt: string; echo: boolean }>, finish: (responses: string[]) => void) => {
+        authProbe.called = true;
+        authProbe.method = 'keyboard-interactive';
+        authProbe.allowed = ['keyboard-interactive'];
+        finish(prompts.map(() => SFTP_PASSWORD));
+      });
+
       await conn.connect({
         host: SFTP_SERVER,
         port: SFTP_PORT,
         username: SFTP_USERNAME,
         password: SFTP_PASSWORD,
-        // Certains providers (dont IONOS selon config) utilisent keyboard-interactive même pour un password.
         tryKeyboard: true,
       });
 
@@ -125,9 +133,11 @@ Deno.serve(async (req: Request) => {
     const publicUrl = buildSftpPublicUrl(PUBLIC_BASE_URL, SFTP_WEB_ASSETS_PATH, key);
     return json(200, { path: key, publicUrl, familleId });
   } catch (e) {
-    const msg = String(e || '');
+    const details = extractErrorDetails(e);
+    const msg = typeof details?.message === 'string' ? details.message : String(e || '');
     const status = msg.includes('authentication') || msg.includes('Auth') ? 502 : 500;
-    return json(status, { error: 'SFTP upload failed', details: msg });
+    // Expose un minimum d'info d'auth pour debug (sans secrets)
+    return json(status, { error: 'SFTP upload failed', details, auth: authProbe });
   }
 });
 
@@ -233,4 +243,34 @@ async function ensureRemoteDir(sftp: any, dirPath: string): Promise<void> {
       await sftp.mkdir(current);
     }
   }
+}
+
+// Note: on utilise l'event `keyboard-interactive` plutôt que `authHandler`,
+// car `authHandler` ne semble pas être invoqué dans l'environnement Edge.
+
+function extractErrorDetails(err: unknown): any {
+  if (err instanceof Error) {
+    const anyErr = err as any;
+    const extra: Record<string, unknown> = {};
+    for (const key of Object.keys(anyErr)) {
+      if (key === 'stack') continue;
+      extra[key] = anyErr[key];
+    }
+    return {
+      name: err.name,
+      message: err.message,
+      ...extra,
+      stack: err.stack ? truncate(err.stack) : undefined,
+    };
+  }
+  if (err && typeof err === 'object') {
+    const obj = err as Record<string, unknown>;
+    return obj;
+  }
+  return { message: typeof err === 'string' ? err : String(err) };
+}
+
+function truncate(value: string, max = 800): string {
+  if (value.length <= max) return value;
+  return `${value.slice(0, max)}…`;
 }
