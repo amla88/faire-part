@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, OnInit, signal, computed, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
-import { NgSupabaseService } from '../../../../services/ng-supabase.service';
-import { AdminAuthService } from '../../../../services/admin-auth.service';
+import { NgSupabaseService } from 'src/app/services/ng-supabase.service';
+import { AdminAuthService } from 'src/app/services/admin-auth.service';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';

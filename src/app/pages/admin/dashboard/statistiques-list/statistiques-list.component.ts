@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { NgSupabaseService } from '../../../../services/ng-supabase.service';
+import { NgSupabaseService } from 'src/app/services/ng-supabase.service';
 
 @Component({
   selector: 'app-statistiques-list',

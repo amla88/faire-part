@@ -162,6 +162,3 @@ export class AppChipsComponent {
     event.chipInput!.clear();
   }
 }
-function isDragDrop(object: any): object is CdkDragDrop<string[]> {
-  return 'previousIndex' in object;
-}

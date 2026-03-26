@@ -30,9 +30,6 @@ export abstract class FullBase implements OnInit, OnDestroy {
   options: any;
   private layoutChangesSubscription = Subscription.EMPTY;
   private isMobileScreen = false;
-  private isContentWidthFixed = true;
-  private isCollapsedWidthFixed = false;
-  private htmlElement!: HTMLHtmlElement;
 
   get isOver(): boolean {
     return this.isMobileScreen;
@@ -43,7 +40,6 @@ export abstract class FullBase implements OnInit, OnDestroy {
     protected router: Router,
     protected breakpointObserver: BreakpointObserver
   ) {
-    this.htmlElement = document.querySelector('html')!;
     this.options = this.settings.getOptions();
 
     this.layoutChangesSubscription = this.breakpointObserver
@@ -74,7 +70,6 @@ export abstract class FullBase implements OnInit, OnDestroy {
   }
 
   toggleCollapsed() {
-    this.isContentWidthFixed = false;
     this.options.sidenavCollapsed = !this.options.sidenavCollapsed;
     this.resetCollapsedState();
   }
@@ -84,11 +79,9 @@ export abstract class FullBase implements OnInit, OnDestroy {
   }
 
   onSidenavClosedStart() {
-    this.isContentWidthFixed = false;
   }
 
   onSidenavOpenedChange(isOpened: boolean) {
-    this.isCollapsedWidthFixed = !this.isOver;
     this.options.sidenavOpened = isOpened;
     //this.settings.setOptions(this.options);
   }

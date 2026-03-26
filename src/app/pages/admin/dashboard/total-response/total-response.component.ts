@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
-import { NgSupabaseService } from '../../../../services/ng-supabase.service';
+import { NgSupabaseService } from 'src/app/services/ng-supabase.service';
 
 import {
   NgApexchartsModule,

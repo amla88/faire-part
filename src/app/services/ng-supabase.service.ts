@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 /**
@@ -82,12 +82,6 @@ export class NgSupabaseService {
         event.preventDefault();
       }
     });
-  }
-
-  /** Notification discrète pour les erreurs de verrous (optionnel) */
-  private notifyLockError(): void {
-    // Optionnel : ajouter une notification non-intrusive
-    console.info('[NgSupabaseService] Session synchronisée. Si vous avez plusieurs onglets ouverts, certaines opérations peuvent être légèrement retardées.');
   }
 
   /** Petite API utilitaire : wrapper pour les appels RPC */

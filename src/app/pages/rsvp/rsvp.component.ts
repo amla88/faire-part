@@ -31,8 +31,6 @@ export class RsvpComponent implements OnInit {
     personnes: this.fb.array([])
   });
 
-  constructor() {}
-
   get personnesArray() {
     return this.form.get('personnes') as FormArray;
   }

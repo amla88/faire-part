@@ -18,10 +18,6 @@ export class AvatarService {
 
   // signal exposed for templates: auth.avatarDataUri() is still supported via delegation
   public avatarDataUri = signal<string | null>(null);
-  // central DiceBear collections map (used by generateDataUri)
-  private readonly collectionsMap: Record<string, any> = {
-    avataaars,
-  };
 
   /**
    * Génère une dataURI PNG via DiceBear pour le style/seed/size donnés.

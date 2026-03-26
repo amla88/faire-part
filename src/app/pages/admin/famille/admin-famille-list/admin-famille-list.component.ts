@@ -1,14 +1,14 @@
 import { ChangeDetectionStrategy, Component, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { NgSupabaseService } from '../../../../services/ng-supabase.service';
+import { NgSupabaseService } from 'src/app/services/ng-supabase.service';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { ConfirmDialogService } from '../../../../shared/dialogs/confirm-dialog/confirm-dialog.service';
-import { ConfirmDialogData } from '../../../../shared/dialogs/confirm-dialog/confirm-dialog.component';
+import { ConfirmDialogService } from 'src/app/shared/dialogs/confirm-dialog/confirm-dialog.service';
+import { ConfirmDialogData } from 'src/app/shared/dialogs/confirm-dialog/confirm-dialog.component';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
