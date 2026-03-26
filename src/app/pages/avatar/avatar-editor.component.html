@@ -27,7 +27,7 @@
         <!-- Actions rapides -->
         <div class="preview-actions">
           <button
-            mat-stroked-button
+            mat-raised-button
             color="primary"
             (click)="generateRandomSeed()"
             class="action-btn"
@@ -36,7 +36,7 @@
             Générer aléatoire
           </button>
           <button
-            mat-stroked-button
+            mat-raised-button
             color="accent"
             (click)="downloadAvatar()"
             class="action-btn"
@@ -45,7 +45,7 @@
             Télécharger
           </button>
           <button
-            mat-stroked-button
+            mat-raised-button
             (click)="resetAvatar()"
             class="action-btn"
           >
@@ -53,7 +53,7 @@
             Réinitialiser
           </button>
           <button
-            mat-raised-button
+            mat-stroked-button
             color="primary"
             (click)="saveAvatar()"
             [disabled]="isLoading() || isSaving() || !avatarDataUri()"
@@ -95,14 +95,22 @@
         <!-- Hair Color -->
         <mat-form-field appearance="outline">
           <mat-label>Couleur de cheveux</mat-label>
-          <mat-select [value]="hairColor()" (selectionChange)="hairColor.set($event.value)">
-            @for (option of hairColorOptions; track option.value) {
-              <mat-option [value]="option.value">
-                <span class="color-preview" [style.background]="'#' + option.value"></span>
-                {{ option.label }}
-              </mat-option>
-            }
-          </mat-select>
+          <span
+            matPrefix
+            class="color-current-dot"
+            [class.transparent]="getCurrentColorValue('hair') === transparentColor"
+            [style.background]="getCurrentColorValue('hair') !== transparentColor ? '#' + getCurrentColorHex('hair') : 'transparent'">
+          </span>
+          <input matInput [value]="getCurrentColorDisplay('hair')" readonly />
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            [matMenuTriggerFor]="colorPickerMenu"
+            (click)="openColorPicker('hair')"
+            aria-label="Choisir la couleur des cheveux">
+            <mat-icon>palette</mat-icon>
+          </button>
         </mat-form-field>
 
         <!-- Facial Hair -->
@@ -123,6 +131,27 @@
               <mat-option [value]="option.value">{{ option.label }}</mat-option>
             }
           </mat-select>
+        </mat-form-field>
+
+        <!-- Clothes Color -->
+        <mat-form-field appearance="outline">
+          <mat-label>Couleur vêtement</mat-label>
+          <span
+            matPrefix
+            class="color-current-dot"
+            [class.transparent]="getCurrentColorValue('clothes') === transparentColor"
+            [style.background]="getCurrentColorValue('clothes') !== transparentColor ? '#' + getCurrentColorHex('clothes') : 'transparent'">
+          </span>
+          <input matInput [value]="getCurrentColorDisplay('clothes')" readonly />
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            [matMenuTriggerFor]="colorPickerMenu"
+            (click)="openColorPicker('clothes')"
+            aria-label="Choisir la couleur des vêtements">
+            <mat-icon>palette</mat-icon>
+          </button>
         </mat-form-field>
 
         <!-- Clothing Graphic -->
@@ -168,33 +197,86 @@
         <!-- Skin Color -->
         <mat-form-field appearance="outline">
           <mat-label>Couleur de peau</mat-label>
-          <mat-select [value]="skinColor()" (selectionChange)="skinColor.set($event.value)">
-            @for (option of skinColorOptions; track option.value) {
-              <mat-option [value]="option.value">
-                <span class="color-preview" [style.background]="'#' + option.value"></span>
-                {{ option.label }}
-              </mat-option>
-            }
-          </mat-select>
+          <span
+            matPrefix
+            class="color-current-dot"
+            [class.transparent]="getCurrentColorValue('skin') === transparentColor"
+            [style.background]="getCurrentColorValue('skin') !== transparentColor ? '#' + getCurrentColorHex('skin') : 'transparent'">
+          </span>
+          <input matInput [value]="getCurrentColorDisplay('skin')" readonly />
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            [matMenuTriggerFor]="colorPickerMenu"
+            (click)="openColorPicker('skin')"
+            aria-label="Choisir la couleur de peau">
+            <mat-icon>palette</mat-icon>
+          </button>
         </mat-form-field>
         
         <!-- Background Color -->
         <mat-form-field appearance="outline">
           <mat-label>Couleur de fond</mat-label>
-          <mat-select [value]="backgroundColor()" (selectionChange)="backgroundColor.set($event.value)">
-            @for (option of backgroundColorOptions; track option.value) {
-              <mat-option [value]="option.value">
-                @if(option.value !== 'transparent') {
-                  <span class="color-preview" [style.background]="'#' + option.value"></span>
-                  {{ option.label }}
-                } @else {
-                  {{ option.label }}
-                }
-              </mat-option>
-            }
-          </mat-select>
+          <span
+            matPrefix
+            class="color-current-dot"
+            [class.transparent]="getCurrentColorValue('background') === transparentColor"
+            [style.background]="getCurrentColorValue('background') !== transparentColor ? '#' + getCurrentColorHex('background') : 'transparent'">
+          </span>
+          <input matInput [value]="getCurrentColorDisplay('background')" readonly />
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            [matMenuTriggerFor]="colorPickerMenu"
+            (click)="openColorPicker('background')"
+            aria-label="Choisir la couleur de fond">
+            <mat-icon>palette</mat-icon>
+          </button>
         </mat-form-field>
       </mat-card-content>
     </mat-card>
   </div>
+
+  <mat-menu #colorPickerMenu="matMenu" class="color-menu-panel" (closed)="closeColorPicker()">
+    @if (openColorPickerTarget(); as target) {
+      <div class="color-menu-content" (click)="$event.stopPropagation()">
+        <p class="color-picker-subtitle">Couleurs prédéfinies</p>
+        <div class="color-palette">
+          @for (option of getPresetColors(target); track option.value) {
+            <button
+              type="button"
+              class="color-swatch"
+              [class.selected]="getCurrentColorValue(target) === option.value"
+              [class.transparent]="option.value === transparentColor"
+              [style.background]="option.value !== transparentColor ? '#' + option.value : 'transparent'"
+              (click)="$event.stopPropagation(); setPresetColor(target, option.value)"
+              [title]="option.label">
+            </button>
+          }
+        </div>
+
+        <p class="color-picker-subtitle">Sélecteur libre (TSL)</p>
+        <input
+          type="color"
+          class="native-color-input"
+          [value]="customColorInput()"
+          (click)="$event.stopPropagation()"
+          (input)="onCustomColorInput(target, $any($event.target).value)"
+        />
+
+        <p class="color-picker-subtitle">Hexadécimal</p>
+        <input
+          matInput
+          type="text"
+          class="hex-input"
+          [value]="customColorInput()"
+          placeholder="#a1b2c3"
+          (click)="$event.stopPropagation()"
+          (change)="applyCustomColor(target, $any($event.target).value)"
+        />
+      </div>
+    }
+  </mat-menu>
 </div>
