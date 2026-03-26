@@ -35,17 +35,23 @@ Deno.serve(async (req: Request) => {
   }
 
   // Parse multipart form to ensure payload looks correct
+  let file: File;
   try {
     const ct = req.headers.get('content-type') || '';
     if (!ct.includes('multipart/form-data')) {
       return json(400, { error: 'Content-Type must be multipart/form-data' });
     }
     const form = await req.formData();
-    const file = form.get('file');
-    if (!(file instanceof File)) {
+    const parsed = form.get('file');
+    if (!(parsed instanceof File)) {
       return json(400, { error: 'Champ "file" manquant' });
     }
+    file = parsed;
+  } catch (e) {
+    return json(400, { error: 'Invalid multipart payload', details: String(e) });
+  }
 
+  try {
     // ENV
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -105,6 +111,8 @@ Deno.serve(async (req: Request) => {
         port: SFTP_PORT,
         username: SFTP_USERNAME,
         password: SFTP_PASSWORD,
+        // Certains providers (dont IONOS selon config) utilisent keyboard-interactive même pour un password.
+        tryKeyboard: true,
       });
 
       const sftp = await conn.sftp();
@@ -117,7 +125,9 @@ Deno.serve(async (req: Request) => {
     const publicUrl = buildSftpPublicUrl(PUBLIC_BASE_URL, SFTP_WEB_ASSETS_PATH, key);
     return json(200, { path: key, publicUrl, familleId });
   } catch (e) {
-    return json(400, { error: 'Invalid multipart payload', details: String(e) });
+    const msg = String(e || '');
+    const status = msg.includes('authentication') || msg.includes('Auth') ? 502 : 500;
+    return json(status, { error: 'SFTP upload failed', details: msg });
   }
 });
 

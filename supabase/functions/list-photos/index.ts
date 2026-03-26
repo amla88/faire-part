@@ -115,6 +115,7 @@ Deno.serve(async (req: Request) => {
       port: SFTP_PORT,
       username: SFTP_USERNAME,
       password: SFTP_PASSWORD,
+      tryKeyboard: true,
     });
     const sftp = await conn.sftp();
 
