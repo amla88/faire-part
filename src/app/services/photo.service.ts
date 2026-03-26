@@ -20,7 +20,6 @@ export interface FamilyPhoto {
 export class PhotoService {
   private supabase = inject(NgSupabaseService);
   private auth = inject(AuthService);
-  private oracleBaseUrl = this.resolveOracleBaseUrl();
 
   /**
    * Upload une image vers Oracle Object Storage via l'Edge Function `upload-photo`.
@@ -137,8 +136,8 @@ export class PhotoService {
     const size = typeof row.size === 'number' ? row.size : Number(row.size || 0) || 0;
     const lastModified = typeof row.lastModified === 'string' && row.lastModified ? row.lastModified : typeof row.last_modified === 'string' ? row.last_modified : null;
 
-    const directUrl = typeof row.url === 'string' && row.url ? row.url : null;
-    const url = directUrl || this.buildOracleUrl(key);
+    // La Edge Function `list-photos` doit renvoyer une URL publique directe.
+    const url = typeof row.url === 'string' && row.url ? row.url : null;
     if (!url) return null;
 
     return {
@@ -158,54 +157,4 @@ export class PhotoService {
     });
   }
 
-  private buildOracleUrl(path: string): string | null {
-    if (!path) {
-      return null;
-    }
-    const base = this.oracleBaseUrl;
-    if (!base) {
-      return null;
-    }
-    const normalizedBase = base.replace(/\/+$/, '');
-    const encoded = path.split('/').map((segment) => encodeURIComponent(segment)).join('/');
-    return `${normalizedBase}/${encoded}`;
-  }
-
-  private resolveOracleBaseUrl(): string | null {
-    const normalize = (value: unknown): string | null => {
-      if (typeof value !== 'string') {
-        return null;
-      }
-      const trimmed = value.trim();
-      return trimmed ? trimmed.replace(/\/+$/, '') : null;
-    };
-
-    try {
-      const win = window as any;
-      if (win && win.__env) {
-        const candidate = normalize(win.__env.ORACLE_PUBLIC_BASE_URL || win.__env.oraclePublicBaseUrl);
-        if (candidate) {
-          return candidate;
-        }
-      }
-    } catch {}
-
-    try {
-      const metaValue = document.querySelector('meta[name="oracle-public-base-url"]')?.getAttribute('content');
-      const candidate = normalize(metaValue);
-      if (candidate) {
-        return candidate;
-      }
-    } catch {}
-
-    try {
-      const win = window as any;
-      const candidate = normalize(win.ORACLE_PUBLIC_BASE_URL || win.oraclePublicBaseUrl);
-      if (candidate) {
-        return candidate;
-      }
-    } catch {}
-
-    return 'https://axadzdd2ubpq.objectstorage.eu-paris-1.oci.customer-oci.com/n/axadzdd2ubpq/b/assets-mariage/o';
-  }
 }

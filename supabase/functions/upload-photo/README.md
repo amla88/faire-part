@@ -1,8 +1,8 @@
 # upload-photo (Supabase Edge Function)
 
-Objectif: proxy d’upload entre le client Angular et Oracle Object Storage (OCI) pour stocker les photos des invités.
+Objectif: proxy d’upload entre le client Angular et IONOS (SFTP) pour stocker les photos des invités.
 
-Statut: placeholder. Le code renvoie 501 tant que les secrets OCI ne sont pas configurés et que la signature SigV4 n’est pas implémentée.
+Statut: implémentation SFTP (pour lecture via URL publique sous `assets-mariage/`).
 
 ## Deux approches possibles
 
@@ -11,25 +11,25 @@ Statut: placeholder. Le code renvoie 501 tant que les secrets OCI ne sont pas co
    - Après upload, appeler la RPC `submit_photo(p_famille_id, p_file_path)` pour créer l’entrée DB.
    - Cette approche est déjà implémentée dans l’app Angular via `PhotoService`.
 
-2) Avancée (OCI):
+2) Avancée (IONOS SFTP):
    - Le client envoie `multipart/form-data` à cette edge function avec l’en-tête `x-app-token` (token invité).
    - La fonction valide le token via une RPC (ex: `get_famille_by_token`) puis signe une requête PUT vers l’endpoint S3‑compatible d’OCI et y stream le fichier.
-   - Enfin, elle appelle `submit_photo` avec le chemin OCI ou renvoie ce chemin au client qui fera l’appel RPC.
+   - La fonction upload le fichier via SFTP (dans `public/assets-mariage/...`) puis renvoie `{ path, publicUrl? }`.
 
-## Variables d’environnement requises (OCI)
+## Variables d’environnement requises (SFTP)
 
 A définir dans Supabase (Dashboard → Edge Functions → “Secrets”):
 
-- OCI_REGION: ex. `eu-paris-1`
-- OCI_NAMESPACE: votre namespace Object Storage
-- OCI_BUCKET: ex. `assets-mariage`
-- OCI_S3_ACCESS_KEY: clé d’accès S3‑compatible
-- OCI_S3_SECRET_KEY: secret S3‑compatible
-- OPTIONAL_PUBLIC_BASE_URL: URL publique pour lire les objets si vous servez en public
+- SFTP_SERVER: ex. `access-5020006231.webspace-host.com`
+- SFTP_PORT: ex. `22` (optionnel, défaut `22`)
+- SFTP_USERNAME: ex. `su515704`
+- SFTP_PASSWORD: mot de passe SFTP
+- SFTP_REMOTE_ASSETS_DIR: dossier distant (dans le home SFTP). Par défaut `public/assets-mariage`
+- SFTP_WEB_ASSETS_PATH: chemin web correspondant. Par défaut `assets-mariage`
+- PUBLIC_BASE_URL: URL publique de ton site (ex. `https://amourythibaud.be`)
 
 ## Points à implémenter
 
-- Signature AWS SigV4 pour endpoints S3 compatibles (header Authorization + x-amz-date, etc.).
 - Chemin d’objet: `famille-<id>/<timestamp>-<rand>.<ext>`
 - Sécurité: valider `x-app-token` via une RPC SECURITY DEFINER; limiter la taille/mime.
 - Retour: JSON `{ path, publicUrl? }` et éventuellement appel interne à `submit_photo`.

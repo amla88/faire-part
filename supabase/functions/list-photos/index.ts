@@ -2,6 +2,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 // @ts-ignore Supabase client résolu via JSR au runtime Deno
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { Client } from 'jsr:@ein/ssh2-ts';
 
 // deno-lint-ignore no-var
 declare const Deno: any;
@@ -74,9 +75,17 @@ Deno.serve(async (req: Request) => {
     return json(500, { error: 'Supabase configuration missing' });
   }
 
-  const oracle = readOracleConfig();
-  if (!oracle) {
-    return json(500, { error: 'Oracle Object Storage configuration missing' });
+  // IONOS SFTP (remplace l'ancienne logique OCI/S3)
+  const PUBLIC_BASE_URL = Deno.env.get('PUBLIC_BASE_URL'); // ex: https://amaurythibaud.be
+  const SFTP_SERVER = Deno.env.get('SFTP_SERVER');
+  const SFTP_PORT = Number(Deno.env.get('SFTP_PORT') || '22');
+  const SFTP_USERNAME = Deno.env.get('SFTP_USERNAME');
+  const SFTP_PASSWORD = Deno.env.get('SFTP_PASSWORD');
+  const SFTP_REMOTE_ASSETS_DIR = Deno.env.get('SFTP_REMOTE_ASSETS_DIR') || 'public/assets-mariage';
+  const SFTP_WEB_ASSETS_PATH = Deno.env.get('SFTP_WEB_ASSETS_PATH') || 'assets-mariage';
+
+  if (!PUBLIC_BASE_URL || !SFTP_SERVER || !SFTP_USERNAME || !SFTP_PASSWORD || !Number.isFinite(SFTP_PORT) || SFTP_PORT <= 0) {
+    return json(500, { error: 'Secrets SFTP/Public manquants (voir README)' });
   }
 
   const supabase = createClient(supabaseConfig.url, supabaseConfig.serviceRoleKey);
@@ -98,19 +107,37 @@ Deno.serve(async (req: Request) => {
     return json(401, { error: 'Token invalide' });
   }
 
+  let conn: Client | null = null;
   try {
-    const objects = await listObjects(oracle, `famille-${familleId}/`);
-    const items = objects.map((obj) => ({
-      key: obj.key,
-      name: obj.key.replace(/^.*\//, ''),
-      url: buildPublicUrl(oracle, obj.key),
-      size: obj.size,
-      lastModified: obj.lastModified,
-    }));
+    conn = new Client();
+    await conn.connect({
+      host: SFTP_SERVER,
+      port: SFTP_PORT,
+      username: SFTP_USERNAME,
+      password: SFTP_PASSWORD,
+    });
+    const sftp = await conn.sftp();
+
+    const remoteFamilyDir = `${normalizeRemotePath(SFTP_REMOTE_ASSETS_DIR)}/famille-${familleId}`;
+    const familyExists = await sftp.exists(remoteFamilyDir);
+    if (!familyExists) {
+      return json(200, { items: [] satisfies ListResponse['items'] });
+    }
+
+    const entries: any[] = await sftp.readdir(remoteFamilyDir, { full: true });
+
+    const items = entries
+      .map((entry) => mapSftpEntryToPhoto(entry, familleId, PUBLIC_BASE_URL, SFTP_WEB_ASSETS_PATH))
+      .filter((x: unknown): x is ListResponse['items'][number] => !!x);
+
     return json(200, { items } satisfies ListResponse);
   } catch (err) {
-    console.error('[list-photos] listObjects error', err);
+    console.error('[list-photos] SFTP listing error', err);
     return json(502, { error: 'Impossible de lister les photos', details: extractErrorDetails(err) });
+  } finally {
+    if (conn) {
+      try { conn.end(); } catch {}
+    }
   }
 });
 
@@ -335,4 +362,58 @@ function truncate(value: string, max = 500): string {
     return value;
   }
   return `${value.slice(0, max)}…`;
+}
+
+function normalizeRemotePath(path: string): string {
+  return path.replace(/\\/g, '/').replace(/\/+/g, '/').replace(/\/$/, '');
+}
+
+function buildSftpPublicUrl(publicBaseUrl: string, webAssetsPath: string, key: string): string {
+  const base = publicBaseUrl.replace(/\/+$/, '');
+  const assetsPath = webAssetsPath.replace(/^\/+|\/+$/g, '');
+  const encodedKey = key.split('/').map((segment) => encodeURIComponent(segment)).join('/');
+  return `${base}/${assetsPath}/${encodedKey}`;
+}
+
+function mapSftpEntryToPhoto(
+  entry: any,
+  familleId: number,
+  publicBaseUrl: string,
+  webAssetsPath: string
+): ListResponse['items'][number] | null {
+  if (!entry) return null;
+
+  const filename = typeof entry.filename === 'string'
+    ? entry.filename
+    : typeof entry.name === 'string'
+      ? entry.name
+      : null;
+
+  if (!filename) return null;
+  if (!filename || filename === '.' || filename === '..') return null;
+
+  const key = `famille-${familleId}/${filename}`;
+  const size = Number(entry?.attrs?.size ?? entry?.size ?? 0) || 0;
+
+  // lastModified est optionnel : si on n'arrive pas à le dériver, on laisse null.
+  const mtime = entry?.attrs?.mtime ?? entry?.attrs?.modifyTime ?? entry?.mtime ?? null;
+  let lastModified: string | null = null;
+  if (mtime instanceof Date) {
+    lastModified = mtime.toISOString();
+  } else if (typeof mtime === 'string') {
+    lastModified = mtime;
+  } else if (typeof mtime === 'number' && Number.isFinite(mtime)) {
+    // Heuristique: secondes vs millisecondes
+    const ms = mtime > 1e12 ? mtime : mtime * 1000;
+    const d = new Date(ms);
+    if (!Number.isNaN(d.getTime())) lastModified = d.toISOString();
+  }
+
+  return {
+    key,
+    name: filename,
+    url: buildSftpPublicUrl(publicBaseUrl, webAssetsPath, key),
+    size,
+    lastModified,
+  };
 }

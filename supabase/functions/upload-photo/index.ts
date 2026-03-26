@@ -2,11 +2,12 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 // @ts-ignore - import résolu par Deno via jsr:namespace
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { Client } from 'jsr:@ein/ssh2-ts';
 // For editors that don't include Deno types in this workspace
 // deno-lint-ignore no-var
 declare const Deno: any;
 
-// Edge Function servant de proxy d'upload vers Oracle Object Storage.
+// Edge Function servant de proxy d’upload vers IONOS via SFTP.
 
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -48,17 +49,26 @@ Deno.serve(async (req: Request) => {
     // ENV
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const OCI_REGION = Deno.env.get('OCI_REGION');
-    const OCI_NAMESPACE = Deno.env.get('OCI_NAMESPACE');
-    const OCI_BUCKET = Deno.env.get('OCI_BUCKET');
-    const OCI_S3_ACCESS_KEY = Deno.env.get('OCI_S3_ACCESS_KEY');
-    const OCI_S3_SECRET_KEY = Deno.env.get('OCI_S3_SECRET_KEY');
-    const PUBLIC_BASE_URL = Deno.env.get('PUBLIC_BASE_URL'); // ex: https://.../n/<ns>/b/<bucket>/o/
+    const PUBLIC_BASE_URL = Deno.env.get('PUBLIC_BASE_URL'); // ex: https://amaurythibaud.be
+
+    // IONOS SFTP
+    const SFTP_SERVER = Deno.env.get('SFTP_SERVER');
+    const SFTP_PORT = Number(Deno.env.get('SFTP_PORT') || '22');
+    const SFTP_USERNAME = Deno.env.get('SFTP_USERNAME');
+    const SFTP_PASSWORD = Deno.env.get('SFTP_PASSWORD');
+    // Dossier distant (dans le scope utilisateur SFTP) où l'on stocke les photos
+    const SFTP_REMOTE_ASSETS_DIR = Deno.env.get('SFTP_REMOTE_ASSETS_DIR') || 'public/assets-mariage';
+    // Chemin web (dans l'URL) correspondant au dossier SFTP_remote_assets_dir
+    const SFTP_WEB_ASSETS_PATH = Deno.env.get('SFTP_WEB_ASSETS_PATH') || 'assets-mariage';
+
     const MAX_UPLOAD_BYTES = Number(Deno.env.get('MAX_UPLOAD_BYTES') || '10485760'); // 10MB default
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return json(500, { error: 'Missing Supabase service config' });
-    if (!OCI_REGION || !OCI_NAMESPACE || !OCI_BUCKET || !OCI_S3_ACCESS_KEY || !OCI_S3_SECRET_KEY) {
-      return json(500, { error: 'OCI secrets manquants (voir README)' });
+    if (!PUBLIC_BASE_URL) {
+      return json(500, { error: 'PUBLIC_BASE_URL manquant (ex: https://domaine.tld)' });
+    }
+    if (!SFTP_SERVER || !SFTP_USERNAME || !SFTP_PASSWORD || !Number.isFinite(SFTP_PORT) || SFTP_PORT <= 0) {
+      return json(500, { error: 'Secrets SFTP manquants (voir README)' });
     }
 
     // Taille: limiter
@@ -77,74 +87,35 @@ Deno.serve(async (req: Request) => {
 
     // Construire la clé d’objet
     const ext = safeExt(file.name);
+    if (!ext) {
+      return json(400, { error: 'Extension de fichier non autorisee' });
+    }
     const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const key = `famille-${familleId}/${unique}${ext}`;
 
-    // Signer et envoyer vers l’endpoint S3-compatible d’OCI
-    const host = `${OCI_NAMESPACE}.compat.objectstorage.${OCI_REGION}.oraclecloud.com`;
-    const url = `https://${host}/${encodeURIComponent(OCI_BUCKET)}/${key.split('/').map(encodeURIComponent).join('/')}`;
-    const contentType = file.type || 'application/octet-stream';
-    const body = new Uint8Array(await file.arrayBuffer());
+    // Upload sur IONOS via SFTP
+    const fileBytes = new Uint8Array(await file.arrayBuffer());
+    const remoteFilePath = `${normalizeRemotePath(SFTP_REMOTE_ASSETS_DIR)}/${key}`;
+    const remoteFamilyDir = `${normalizeRemotePath(SFTP_REMOTE_ASSETS_DIR)}/famille-${familleId}`;
 
-    const now = new Date();
-    const amzDate = toAmzDate(now); // yyyymmddThhmmssZ
-    const dateStamp = amzDate.slice(0, 8); // yyyymmdd
-    const service = 's3';
-    const region = OCI_REGION;
+    const conn = new Client();
+    try {
+      await conn.connect({
+        host: SFTP_SERVER,
+        port: SFTP_PORT,
+        username: SFTP_USERNAME,
+        password: SFTP_PASSWORD,
+      });
 
-    const payloadHash = await sha256Hex(body);
-    const canonicalHeaders =
-      `content-type:${contentType}\n` +
-      `host:${host}\n` +
-      `x-amz-content-sha256:${payloadHash}\n` +
-      `x-amz-date:${amzDate}\n`;
-    const signedHeaders = 'content-type;host;x-amz-content-sha256;x-amz-date';
-    const canonicalRequest = [
-      'PUT',
-      `/${encodeURIComponent(OCI_BUCKET)}/${key.split('/').map(encodeURIComponent).join('/')}`,
-      '',
-      canonicalHeaders,
-      signedHeaders,
-      payloadHash,
-    ].join('\n');
-
-    const algorithm = 'AWS4-HMAC-SHA256';
-    const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
-    const stringToSign = [
-      algorithm,
-      amzDate,
-      credentialScope,
-      await sha256Hex(canonicalRequest),
-    ].join('\n');
-
-    const signingKey = await getSignatureKey(OCI_S3_SECRET_KEY, dateStamp, region, service);
-    const signature = await hmacHex(signingKey, stringToSign);
-
-    const authorization = `${algorithm} Credential=${OCI_S3_ACCESS_KEY}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
-
-    const putRes = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        'content-type': contentType,
-        host,
-        'x-amz-content-sha256': payloadHash,
-        'x-amz-date': amzDate,
-        Authorization: authorization,
-      },
-      body,
-    });
-
-    if (!putRes.ok) {
-      const text = await safeText(putRes);
-      return json(502, { error: 'OCI upload failed', status: putRes.status, body: text });
+      const sftp = await conn.sftp();
+      await ensureRemoteDir(sftp, remoteFamilyDir);
+      await sftp.writeFile(remoteFilePath, fileBytes);
+    } finally {
+      try { conn.end(); } catch {}
     }
 
-    const publicUrl = buildPublicUrl({ bucket: OCI_BUCKET, key, baseUrl: PUBLIC_BASE_URL });
-    return json(200, {
-      path: `${OCI_BUCKET}/${key}`,
-      publicUrl,
-      familleId,
-    });
+    const publicUrl = buildSftpPublicUrl(PUBLIC_BASE_URL, SFTP_WEB_ASSETS_PATH, key);
+    return json(200, { path: key, publicUrl, familleId });
   } catch (e) {
     return json(400, { error: 'Invalid multipart payload', details: String(e) });
   }
@@ -226,4 +197,30 @@ function buildPublicUrl(options: { bucket: string; key: string; baseUrl?: string
     return `${baseUrl}${separator}${key.split('/').map(encodeURIComponent).join('/')}`;
   }
   return `s3://${bucket}/${key}`;
+}
+
+function normalizeRemotePath(path: string): string {
+  // SFTP attend un chemin Unix (slash).
+  return path.replace(/\\/g, '/').replace(/\/+/g, '/').replace(/\/$/, '');
+}
+
+function buildSftpPublicUrl(publicBaseUrl: string, webAssetsPath: string, key: string): string {
+  const base = publicBaseUrl.replace(/\/+$/, '');
+  const assetsPath = webAssetsPath.replace(/^\/+|\/+$/g, '');
+  const encodedKey = key.split('/').map((segment) => encodeURIComponent(segment)).join('/');
+  return `${base}/${assetsPath}/${encodedKey}`;
+}
+
+async function ensureRemoteDir(sftp: any, dirPath: string): Promise<void> {
+  const normalized = normalizeRemotePath(dirPath);
+  const parts = normalized.split('/').filter(Boolean);
+  let current = normalized.startsWith('/') ? '/' : '';
+
+  for (const part of parts) {
+    current = current ? `${current}/${part}` : part;
+    // sftp.exists évite de dépendre du message d'erreur de mkdir si le dossier existe déjà.
+    if (!(await sftp.exists(current))) {
+      await sftp.mkdir(current);
+    }
+  }
 }
