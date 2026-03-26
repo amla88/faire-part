@@ -8,8 +8,6 @@ if (!function_exists('str_starts_with')) {
 }
 
 header('content-type: application/json; charset=utf-8');
-header('cache-control: no-store, no-cache, must-revalidate, max-age=0');
-header('pragma: no-cache');
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
   // Same-origin in practice; keep headers explicit (avoid wildcard).
@@ -35,6 +33,13 @@ if (!$token) {
 if (!isValidToken($token)) {
   http_response_code(400);
   echo json_encode(['error' => 'Invalid token format']);
+  exit;
+}
+
+$personneId = isset($_POST['personneId']) ? (int)$_POST['personneId'] : 0;
+if ($personneId <= 0) {
+  http_response_code(400);
+  echo json_encode(['error' => 'Missing personneId']);
   exit;
 }
 
@@ -93,6 +98,14 @@ if (!$famille || !isset($famille['id'])) {
 }
 $familleId = (int)$famille['id'];
 
+// Ensure personne belongs to famille
+$personnes = rpcGetPersonnesByFamille($supabaseUrl, $supabaseAnonKey, $familleId);
+if (!isPersonneInList($personneId, $personnes)) {
+  http_response_code(403);
+  echo json_encode(['error' => 'Personne forbidden']);
+  exit;
+}
+
 // Renaming strategy:
 // - folder: famille-<id>/
 // - filename: yyyyMMdd-HHmmss_<8chars>_<8hex>.webp (or jpg fallback)
@@ -112,7 +125,7 @@ if ($conversion['ok'] !== true) {
 }
 $outExt = $conversion['ext']; // webp or jpg
 $filename = "{$ts}_{$rand}_{$hash8}.{$outExt}";
-$relativeKey = "famille-{$familleId}/{$filename}";
+$relativeKey = "personne-{$personneId}/{$filename}";
 
 // Store under public/assets-mariage/
 $baseDir = realpath(__DIR__ . '/../assets-mariage');
@@ -127,14 +140,14 @@ if ($baseDir === false) {
   $baseDir = realpath($target);
 }
 
-$familyDir = $baseDir . DIRECTORY_SEPARATOR . "famille-{$familleId}";
-if (!is_dir($familyDir) && !mkdir($familyDir, 0775, true)) {
+$personDir = $baseDir . DIRECTORY_SEPARATOR . "personne-{$personneId}";
+if (!is_dir($personDir) && !mkdir($personDir, 0775, true)) {
   http_response_code(500);
-  echo json_encode(['error' => 'Cannot create family directory']);
+  echo json_encode(['error' => 'Cannot create personne directory']);
   exit;
 }
 
-$destPath = $familyDir . DIRECTORY_SEPARATOR . $filename;
+$destPath = $personDir . DIRECTORY_SEPARATOR . $filename;
 if (!writeFileBytes($destPath, $conversion['bytes'])) {
   http_response_code(500);
   echo json_encode(['error' => 'Cannot store uploaded file']);
@@ -143,12 +156,13 @@ if (!writeFileBytes($destPath, $conversion['bytes'])) {
 @chmod($destPath, 0664);
 
 $publicBaseUrl = publicBaseUrl();
-$publicUrl = rtrim($publicBaseUrl, '/') . '/assets-mariage/' . rawurlencode("famille-{$familleId}") . '/' . rawurlencode($filename);
+$publicUrl = rtrim($publicBaseUrl, '/') . '/assets-mariage/' . rawurlencode("personne-{$personneId}") . '/' . rawurlencode($filename);
 
 echo json_encode([
   'path' => $relativeKey,
   'publicUrl' => $publicUrl,
   'familleId' => $familleId,
+  'personneId' => $personneId,
 ]);
 
 function publicBaseUrl(): string {
@@ -302,6 +316,36 @@ function rpcGetFamilleByToken(string $supabaseUrl, string $anonKey, string $toke
   if (is_array($decoded) && isset($decoded[0]) && is_array($decoded[0])) return $decoded[0];
   if (is_array($decoded)) return $decoded;
   return null;
+}
+
+function rpcGetPersonnesByFamille(string $supabaseUrl, string $anonKey, int $familleId): array {
+  $endpoint = rtrim($supabaseUrl, '/') . '/rest/v1/rpc/get_personnes_by_famille';
+  $payload = json_encode(['p_famille_id' => $familleId]);
+  if ($payload === false) return [];
+  $opts = [
+    'http' => [
+      'method' => 'POST',
+      'header' => implode("\r\n", [
+        'content-type: application/json',
+        'apikey: ' . $anonKey,
+        'authorization: Bearer ' . $anonKey,
+      ]),
+      'content' => $payload,
+      'timeout' => 10,
+    ],
+  ];
+  $ctx = stream_context_create($opts);
+  $res = @file_get_contents($endpoint, false, $ctx);
+  if ($res === false) return [];
+  $decoded = json_decode($res, true);
+  return is_array($decoded) ? $decoded : [];
+}
+
+function isPersonneInList(int $personneId, array $list): bool {
+  foreach ($list as $row) {
+    if (is_array($row) && isset($row['id']) && (int)$row['id'] === $personneId) return true;
+  }
+  return false;
 }
 
 function randomString(int $len): string {

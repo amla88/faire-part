@@ -5,6 +5,7 @@ export interface PhotoUploadResult {
   path: string;
   publicUrl?: string;
   familleId?: number;
+  personneId?: number;
 }
 
 export interface FamilyPhoto {
@@ -19,6 +20,16 @@ export interface FamilyPhoto {
 export class PhotoService {
   private auth = inject(AuthService);
 
+  private resolvePersonneId(): number {
+    const user = this.auth.getUser();
+    const pid = user?.selected_personne_id ?? user?.personne_principale_id ?? null;
+    const n = typeof pid === 'number' ? pid : pid ? Number(pid) : NaN;
+    if (!Number.isFinite(n) || n <= 0) {
+      throw new Error('Aucune personne sélectionnée');
+    }
+    return n;
+  }
+
   /**
    * Upload une image vers le serveur IONOS (PHP) sous /api/.
    * Le serveur revalide le token invité via une RPC Supabase (clé anon).
@@ -31,9 +42,11 @@ export class PhotoService {
 
     const token = this.auth.getToken();
     if (!token) throw new Error('Token invité manquant');
+    const personneId = this.resolvePersonneId();
 
     const fd = new FormData();
     fd.append('file', file, file.name);
+    fd.append('personneId', String(personneId));
 
     const endpoint = this.resolveApiUrl('/api/photos-upload.php');
     const res = await fetch(endpoint, {
@@ -57,13 +70,14 @@ export class PhotoService {
   }
 
   /**
-   * Liste les photos d'une famille via le serveur IONOS (PHP) sous /api/.
+   * Liste les photos de la personne sélectionnée via le serveur IONOS (PHP) sous /api/.
    */
   async listFamilyPhotos(): Promise<FamilyPhoto[]> {
     const user = this.auth.getUser();
     const token = this.auth.getToken();
     if (!user?.famille_id) throw new Error('Utilisateur non authentifié');
     if (!token) throw new Error("Jeton d'invitation introuvable");
+    const personneId = this.resolvePersonneId();
 
     const endpoint = this.resolveApiUrl('/api/photos-list.php');
     const res = await fetch(endpoint, {
@@ -72,7 +86,7 @@ export class PhotoService {
         'x-app-token': token,
         'content-type': 'application/json',
       },
-      body: '{}',
+      body: JSON.stringify({ personneId }),
       cache: 'no-store',
     });
 
@@ -100,6 +114,7 @@ export class PhotoService {
     if (!user?.famille_id) throw new Error('Utilisateur non authentifié');
     if (!token) throw new Error("Jeton d'invitation introuvable");
     if (!key) throw new Error('Clé photo manquante');
+    const personneId = this.resolvePersonneId();
 
     const endpoint = this.resolveApiUrl('/api/photos-delete.php');
     const res = await fetch(endpoint, {
@@ -108,7 +123,7 @@ export class PhotoService {
         'x-app-token': token,
         'content-type': 'application/json',
       },
-      body: JSON.stringify({ key }),
+      body: JSON.stringify({ key, personneId }),
       cache: 'no-store',
     });
 

@@ -8,8 +8,6 @@ if (!function_exists('str_starts_with')) {
 }
 
 header('content-type: application/json; charset=utf-8');
-header('cache-control: no-store, no-cache, must-revalidate, max-age=0');
-header('pragma: no-cache');
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
   header('access-control-allow-origin: ' . allowedOrigin());
@@ -37,6 +35,20 @@ if (!isValidToken($token)) {
   exit;
 }
 
+$raw = file_get_contents('php://input');
+$payload = is_string($raw) ? json_decode($raw, true) : null;
+if (!is_array($payload)) {
+  http_response_code(400);
+  echo json_encode(['error' => 'Invalid JSON body']);
+  exit;
+}
+$personneId = isset($payload['personneId']) ? (int)$payload['personneId'] : 0;
+if ($personneId <= 0) {
+  http_response_code(400);
+  echo json_encode(['error' => 'Missing personneId']);
+  exit;
+}
+
 $supabaseUrl = getSupabaseMeta('supabase-url');
 $supabaseAnonKey = getSupabaseMeta('supabase-anon-key');
 if (!$supabaseUrl || !$supabaseAnonKey) {
@@ -53,27 +65,34 @@ if (!$famille || !isset($famille['id'])) {
 }
 $familleId = (int)$famille['id'];
 
+$personnes = rpcGetPersonnesByFamille($supabaseUrl, $supabaseAnonKey, $familleId);
+if (!isPersonneInList($personneId, $personnes)) {
+  http_response_code(403);
+  echo json_encode(['error' => 'Personne forbidden']);
+  exit;
+}
+
 $baseDir = realpath(__DIR__ . '/../assets-mariage');
 if ($baseDir === false) {
   echo json_encode(['items' => []]);
   exit;
 }
-$familyDir = $baseDir . DIRECTORY_SEPARATOR . "famille-{$familleId}";
-if (!is_dir($familyDir)) {
+$personDir = $baseDir . DIRECTORY_SEPARATOR . "personne-{$personneId}";
+if (!is_dir($personDir)) {
   echo json_encode(['items' => []]);
   exit;
 }
 
 $publicBaseUrl = publicBaseUrl();
 $items = [];
-$familyDirReal = $familyDir;
+$familyDirReal = $personDir;
 clearstatcache(true, $familyDirReal);
-$files = @scandir($familyDir);
+$files = @scandir($personDir);
 if (is_array($files)) {
   foreach ($files as $name) {
     if (!is_string($name) || $name === '.' || $name === '..') continue;
     if (str_starts_with($name, '.')) continue;
-    $path = $familyDir . DIRECTORY_SEPARATOR . $name;
+    $path = $personDir . DIRECTORY_SEPARATOR . $name;
     if (!is_file($path)) continue;
     // Only list expected formats
     $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
@@ -82,8 +101,8 @@ if (is_array($files)) {
     if ($size === false) $size = 0;
     $mtime = @filemtime($path);
     $lastModified = $mtime ? gmdate('c', $mtime) : null;
-    $key = "famille-{$familleId}/{$name}";
-    $url = rtrim($publicBaseUrl, '/') . '/assets-mariage/' . rawurlencode("famille-{$familleId}") . '/' . rawurlencode($name);
+    $key = "personne-{$personneId}/{$name}";
+    $url = rtrim($publicBaseUrl, '/') . '/assets-mariage/' . rawurlencode("personne-{$personneId}") . '/' . rawurlencode($name);
     if ($mtime) {
       $url .= '?v=' . (string)$mtime;
     }
@@ -162,5 +181,35 @@ function rpcGetFamilleByToken(string $supabaseUrl, string $anonKey, string $toke
   if (is_array($decoded) && isset($decoded[0]) && is_array($decoded[0])) return $decoded[0];
   if (is_array($decoded)) return $decoded;
   return null;
+}
+
+function rpcGetPersonnesByFamille(string $supabaseUrl, string $anonKey, int $familleId): array {
+  $endpoint = rtrim($supabaseUrl, '/') . '/rest/v1/rpc/get_personnes_by_famille';
+  $payload = json_encode(['p_famille_id' => $familleId]);
+  if ($payload === false) return [];
+  $opts = [
+    'http' => [
+      'method' => 'POST',
+      'header' => implode("\r\n", [
+        'content-type: application/json',
+        'apikey: ' . $anonKey,
+        'authorization: Bearer ' . $anonKey,
+      ]),
+      'content' => $payload,
+      'timeout' => 10,
+    ],
+  ];
+  $ctx = stream_context_create($opts);
+  $res = @file_get_contents($endpoint, false, $ctx);
+  if ($res === false) return [];
+  $decoded = json_decode($res, true);
+  return is_array($decoded) ? $decoded : [];
+}
+
+function isPersonneInList(int $personneId, array $list): bool {
+  foreach ($list as $row) {
+    if (is_array($row) && isset($row['id']) && (int)$row['id'] === $personneId) return true;
+  }
+  return false;
 }
 

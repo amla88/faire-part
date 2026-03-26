@@ -2,8 +2,6 @@
 declare(strict_types=1);
 
 header('content-type: application/json; charset=utf-8');
-header('cache-control: no-store, no-cache, must-revalidate, max-age=0');
-header('pragma: no-cache');
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
   header('access-control-allow-origin: ' . allowedOrigin());
@@ -44,14 +42,20 @@ if ($key === '') {
   echo json_encode(['error' => 'Missing key']);
   exit;
 }
+$personneId = isset($payload['personneId']) ? (int)$payload['personneId'] : 0;
+if ($personneId <= 0) {
+  http_response_code(400);
+  echo json_encode(['error' => 'Missing personneId']);
+  exit;
+}
 
-// Key expected format: famille-<id>/<filename>
-if (!preg_match('/^famille-(\d+)\/([A-Za-z0-9._-]+\.(webp|jpg|jpeg|png|gif))$/i', $key, $m)) {
+// Key expected format: personne-<id>/<filename>
+if (!preg_match('/^personne-(\d+)\/([A-Za-z0-9._-]+\.(webp|jpg|jpeg|png|gif))$/i', $key, $m)) {
   http_response_code(400);
   echo json_encode(['error' => 'Invalid key format']);
   exit;
 }
-$keyFamilleId = (int)$m[1];
+$keyPersonneId = (int)$m[1];
 $filename = $m[2];
 
 $supabaseUrl = getSupabaseMeta('supabase-url');
@@ -69,7 +73,9 @@ if (!$famille || !isset($famille['id'])) {
   exit;
 }
 $familleId = (int)$famille['id'];
-if ($familleId !== $keyFamilleId) {
+// Ensure personne belongs to famille (and matches key/personneId)
+$personnes = rpcGetPersonnesByFamille($supabaseUrl, $supabaseAnonKey, $familleId);
+if (!isPersonneInList($personneId, $personnes) || $personneId !== $keyPersonneId) {
   http_response_code(403);
   echo json_encode(['error' => 'Forbidden']);
   exit;
@@ -81,7 +87,7 @@ if ($baseDir === false) {
   echo json_encode(['error' => 'Not found']);
   exit;
 }
-$filePath = $baseDir . DIRECTORY_SEPARATOR . "famille-{$familleId}" . DIRECTORY_SEPARATOR . $filename;
+$filePath = $baseDir . DIRECTORY_SEPARATOR . "personne-{$personneId}" . DIRECTORY_SEPARATOR . $filename;
 
 if (!is_file($filePath)) {
   http_response_code(404);
@@ -160,5 +166,35 @@ function rpcGetFamilleByToken(string $supabaseUrl, string $anonKey, string $toke
   if (is_array($decoded) && isset($decoded[0]) && is_array($decoded[0])) return $decoded[0];
   if (is_array($decoded)) return $decoded;
   return null;
+}
+
+function rpcGetPersonnesByFamille(string $supabaseUrl, string $anonKey, int $familleId): array {
+  $endpoint = rtrim($supabaseUrl, '/') . '/rest/v1/rpc/get_personnes_by_famille';
+  $payload = json_encode(['p_famille_id' => $familleId]);
+  if ($payload === false) return [];
+  $opts = [
+    'http' => [
+      'method' => 'POST',
+      'header' => implode("\r\n", [
+        'content-type: application/json',
+        'apikey: ' . $anonKey,
+        'authorization: Bearer ' . $anonKey,
+      ]),
+      'content' => $payload,
+      'timeout' => 10,
+    ],
+  ];
+  $ctx = stream_context_create($opts);
+  $res = @file_get_contents($endpoint, false, $ctx);
+  if ($res === false) return [];
+  $decoded = json_decode($res, true);
+  return is_array($decoded) ? $decoded : [];
+}
+
+function isPersonneInList(int $personneId, array $list): bool {
+  foreach ($list as $row) {
+    if (is_array($row) && isset($row['id']) && (int)$row['id'] === $personneId) return true;
+  }
+  return false;
 }
 
