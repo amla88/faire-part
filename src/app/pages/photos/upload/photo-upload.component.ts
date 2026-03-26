@@ -42,6 +42,8 @@ export class PhotoUploadComponent {
   objectUrl: string | null = null;
   fileInfo = signal<{ name: string; type: string; size: number } | null>(null);
   private triedDataUrlFallback = false;
+  isConverting = signal(false);
+  conversionNote = signal<string | null>(null);
 
   onFileChange(ev: Event) {
     const input = ev.target as HTMLInputElement;
@@ -50,6 +52,7 @@ export class PhotoUploadComponent {
     if (file) {
       // Réinitialiser état précédent
       this.previewError.set(false);
+      this.conversionNote.set(null);
       this.fileInfo.set({ name: file.name, type: file.type || 'inconnu', size: file.size });
       if (this.objectUrl) {
         URL.revokeObjectURL(this.objectUrl);
@@ -71,6 +74,7 @@ export class PhotoUploadComponent {
       this.safePreview.set(null);
       this.fileInfo.set(null);
       this.previewError.set(false);
+      this.conversionNote.set(null);
       if (this.objectUrl) {
         URL.revokeObjectURL(this.objectUrl);
         this.objectUrl = null;
@@ -109,11 +113,26 @@ export class PhotoUploadComponent {
   }
 
   async submit(): Promise<void> {
-    const file = this.form.value.file as File | null;
+    let file = this.form.value.file as File | null;
     if (!file) return;
 
     this.isUploading.set(true);
     try {
+      // Convert HEIC/HEIF (iPhone) to JPEG before upload for server compatibility
+      if (this.isHeic(file)) {
+        this.isConverting.set(true);
+        try {
+          const converted = await this.convertHeicToJpeg(file);
+          file = converted;
+          this.conversionNote.set('Photo iPhone convertie en JPEG avant envoi.');
+          this.fileInfo.set({ name: file.name, type: file.type || 'image/jpeg', size: file.size });
+          // update preview to converted file (more reliable)
+          this.setPreviewFromFile(file);
+        } finally {
+          this.isConverting.set(false);
+        }
+      }
+
       const res = await this.photo.uploadGuestPhoto(file);
       this.snack.open('Photo envoyée pour modération', undefined, { duration: 3000 });
       // reset
@@ -122,6 +141,7 @@ export class PhotoUploadComponent {
       this.safePreview.set(null);
       this.fileInfo.set(null);
       this.previewError.set(false);
+      this.conversionNote.set(null);
       if (this.objectUrl) {
         URL.revokeObjectURL(this.objectUrl);
         this.objectUrl = null;
@@ -131,6 +151,55 @@ export class PhotoUploadComponent {
       this.snack.open(e?.message || 'Échec de l\'upload', 'OK', { duration: 5000 });
     } finally {
       this.isUploading.set(false);
+      this.isConverting.set(false);
     }
+  }
+
+  private setPreviewFromFile(file: File) {
+    this.previewError.set(false);
+    if (this.objectUrl) {
+      URL.revokeObjectURL(this.objectUrl);
+      this.objectUrl = null;
+    }
+    this.triedDataUrlFallback = false;
+    try {
+      this.objectUrl = URL.createObjectURL(file);
+      this.previewUrl.set(this.objectUrl);
+      this.safePreview.set(this.sanitizer.bypassSecurityTrustUrl(this.objectUrl));
+    } catch {
+      this.readAsDataUrl(file);
+    }
+  }
+
+  private isHeic(file: File): boolean {
+    const name = (file.name || '').toLowerCase();
+    const type = (file.type || '').toLowerCase();
+    return (
+      name.endsWith('.heic') ||
+      name.endsWith('.heif') ||
+      type === 'image/heic' ||
+      type === 'image/heif' ||
+      type === 'image/heic-sequence' ||
+      type === 'image/heif-sequence'
+    );
+  }
+
+  private async convertHeicToJpeg(file: File): Promise<File> {
+    // Dynamic import to keep main bundle light
+    const mod: any = await import('heic2any');
+    const heic2any = mod?.default || mod;
+    const output: Blob | Blob[] = await heic2any({
+      blob: file,
+      toType: 'image/jpeg',
+      quality: 0.85,
+    });
+
+    const blob = Array.isArray(output) ? output[0] : output;
+    if (!(blob instanceof Blob)) {
+      throw new Error('Conversion HEIC impossible');
+    }
+
+    const baseName = (file.name || 'photo').replace(/\.(heic|heif)$/i, '');
+    return new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' });
   }
 }

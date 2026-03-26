@@ -1,12 +1,12 @@
 <mat-card appearance="outlined">
   <mat-card-header>
     <mat-card-title>Téléverser une photo</mat-card-title>
-    <mat-card-subtitle>Formats acceptés: JPG, PNG, WebP, GIF. Taille max selon configuration du bucket.</mat-card-subtitle>
+    <mat-card-subtitle>Formats acceptés: JPG/JPEG, PNG, WebP, GIF, HEIC/HEIF (iPhone). Les HEIC/HEIF sont convertis avant envoi.</mat-card-subtitle>
   </mat-card-header>
 
   <mat-card-content>
     <div class="picker">
-      <input type="file" accept="image/*" (change)="onFileChange($event)" />
+      <input type="file" accept="image/*,.heic,.heif" (change)="onFileChange($event)" />
     </div>
 
     @if (fileInfo()) {
@@ -26,6 +26,12 @@
     @if (previewError()) {
       <div class="hint error">
         <small>Aperçu indisponible pour ce format d'image, mais l'upload fonctionne quand même.</small>
+      </div>
+    }
+
+    @if (conversionNote()) {
+      <div class="hint">
+        <small>{{ conversionNote() }}</small>
       </div>
     }
 

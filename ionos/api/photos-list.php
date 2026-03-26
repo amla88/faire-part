@@ -1,10 +1,16 @@
 <?php
 declare(strict_types=1);
 
+if (!function_exists('str_starts_with')) {
+  function str_starts_with(string $haystack, string $needle): bool {
+    return $needle === '' || strncmp($haystack, $needle, strlen($needle)) === 0;
+  }
+}
+
 header('content-type: application/json; charset=utf-8');
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
-  header('access-control-allow-origin: *');
+  header('access-control-allow-origin: ' . allowedOrigin());
   header('access-control-allow-headers: content-type, x-app-token');
   header('access-control-allow-methods: POST, OPTIONS');
   http_response_code(204);
@@ -21,6 +27,11 @@ $token = $_SERVER['HTTP_X_APP_TOKEN'] ?? '';
 if (!$token) {
   http_response_code(400);
   echo json_encode(['error' => 'Missing x-app-token header']);
+  exit;
+}
+if (!isValidToken($token)) {
+  http_response_code(400);
+  echo json_encode(['error' => 'Invalid token format']);
   exit;
 }
 
@@ -57,8 +68,12 @@ $files = @scandir($familyDir);
 if (is_array($files)) {
   foreach ($files as $name) {
     if (!is_string($name) || $name === '.' || $name === '..') continue;
+    if (str_starts_with($name, '.')) continue;
     $path = $familyDir . DIRECTORY_SEPARATOR . $name;
     if (!is_file($path)) continue;
+    // Only list expected formats
+    $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+    if (!in_array($ext, ['webp', 'jpg', 'jpeg', 'png', 'gif'], true)) continue;
     $size = @filesize($path);
     if ($size === false) $size = 0;
     $mtime = @filemtime($path);
@@ -89,6 +104,19 @@ function publicBaseUrl(): string {
   $proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
   if ($host) return "{$proto}://{$host}";
   return 'https://amaurythibaud.be';
+}
+
+function allowedOrigin(): string {
+  $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+  if (is_string($origin) && $origin !== '') {
+    return $origin;
+  }
+  return publicBaseUrl();
+}
+
+function isValidToken(string $token): bool {
+  if (strlen($token) < 4 || strlen($token) > 128) return false;
+  return (bool)preg_match('/^[A-Za-z0-9_-]+$/', $token);
 }
 
 function getSupabaseMeta(string $name): ?string {
