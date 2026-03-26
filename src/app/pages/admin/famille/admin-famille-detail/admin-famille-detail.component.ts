@@ -134,6 +134,8 @@ export class AdminFamilleDetailComponent implements OnInit {
       invite_reception: [!!data?.invite_reception],
       invite_repas: [!!data?.invite_repas],
       invite_soiree: [!!data?.invite_soiree],
+      allergenes_alimentaires: [data?.allergenes_alimentaires || '', [Validators.maxLength(2000)]],
+      regimes_remarques: [data?.regimes_remarques || '', [Validators.maxLength(2000)]],
     });
   }
 
@@ -299,6 +301,8 @@ export class AdminFamilleDetailComponent implements OnInit {
         invite_reception: !!g.get('invite_reception')?.value,
         invite_repas: !!g.get('invite_repas')?.value,
         invite_soiree: !!g.get('invite_soiree')?.value,
+        allergenes_alimentaires: (g.get('allergenes_alimentaires')?.value || '').trim() || null,
+        regimes_remarques: (g.get('regimes_remarques')?.value || '').trim() || null,
         famille_id: familleId,
       };
       

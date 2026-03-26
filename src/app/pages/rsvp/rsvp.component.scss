@@ -2,26 +2,55 @@
 
 .cardWithShadow{box-shadow:0 6px 18px rgba(0,0,0,0.08);border-radius:10px;padding:8px}
 
+.rsvp-prose{font-size:14px;line-height:1.55;color:rgba(0,0,0,0.72);margin:0 0 16px;padding:12px 14px;border-left:3px solid rgba(103,58,183,0.35);background:rgba(103,58,183,0.04);border-radius:0 8px 8px 0}
+
 .rsvp-grid{display:block}
+
+.person-block{margin-bottom:18px;padding-bottom:14px;border-bottom:1px dashed rgba(0,0,0,0.08)}
+.person-block:last-of-type{border-bottom:none}
+
+.person-dietary{display:flex;flex-direction:column;gap:8px;padding:8px 6px 0 48px}
+.w-100{width:100%}
 
 .rsvp-header{display:flex;align-items:center;padding:8px 6px;border-bottom:1px solid rgba(0,0,0,0.06);font-weight:600}
 .rsvp-header .person-col{flex:1}
-.rsvp-header .events-col{display:flex;gap:18px;min-width:240px;justify-content:space-between}
-.event-title{font-size:13px;color:rgba(0,0,0,0.6);text-align:center}
+.rsvp-header .events-col{display:flex;gap:12px;min-width:280px;justify-content:space-between}
+.event-title{font-size:13px;color:rgba(0,0,0,0.6);text-align:center;display:block}
+.event-cell{flex:1 1 0;min-width:0;display:flex;justify-content:center;align-items:center}
 
 .person-row{display:flex;align-items:center;padding:10px 6px;border-bottom:1px dashed rgba(0,0,0,0.04)}
 .person-col{display:flex;align-items:center;gap:12px;flex:1}
-.avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#f0f0f0,#e8e8e8);display:inline-flex;align-items:center;justify-content:center;font-weight:700;color:#444}
 .person-name{font-weight:600}
 
-.events-col{display:flex;gap:18px;min-width:240px;justify-content:space-between}
+.events-col{display:flex;gap:12px;min-width:280px;justify-content:space-between;align-items:center}
 .event-checkbox{display:flex;align-items:center;justify-content:center}
 
 .form-actions{display:flex;gap:12px;justify-content:flex-end;padding:12px 6px}
 
 @media (max-width:640px){
   .rsvp-header,.person-row{flex-direction:column;align-items:stretch}
-  .rsvp-header .events-col,.events-col{min-width:0;gap:8px;padding-top:8px;justify-content:flex-start}
-  .events-col .event-checkbox{margin-right:8px}
+  /* Légende horizontale inutile : chaque case porte déjà Réception / Repas / Soirée */
+  .rsvp-header .events-col{display:none}
+  .rsvp-header{padding-bottom:4px}
+  .events-col{
+    flex-direction:column;
+    align-items:stretch;
+    align-self:stretch;
+    width:100%;
+    min-width:0;
+    gap:6px;
+    padding-top:10px;
+    justify-content:flex-start;
+  }
+  .event-cell{
+    flex:0 0 auto;
+    width:100%;
+    min-width:0;
+    justify-content:flex-start;
+    align-items:center;
+    min-height:44px;
+  }
+  .event-checkbox{width:100%;display:flex;justify-content:flex-start}
   .form-actions{justify-content:flex-start}
+  .person-dietary{padding-left:6px}
 }

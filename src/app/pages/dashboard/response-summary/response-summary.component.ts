@@ -29,6 +29,13 @@ export class ResponseSummaryComponent implements OnInit {
     return v === true || v === 'true' || v === 1 || v === '1';
   }
 
+  /** Indique si des notes culinaires ont été laissées au registre. */
+  hasDietaryNotes(p: any): boolean {
+    const a = String(p?.allergenes_alimentaires ?? '').trim();
+    const r = String(p?.regimes_remarques ?? '').trim();
+    return a.length > 0 || r.length > 0;
+  }
+
   async ngOnInit(): Promise<void> {
     try {
       const user = this.auth.getUser();
@@ -63,6 +70,8 @@ export class ResponseSummaryComponent implements OnInit {
         present_repas: r.present_repas ?? false,
         invite_soiree: r.invite_soiree ?? false,
         present_soiree: r.present_soiree ?? false,
+        allergenes_alimentaires: r.allergenes_alimentaires ?? '',
+        regimes_remarques: r.regimes_remarques ?? '',
       }));
       // Compute which headers should be shown: at least one personne invited.
       this.showReceptionHeader = this.personnes.some((pp: any) => this.isTrue(pp.invite_reception));

@@ -1,5 +1,15 @@
-<div class="dashboard-welcome">
-	<h1>Bienvenue, {{ selectedPersonName }} !</h1>
-	<p>Heureux de vous revoir. Explorez le jeu et mettez à jour votre avatar ou vos préférences.</p>
+<div class="dashboard-bridgerton">
+	<section class="dashboard-hero" aria-labelledby="dashboard-title">
+		<div class="dashboard-hero-frame">
+			<p class="dashboard-eyebrow">Le salon des époux</p>
+			<h1 id="dashboard-title" class="dashboard-title">Bienvenue, {{ selectedPersonName }}</h1>
+			<p class="dashboard-lede">
+				Il nous en fait l’honneur de vous revoir dans cette demeure — toute virtuelle qu’elle soit.
+				Vos réponses, votre avatar et les menus du festin s’offrent à votre discrétion.
+			</p>
+			<div class="dashboard-flourish" aria-hidden="true"></div>
+		</div>
+	</section>
+
+	<app-response-summary></app-response-summary>
 </div>
-<app-response-summary></app-response-summary>

@@ -24,6 +24,7 @@ import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { LiveAnnouncer } from '@angular/cdk/a11y';
 import { MatButtonModule } from '@angular/material/button';
 import { AuthService } from 'src/app/services/auth.service';
+import { AvatarMacaronComponent } from 'src/app/shared/avatar-macaron/avatar-macaron.component';
 
 export interface ChipColor {
   name: string;
@@ -51,7 +52,8 @@ export interface Vegetable {
     CdkDrag,
     FormsModule,
     ReactiveFormsModule,
-    MatButtonModule
+    MatButtonModule,
+    AvatarMacaronComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -131,11 +133,7 @@ export class AppChipsComponent {
   readonly formControl = new FormControl(['angular']);
 
   announcer = inject(LiveAnnouncer);
-  private auth = inject(AuthService);
-
-  get currentAvatarUrl(): string {
-    return this.auth.avatarDataUri() || 'assets/images/profile/user-1.jpg';
-  }
+  auth = inject(AuthService);
 
   removeKeyword(keyword: string) {
     this.keywords.update(keywords => {

@@ -1,16 +1,20 @@
-<mat-card class="cardWithShadow">
-    <mat-card-title>
-        <div class="card-actions">
-            <div>Mes réponses</div>
-			<div><button mat-raised-button color="primary" routerLink="/rsvp">Modifier mes réponses</button></div>
+<mat-card class="cardWithShadow bridgerton-card">
+	<mat-card-title>
+		<div class="card-actions">
+			<div class="bridgerton-card-heading">
+				<span class="bridgerton-card-kicker">Registre du domaine</span>
+				<span class="bridgerton-card-title">Mes réponses</span>
+			</div>
+			<button mat-stroked-button color="primary" type="button" routerLink="/rsvp" class="bridgerton-rsvp-btn">
+				Modifier mes réponses
+			</button>
 		</div>
-    </mat-card-title>
+	</mat-card-title>
 	<mat-card-content>
-		<div *ngIf="loading">Chargement…</div>
+		<div *ngIf="loading" class="bridgerton-loading">Chargement…</div>
 
 		<div *ngIf="!loading">
 
-			<!-- En-têtes des colonnes -->
 			<div class="summary-header" aria-hidden="true">
 				<div class="header-name">Nom</div>
 				<div class="header-events">
@@ -20,44 +24,54 @@
 				</div>
 			</div>
 
-			<div *ngIf="personnes.length === 0">Aucune personne trouvée pour votre famille.</div>
+			<div *ngIf="personnes.length === 0" class="bridgerton-empty">Aucune personne trouvée pour votre famille.</div>
 
-			<div *ngFor="let p of personnes" class="person-row">
-				<div class="person-name">{{ p.prenom }} {{ p.nom }}</div>
+			<div *ngFor="let p of personnes" class="person-row-wrap">
+				<div class="person-row">
+					<div class="person-name">{{ p.prenom }} {{ p.nom }}</div>
 
-				<div class="person-events">
-					<!-- Réception -->
-					<mat-icon
-						class="event-icon"
-						[class.present]="isTrue(p.present_reception)"
-						[style.visibility]="isTrue(p.invite_reception) ? 'visible' : 'hidden'"
-						[attr.aria-hidden]="!isTrue(p.invite_reception)"
-						aria-label="Réception">
-						{{ isTrue(p.present_reception) ? 'celebration' : 'event' }}
-					</mat-icon>
-					<span *ngIf="isTrue(p.invite_reception)" class="sr-only">Réception: {{ isTrue(p.present_reception) ? 'Présent' : 'Absent' }}</span>
+					<div class="person-events">
+						<mat-icon
+							class="event-icon"
+							[class.present]="isTrue(p.present_reception)"
+							[style.visibility]="isTrue(p.invite_reception) ? 'visible' : 'hidden'"
+							[attr.aria-hidden]="!isTrue(p.invite_reception)"
+							aria-label="Réception">
+							{{ isTrue(p.present_reception) ? 'celebration' : 'event' }}
+						</mat-icon>
+						<span *ngIf="isTrue(p.invite_reception)" class="sr-only">Réception: {{ isTrue(p.present_reception) ? 'Présent' : 'Absent' }}</span>
 
-					<!-- Repas -->
-					<mat-icon
-						class="event-icon"
-						[class.present]="isTrue(p.present_repas)"
-						[style.visibility]="isTrue(p.invite_repas) ? 'visible' : 'hidden'"
-						[attr.aria-hidden]="!isTrue(p.invite_repas)"
-						aria-label="Repas">
-						{{ isTrue(p.present_repas) ? 'restaurant' : 'restaurant_menu' }}
-					</mat-icon>
-					<span *ngIf="isTrue(p.invite_repas)" class="sr-only">Repas: {{ isTrue(p.present_repas) ? 'Présent' : 'Absent' }}</span>
+						<mat-icon
+							class="event-icon"
+							[class.present]="isTrue(p.present_repas)"
+							[style.visibility]="isTrue(p.invite_repas) ? 'visible' : 'hidden'"
+							[attr.aria-hidden]="!isTrue(p.invite_repas)"
+							aria-label="Repas">
+							{{ isTrue(p.present_repas) ? 'restaurant' : 'restaurant_menu' }}
+						</mat-icon>
+						<span *ngIf="isTrue(p.invite_repas)" class="sr-only">Repas: {{ isTrue(p.present_repas) ? 'Présent' : 'Absent' }}</span>
 
-					<!-- Soirée -->
-					<mat-icon
-						class="event-icon"
-						[class.present]="isTrue(p.present_soiree)"
-						[style.visibility]="isTrue(p.invite_soiree) ? 'visible' : 'hidden'"
-						[attr.aria-hidden]="!isTrue(p.invite_soiree)"
-						aria-label="Soirée">
-						{{ isTrue(p.present_soiree) ? 'nightlife' : 'bedtime' }}
-					</mat-icon>
-					<span *ngIf="isTrue(p.invite_soiree)" class="sr-only">Soirée: {{ isTrue(p.present_soiree) ? 'Présent' : 'Absent' }}</span>
+						<mat-icon
+							class="event-icon"
+							[class.present]="isTrue(p.present_soiree)"
+							[style.visibility]="isTrue(p.invite_soiree) ? 'visible' : 'hidden'"
+							[attr.aria-hidden]="!isTrue(p.invite_soiree)"
+							aria-label="Soirée">
+							{{ isTrue(p.present_soiree) ? 'nightlife' : 'bedtime' }}
+						</mat-icon>
+						<span *ngIf="isTrue(p.invite_soiree)" class="sr-only">Soirée: {{ isTrue(p.present_soiree) ? 'Présent' : 'Absent' }}</span>
+					</div>
+				</div>
+				<div *ngIf="isTrue(p.invite_repas) && hasDietaryNotes(p)" class="person-dietary-notes" aria-label="Notes pour le banquet">
+					<span *ngIf="(p.allergenes_alimentaires || '').trim()" class="dietary-block">
+						<span class="dietary-label">Allergènes :</span>
+						<span class="dietary-text">{{ p.allergenes_alimentaires }}</span>
+					</span>
+					<span *ngIf="(p.regimes_remarques || '').trim()" class="dietary-block">
+						<span class="dietary-sep" *ngIf="(p.allergenes_alimentaires || '').trim()"> · </span>
+						<span class="dietary-label">Préférences :</span>
+						<span class="dietary-text">{{ p.regimes_remarques }}</span>
+					</span>
 				</div>
 			</div>
 		</div>

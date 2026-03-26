@@ -12,6 +12,7 @@ import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { NgScrollbarModule } from 'ngx-scrollbar';
 import { AuthService } from 'src/app/services/auth.service';
+import { AvatarMacaronComponent } from 'src/app/shared/avatar-macaron/avatar-macaron.component';
 import { AdminAuthService } from 'src/app/services/admin-auth.service';
 import { Router } from '@angular/router';
 
@@ -23,6 +24,7 @@ import { Router } from '@angular/router';
     NgScrollbarModule,
     TablerIconsModule,
     MaterialModule,
+    AvatarMacaronComponent,
   ],
   templateUrl: './header.component.html',
   encapsulation: ViewEncapsulation.None,

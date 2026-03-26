@@ -1,0 +1,18 @@
+<div
+  class="avatar-macaron"
+  [style.width.px]="size()"
+  [style.height.px]="size()"
+  [style.--macaron-size.px]="size()"
+  aria-hidden="true"
+>
+  <span class="avatar-macaron-initials">{{ initials() }}</span>
+  @if (showImage()) {
+    <img
+      class="avatar-macaron-img"
+      [src]="imageSrc()!"
+      alt=""
+      decoding="async"
+      (error)="onImgError()"
+    />
+  }
+</div>

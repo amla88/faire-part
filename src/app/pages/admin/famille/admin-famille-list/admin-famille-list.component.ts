@@ -14,11 +14,12 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router, RouterModule } from '@angular/router';
+import { AvatarMacaronComponent } from 'src/app/shared/avatar-macaron/avatar-macaron.component';
 
 @Component({
   selector: 'app-admin-famille-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, MatCardModule, MatTableModule, MatChipsModule, MatIconModule, MatButtonModule, MatProgressSpinnerModule, MatSnackBarModule, MatFormFieldModule, MatInputModule, MatTooltipModule],
+  imports: [CommonModule, RouterModule, MatCardModule, MatTableModule, MatChipsModule, MatIconModule, MatButtonModule, MatProgressSpinnerModule, MatSnackBarModule, MatFormFieldModule, MatInputModule, MatTooltipModule, AvatarMacaronComponent],
   templateUrl: './admin-famille-list.component.html',
   styleUrls: ['./admin-famille-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

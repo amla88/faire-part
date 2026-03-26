@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { MaterialModule } from 'src/app/material.module';
 import { AuthService, PersonneSummary } from 'src/app/services/auth.service';
+import { AvatarMacaronComponent } from 'src/app/shared/avatar-macaron/avatar-macaron.component';
 
 @Component({
   selector: 'app-person-select',
   standalone: true,
-  imports: [CommonModule, RouterModule, MaterialModule],
+  imports: [CommonModule, RouterModule, MaterialModule, AvatarMacaronComponent],
   templateUrl: './person.component.html',
   styleUrls: ['./person.component.scss'],
 })

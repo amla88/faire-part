@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService, PersonneSummary } from 'src/app/services/auth.service';
+import { AvatarService } from 'src/app/services/avatar.service';
 import { ResponseSummaryComponent } from './response-summary/response-summary.component';
 
 @Component({
@@ -14,7 +15,10 @@ import { ResponseSummaryComponent } from './response-summary/response-summary.co
 export class DashboardComponent implements OnInit {
   selectedPersonName = 'invité';
 
-  constructor(private auth: AuthService) {}
+  constructor(
+    private auth: AuthService,
+    private avatar: AvatarService,
+  ) {}
 
   ngOnInit(): void {
     const user = this.auth.getUser();
@@ -25,6 +29,10 @@ export class DashboardComponent implements OnInit {
     const personne = user.personnes?.find((p: PersonneSummary) => p.id === selectedId) ?? null;
     if (personne) {
       this.selectedPersonName = `${personne.prenom} ${personne.nom}`.trim();
+    }
+    /* Aligner le cache (localStorage) sur la base : si la ligne avatar a été supprimée côté DB, invalider l’ancienne image */
+    if (selectedId != null) {
+      void this.avatar.loadAvatarFromRpc(Number(selectedId));
     }
   }
 }

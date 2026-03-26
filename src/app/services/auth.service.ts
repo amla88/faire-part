@@ -175,6 +175,16 @@ export class AuthService {
     return localStorage.getItem('app_token');
   }
 
+  /** Prénom / nom de la personne sélectionnée (invité), pour macarons (header, etc.). */
+  getSelectedPersonneDisplay(): { prenom: string; nom: string } {
+    const u = this.getUser();
+    if (!u?.personnes?.length) return { prenom: '', nom: '' };
+    const pid = u.selected_personne_id ?? (u.personnes.length === 1 ? u.personnes[0].id : null);
+    if (pid == null) return { prenom: '', nom: '' };
+    const p = u.personnes.find((x) => Number(x.id) === Number(pid));
+    return { prenom: p?.prenom ?? '', nom: p?.nom ?? '' };
+  }
+
   /**
    * Sélectionne une personne dans l'objet user et persiste la sélection.
    * Récupère aussi l'avatar associé via RPC et le met en cache dans l'objet user.

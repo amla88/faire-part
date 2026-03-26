@@ -1,0 +1,117 @@
+:host {
+	display: block;
+}
+
+.dashboard-bridgerton {
+	--bridgerton-cream: #faf6f1;
+	--bridgerton-blush: #f5e6e8;
+	--bridgerton-mauve: #e8e0eb;
+	--bridgerton-ink: #2c2433;
+	--bridgerton-wine: #6b3d4f;
+	--bridgerton-gold: #b8956a;
+	--bridgerton-muted: rgba(44, 36, 51, 0.65);
+
+	min-height: 100%;
+	padding: 8px 4px 32px;
+	background:
+		radial-gradient(ellipse 120% 80% at 50% -20%, rgba(232, 224, 235, 0.55), transparent 50%),
+		radial-gradient(ellipse 80% 50% at 100% 30%, rgba(245, 230, 232, 0.4), transparent 45%),
+		linear-gradient(180deg, var(--bridgerton-cream) 0%, #f3ebe4 100%);
+}
+
+.dashboard-hero {
+	max-width: 720px;
+	margin: 0 auto 28px;
+	padding: 4px;
+}
+
+.dashboard-hero-frame {
+	position: relative;
+	padding: 28px 26px 32px;
+	border: 1px solid rgba(184, 149, 106, 0.35);
+	border-radius: 2px;
+	background: linear-gradient(145deg, rgba(255, 255, 255, 0.92) 0%, rgba(250, 246, 241, 0.98) 100%);
+	box-shadow:
+		0 1px 0 rgba(255, 255, 255, 0.8) inset,
+		0 12px 40px rgba(44, 36, 51, 0.06),
+		0 2px 8px rgba(107, 61, 79, 0.05);
+}
+
+/* Double filet décoratif */
+.dashboard-hero-frame::before {
+	content: '';
+	position: absolute;
+	inset: 8px;
+	border: 1px solid rgba(184, 149, 106, 0.2);
+	pointer-events: none;
+	border-radius: 1px;
+}
+
+.dashboard-eyebrow {
+	font-family: 'Italiana', serif;
+	font-size: 0.75rem;
+	letter-spacing: 0.35em;
+	text-transform: uppercase;
+	color: var(--bridgerton-gold);
+	margin: 0 0 12px;
+	text-align: center;
+}
+
+.dashboard-title {
+	font-family: 'Cormorant Garamond', serif;
+	font-weight: 600;
+	font-size: clamp(1.75rem, 4vw, 2.35rem);
+	line-height: 1.15;
+	color: var(--bridgerton-ink);
+	margin: 0 0 16px;
+	text-align: center;
+	letter-spacing: 0.02em;
+}
+
+.dashboard-lede {
+	font-family: 'Plus Jakarta Sans', sans-serif;
+	font-size: 0.95rem;
+	line-height: 1.65;
+	color: var(--bridgerton-muted);
+	margin: 0 auto;
+	max-width: 38em;
+	text-align: center;
+	font-weight: 400;
+}
+
+.dashboard-flourish {
+	height: 1px;
+	max-width: 280px;
+	margin: 22px auto 0;
+	background: linear-gradient(
+		90deg,
+		transparent,
+		rgba(184, 149, 106, 0.5) 20%,
+		rgba(184, 149, 106, 0.5) 80%,
+		transparent
+	);
+	position: relative;
+}
+
+.dashboard-flourish::after {
+	content: '❦';
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	font-size: 0.75rem;
+	color: var(--bridgerton-gold);
+	opacity: 0.85;
+	background: linear-gradient(180deg, #faf6f1, #f5ebe4);
+	padding: 0 10px;
+	line-height: 1;
+}
+
+@media (max-width: 600px) {
+	.dashboard-hero-frame {
+		padding: 22px 18px 26px;
+	}
+	.dashboard-lede {
+		font-size: 0.9rem;
+	}
+}

@@ -39,7 +39,8 @@ export class AvatarService {
       if (!raw) return;
       const user = JSON.parse(raw) as any;
       const selected = user?.selected_personne_id ?? null;
-      const img = selected && user?.avatars ? user.avatars[selected]?.imageDataUri || null : null;
+      const img =
+        selected != null ? this.getCachedAvatarEntry(selected)?.imageDataUri ?? null : null;
       if (img) this.avatarDataUri.set(img);
     } catch {
       // ignore
@@ -64,25 +65,44 @@ export class AvatarService {
     }
   }
 
-  /** Retourne le data URI PNG mis en cache pour la personne */
-  getAvatarDataUri(personneId?: number | null): string | null {
-    if (!personneId) return null;
+  /**
+   * Résout une entrée avatar dans le cache (localStorage sérialise les clés d'objet en string :
+   * `avatars[5]` peut échouer si la clé stockée est `"5"` selon le chemin d'écriture).
+   */
+  private getCachedAvatarEntry(personneId: unknown): AvatarRow | null {
     const u = this.readUser();
-    if (!u || !u.avatars) return null;
-    const a = u.avatars[personneId];
-    return a?.imageDataUri || null;
+    if (!u?.avatars || personneId == null || personneId === '') return null;
+    const av = u.avatars as Record<string, AvatarRow>;
+    const n = Number(personneId);
+    if (Number.isFinite(n)) {
+      const hit = av[n] ?? av[String(n)];
+      if (hit) return hit;
+    }
+    return av[String(personneId)] ?? null;
+  }
+
+  /** Retourne le data URI PNG mis en cache pour la personne */
+  getAvatarDataUri(personneId?: number | null | string | bigint): string | null {
+    if (personneId == null || personneId === '') return null;
+    const entry = this.getCachedAvatarEntry(personneId);
+    const uri = entry?.imageDataUri;
+    if (uri == null) return null;
+    const t = String(uri).trim();
+    return t.length > 0 ? t : null;
   }
 
   /** Met à jour le cache d'avatar dans l'objet user pour la personne donnée. */
   setAvatarInCache(personneId: number, avatarRow: AvatarRow): void {
     const user = this.readUser();
     if (!user) return;
+    const pid = Number(personneId);
+    if (!Number.isFinite(pid)) return;
     user.avatars = user.avatars || {};
     // preserve existing cached fields (notably imageDataUri) when incoming row
     // doesn't include them. This prevents overwriting a client-generated PNG
     // stored in localStorage with a null from the RPC.
-    const existing = user.avatars[personneId] || {};
-    user.avatars[personneId] = {
+    const existing = user.avatars[pid] ?? user.avatars[String(pid)] ?? {};
+    user.avatars[pid] = {
       id: avatarRow.id ?? existing.id ?? undefined,
       seed: avatarRow.seed ?? existing.seed ?? undefined,
       options: avatarRow.options ?? existing.options ?? undefined,
@@ -94,12 +114,32 @@ export class AvatarService {
     this.writeUser(user);
 
     try {
-      if (user.selected_personne_id === personneId) {
-        const img = user.avatars[personneId].imageDataUri;
+      if (Number(user.selected_personne_id) === pid) {
+        const img = user.avatars[pid].imageDataUri;
         if (img) this.avatarDataUri.set(img);
       }
     } catch (e) {
       // ignore
+    }
+  }
+
+  /**
+   * Supprime l'entrée avatar en cache (localStorage) pour cette personne.
+   * À appeler lorsque la base ne contient plus de ligne `avatars` pour cet id.
+   */
+  removeAvatarFromCache(personneId: number): void {
+    const user = this.readUser();
+    if (!user?.avatars) return;
+    const pid = Number(personneId);
+    if (!Number.isFinite(pid)) return;
+    delete user.avatars[pid];
+    delete user.avatars[String(pid)];
+    if (Object.keys(user.avatars).length === 0) {
+      delete user.avatars;
+    }
+    this.writeUser(user);
+    if (Number(user.selected_personne_id) === pid) {
+      this.avatarDataUri.set(null);
     }
   }
 
@@ -115,7 +155,11 @@ export class AvatarService {
       }
       let data: any = rpcRes.data;
       if (Array.isArray(data)) data = data[0] || null;
-      if (!data) return null;
+      /* Pas de ligne en base (ou réponse vide) : invalider le cache local */
+      if (!data || data.id == null) {
+        this.removeAvatarFromCache(personneId);
+        return null;
+      }
       // build a row but avoid forcing imageDataUri to null if RPC doesn't return it.
       const rowFromRpc: AvatarRow = {
         id: data.id,
@@ -140,9 +184,7 @@ export class AvatarService {
 
       this.setAvatarInCache(personneId, rowFromRpc);
       // return merged entry (read from cache) so callers get the effective state
-      const user = this.readUser();
-      const merged = user?.avatars?.[personneId] || null;
-      return merged;
+      return this.getCachedAvatarEntry(personneId);
     } catch (e) {
       console.error('AvatarService.loadAvatarFromRpc error', e);
       return null;
@@ -213,7 +255,8 @@ export class AvatarService {
 
       // set current avatar signal if selected personne has image
       const selected = user?.selected_personne_id ?? null;
-      const img = selected && user?.avatars ? user.avatars[selected]?.imageDataUri || null : null;
+      const img =
+        selected != null ? this.getCachedAvatarEntry(selected)?.imageDataUri ?? null : null;
       if (img) this.avatarDataUri.set(img);
     } catch (err) {
       console.error('AvatarService.initFromUser error', err);

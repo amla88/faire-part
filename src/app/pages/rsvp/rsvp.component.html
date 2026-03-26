@@ -1,41 +1,98 @@
 <mat-card class="cardWithShadow">
-	<mat-card-title>RSVP — Modifier mes réponses</mat-card-title>
+	<mat-card-title>Registre des présences &amp; du banquet</mat-card-title>
 	<mat-card-content>
-		<div *ngIf="loading">Chargement…</div>
+		@if (loading) {
+			<div>Chargement…</div>
+		}
 
-		<form [formGroup]="form" *ngIf="!loading">
-			<div *ngIf="personnes.length === 0">Aucune personne trouvée pour votre famille.</div>
+		@if (!loading) {
+			<form [formGroup]="form">
+				@if (personnes.length === 0) {
+					<div>Aucune personne trouvée pour votre famille.</div>
+				}
 
+				@if (personnes.length > 0) {
+					<p class="rsvp-prose">
+						Chers invités, nous recueillons ici vos intentions de présence.
+						Et, pour celles et ceux conviés au repas, quelques confidences nécessaires au banquet :
+						allergènes, intolérances, régimes et préférences — afin que chacun soit servi avec égards.
+					</p>
+				}
+
+				@if (personnes.length > 0) {
 					<div class="rsvp-grid">
-						<div class="rsvp-header">
-							<div class="person-col">Personne</div>
-							<div class="events-col">
-								<div class="event-title">Réception</div>
-								<div class="event-title">Repas</div>
-								<div class="event-title">Soirée</div>
-							</div>
-						</div>
-
 						<div formArrayName="personnes">
-							<div *ngFor="let ctrl of personnesArray.controls; let i = index" [formGroupName]="i" class="person-row">
-								<div class="person-col">
-									<div class="avatar" aria-hidden="true">{{ (personnes[i].prenom || '').charAt(0) || '' }}{{ (personnes[i].nom || '').charAt(0) || '' }}</div>
-									<div class="person-name">{{ personnes[i].prenom }} {{ personnes[i].nom }}</div>
-								</div>
+							@for (p of personnes; track p.id) {
+								<div [formGroupName]="$index" class="person-block">
+									<div class="person-row">
+										<div class="person-col">
+											<app-avatar-macaron
+												[imageSrc]="macaronAvatarUri(p)"
+												[prenom]="p.prenom"
+												[nom]="p.nom"
+												[size]="36"
+											/>
+											<div class="person-name">{{ p.prenom }} {{ p.nom }}</div>
+										</div>
 
-								<div class="events-col">
-									<mat-checkbox class="event-checkbox" formControlName="present_reception" [disabled]="!personnes[i].invite_reception" aria-label="Présence réception"></mat-checkbox>
-									<mat-checkbox class="event-checkbox" formControlName="present_repas" [disabled]="!personnes[i].invite_repas" aria-label="Présence repas"></mat-checkbox>
-									<mat-checkbox class="event-checkbox" formControlName="present_soiree" [disabled]="!personnes[i].invite_soiree" aria-label="Présence soirée"></mat-checkbox>
+										<div class="events-col">
+											<div class="event-cell">
+												<mat-checkbox class="event-checkbox" formControlName="present_reception" [disabled]="!p.invite_reception">Réception</mat-checkbox>
+											</div>
+											<div class="event-cell">
+												<mat-checkbox class="event-checkbox" formControlName="present_repas" [disabled]="!p.invite_repas">Repas</mat-checkbox>
+											</div>
+											<div class="event-cell">
+												<mat-checkbox class="event-checkbox" formControlName="present_soiree" [disabled]="!p.invite_soiree">Soirée</mat-checkbox>
+											</div>
+										</div>
+									</div>
+
+									@if (p.invite_repas) {
+										<div class="person-dietary">
+											<mat-form-field appearance="outline" class="w-100">
+												<mat-label>Allergènes &amp; intolérances alimentaires</mat-label>
+												<textarea
+													matInput
+													formControlName="allergenes_alimentaires"
+													rows="2"
+													placeholder="Arachides, lactose, fruits à coque, sulfites…"
+													[cdkTextareaAutosize]="true"
+													cdkAutosizeMinRows="2"
+													cdkAutosizeMaxRows="6"
+												></textarea>
+												<mat-hint>
+													Ex. : arachides, lactose, fruits à coque, gluten, sulfites…
+												</mat-hint>
+											</mat-form-field>
+											<mat-form-field appearance="outline" class="w-100">
+												<mat-label>Régimes, préférences &amp; autres précisions</mat-label>
+												<textarea
+													matInput
+													formControlName="regimes_remarques"
+													rows="2"
+													placeholder="Végétarien, sans porc, besoin d'une chaise haute, ou toute autre requête raisonnable…"
+													[cdkTextareaAutosize]="true"
+													cdkAutosizeMinRows="2"
+													cdkAutosizeMaxRows="6"
+												></textarea>
+												<mat-hint>
+													Ex. : végétarien, sans porc, halal/kasher, chaise haute, etc.
+												</mat-hint>
+											</mat-form-field>
+										</div>
+									}
 								</div>
-							</div>
+							}
 						</div>
 					</div>
+				}
 
-			<div class="form-actions">
-				<button mat-raised-button color="primary" type="button" (click)="submit()" [disabled]="saving">Enregistrer</button>
-				<button mat-button type="button" (click)="cancel()" [disabled]="saving">Annuler</button>
-			</div>
-		</form>
+				<div class="form-actions">
+					<button mat-raised-button color="primary" type="button" (click)="submit()" [disabled]="saving">Enregistrer dans le registre</button>
+					<button mat-button type="button" (click)="cancel()" [disabled]="saving">Annuler</button>
+				</div>
+			</form>
+		}
 	</mat-card-content>
 </mat-card>

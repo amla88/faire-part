@@ -21,7 +21,12 @@
   <!-- profile Dropdown -->
   <!-- --------------------------------------------------------------- -->
   <button mat-mini-fab [matMenuTriggerFor]="profilemenu" aria-label="Notifications">
-  <img [src]="isAdminContext ? 'assets/images/profile/user-1.jpg' : (auth.avatarDataUri() || 'assets/images/profile/user-1.jpg')" class="rounded-circle object-cover d-block" width="35" />
+    <app-avatar-macaron
+      [imageSrc]="isAdminContext ? null : auth.avatarDataUri()"
+      [prenom]="isAdminContext ? 'Admin' : auth.getSelectedPersonneDisplay().prenom"
+      [nom]="isAdminContext ? '' : auth.getSelectedPersonneDisplay().nom"
+      [size]="35"
+    />
   </button>
   <mat-menu #profilemenu="matMenu" class="cardWithShadow topbar-dd">
     <ng-container *ngIf="!isAdminContext">
