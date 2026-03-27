@@ -71,11 +71,14 @@ if (!$famille || !isset($famille['id'])) {
   exit;
 }
 
-$clientId = getenvSpotify('SPOTIFY_CLIENT_ID', 'spotify-client-id');
-$clientSecret = getenvSpotify('SPOTIFY_CLIENT_SECRET', 'spotify-client-secret');
+$clientId = resolveSpotifySecret('SPOTIFY_CLIENT_ID', 'spotify-client-id');
+$clientSecret = resolveSpotifySecret('SPOTIFY_CLIENT_SECRET', 'spotify-client-secret');
 if (!$clientId || !$clientSecret) {
   http_response_code(503);
-  echo json_encode(['error' => 'Spotify API non configurée sur le serveur']);
+  echo json_encode([
+    'error' => 'Spotify API non configurée sur le serveur',
+    'hint' => 'Ajoutez SPOTIFY_CLIENT_ID et SPOTIFY_CLIENT_SECRET (secrets GitHub pour le déploiement, ou champs spotify-client-id / spotify-client-secret dans public/api/supabase-meta.json, ou fichier api/spotify-meta.json à côté du PHP). Créez une app sur https://developer.spotify.com/dashboard',
+  ]);
   exit;
 }
 
@@ -94,13 +97,40 @@ $url = 'https://api.spotify.com/v1/search?' . http_build_query([
   'market' => 'FR',
 ]);
 
-$searchRes = httpJson('GET', $url, [
+$searchRes = spotifyApiGetJson($url, [
   'Authorization: Bearer ' . $access,
 ]);
 
+// Jeton expiré : on purge le cache et on retente une fois avec un nouveau jeton.
+if (!is_array($searchRes) && spotifyLastHttpStatus() === 401) {
+  @unlink(__DIR__ . '/.spotify-token-cache.json');
+  $access = spotifyGetAccessToken($clientId, $clientSecret);
+  if ($access) {
+    $searchRes = spotifyApiGetJson($url, [
+      'Authorization: Bearer ' . $access,
+    ]);
+  }
+}
+
+// Même cas avec corps JSON d’erreur (HTTP 401 + { "error": { ... } }).
+if (is_array($searchRes) && isset($searchRes['error']) && spotifyLastHttpStatus() === 401) {
+  @unlink(__DIR__ . '/.spotify-token-cache.json');
+  $access = spotifyGetAccessToken($clientId, $clientSecret);
+  if ($access) {
+    $searchRes = spotifyApiGetJson($url, [
+      'Authorization: Bearer ' . $access,
+    ]);
+  }
+}
+
 if (!is_array($searchRes)) {
   http_response_code(502);
-  echo json_encode(['error' => 'Réponse Spotify invalide']);
+  $detail = spotifyLastHttpStatus() > 0
+    ? ' (HTTP ' . spotifyLastHttpStatus() . ')'
+    : '';
+  echo json_encode([
+    'error' => 'Réponse Spotify invalide ou indisponible' . $detail . '. Réessayez dans un instant.',
+  ]);
   exit;
 }
 
@@ -178,12 +208,47 @@ echo json_encode(['tracks' => $tracksOut]);
 
 // --- helpers ---
 
-function getenvSpotify(string $envName, string $metaKey): ?string {
-  $e = getenv($envName);
-  if (is_string($e) && trim($e) !== '') {
-    return trim($e);
+/**
+ * Ordre : variables d’environnement ($_ENV, $_SERVER, getenv), puis supabase-meta.json,
+ * puis spotify-meta.json (même dossier que ce script, optionnel).
+ */
+function resolveSpotifySecret(string $envName, string $metaKey): ?string {
+  foreach ([$_ENV[$envName] ?? null, $_SERVER[$envName] ?? null] as $v) {
+    if (is_string($v) && trim($v) !== '') {
+      return trim($v);
+    }
   }
-  return getSupabaseMeta($metaKey);
+  $g = getenv($envName);
+  if ($g !== false && is_string($g) && trim($g) !== '') {
+    return trim($g);
+  }
+  $fromMain = getSupabaseMeta($metaKey);
+  if (is_string($fromMain) && trim($fromMain) !== '') {
+    return trim($fromMain);
+  }
+  $fromFile = getSpotifyMetaFromOptionalFile($metaKey);
+  if (is_string($fromFile) && trim($fromFile) !== '') {
+    return trim($fromFile);
+  }
+  return null;
+}
+
+function getSpotifyMetaFromOptionalFile(string $metaKey): ?string {
+  static $cache = null;
+  if ($cache === null) {
+    $path = __DIR__ . '/spotify-meta.json';
+    if (!is_file($path)) {
+      $cache = [];
+    } else {
+      $raw = file_get_contents($path);
+      $data = is_string($raw) ? json_decode($raw, true) : null;
+      $cache = is_array($data) ? $data : [];
+    }
+  }
+  if (!isset($cache[$metaKey]) || !is_string($cache[$metaKey])) {
+    return null;
+  }
+  return $cache[$metaKey];
 }
 
 function spotifyGetAccessToken(string $clientId, string $clientSecret): ?string {
@@ -223,6 +288,18 @@ function spotifyGetAccessToken(string $clientId, string $clientSecret): ?string 
   return $tok;
 }
 
+/** Dernier code HTTP lu par httpJson (pour diagnostics / retry 401). */
+function spotifyLastHttpStatus(): int {
+  return (int)($GLOBALS['__spotify_last_http_status'] ?? 0);
+}
+
+/**
+ * GET vers l’API Spotify (ignore_errors : corps 4xx/5xx toujours lisible).
+ */
+function spotifyApiGetJson(string $url, array $headers): ?array {
+  return httpJson('GET', $url, $headers, null);
+}
+
 /**
  * @return array|null|mixed
  */
@@ -232,6 +309,7 @@ function httpJson(string $method, string $url, array $headers, ?string $body = n
       'method' => $method,
       'header' => implode("\r\n", $headers),
       'timeout' => 15,
+      'ignore_errors' => true,
     ],
   ];
   if ($body !== null && $body !== '') {
@@ -239,6 +317,13 @@ function httpJson(string $method, string $url, array $headers, ?string $body = n
   }
   $ctx = stream_context_create($opts);
   $res = @file_get_contents($url, false, $ctx);
+  $status = 0;
+  if (isset($http_response_header[0]) && is_string($http_response_header[0])) {
+    if (preg_match('/\bHTTP\/\S+\s+(\d{3})\b/', $http_response_header[0], $m)) {
+      $status = (int)$m[1];
+    }
+  }
+  $GLOBALS['__spotify_last_http_status'] = $status;
   if ($res === false) {
     return null;
   }

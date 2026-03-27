@@ -28,6 +28,10 @@ yarn-error.log
 !.vscode/extensions.json
 .history/*
 
+# API secrets (IONOS / local)
+ionos/api/spotify-meta.json
+ionos/api/.spotify-token-cache.json
+
 # Miscellaneous
 /.angular/cache
 .sass-cache/

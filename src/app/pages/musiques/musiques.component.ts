@@ -16,7 +16,18 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
-import { Subject, debounceTime, distinctUntilChanged, filter, switchMap, from, takeUntil, map } from 'rxjs';
+import {
+  Subject,
+  debounceTime,
+  distinctUntilChanged,
+  filter,
+  switchMap,
+  from,
+  takeUntil,
+  map,
+  catchError,
+  of,
+} from 'rxjs';
 import { AuthService, PersonneSummary } from 'src/app/services/auth.service';
 import { MusiqueService, MusiqueRow, SpotifySearchTrack } from 'src/app/services/musique.service';
 
@@ -84,17 +95,19 @@ export class MusiquesComponent implements OnInit, OnDestroy {
           this.searchLoading.set(true);
           return from(
             this.musiqueService.searchSpotify(q).finally(() => this.searchLoading.set(false))
+          ).pipe(
+            // Ne pas terminer l’abonnement sur erreur HTTP : l’utilisateur peut retaper une recherche.
+            catchError((err: unknown) => {
+              const msg = err instanceof Error ? err.message : 'Recherche impossible';
+              this.snack.open(msg, 'OK', { duration: 6000 });
+              return of([] as SpotifySearchTrack[]);
+            })
           );
         }),
         takeUntil(this.destroy$)
       )
       .subscribe({
         next: (tracks) => this.searchHits.set(tracks),
-        error: (e: unknown) => {
-          this.searchHits.set([]);
-          const msg = e instanceof Error ? e.message : 'Recherche impossible';
-          this.snack.open(msg, 'OK', { duration: 5000 });
-        },
       });
   }
 
