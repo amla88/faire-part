@@ -26,6 +26,16 @@ export const routes: Routes = [
           import('./pages/rsvp/rsvp.component').then((m) => m.RsvpComponent),
       },
       {
+        path: 'anecdotes',
+        loadComponent: () =>
+          import('./pages/anecdotes/anecdotes.component').then((m) => m.AnecdotesComponent),
+      },
+      {
+        path: 'idees',
+        loadComponent: () =>
+          import('./pages/boite-idees/boite-idees.component').then((m) => m.BoiteIdeesComponent),
+      },
+      {
         path: 'avatar',
         loadComponent: () => import('./pages/avatar/avatar-editor.component').then((m) => m.AvatarEditorComponent),
         canActivate: [AuthGuard],

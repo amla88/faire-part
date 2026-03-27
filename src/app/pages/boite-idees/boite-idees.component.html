@@ -1,0 +1,93 @@
+<div class="bi-page bi-bridgerton">
+  <header class="bi-header">
+    <p class="bi-eyebrow">Suggestions &amp; envies</p>
+    <h1 class="bi-title">Boîte à idées</h1>
+    <p class="bi-lede">
+      Une idée pour la fête, un souhait, un détail à ne pas oublier — tout reste entre vous et ce profil,
+      autant de messages que vous voulez.
+    </p>
+    <div class="bi-flourish" aria-hidden="true"></div>
+  </header>
+
+  @if (selectedPersonneId() === null) {
+    <mat-card class="bridgerton-card bi-card">
+      <mat-card-content class="bi-no-person">
+        <mat-icon class="bi-no-person-icon" aria-hidden="true">person_search</mat-icon>
+        <p class="bi-no-person-title">Aucune personne sélectionnée</p>
+        <p class="bi-no-person-text">
+          Choisissez d’abord pour qui vous écrivez dans le menu « Changer de personne ».
+        </p>
+        <a mat-stroked-button color="primary" routerLink="/person" class="bi-link-btn">
+          <mat-icon>swap_horiz</mat-icon>
+          Choisir une personne
+        </a>
+      </mat-card-content>
+    </mat-card>
+  } @else {
+    <mat-card class="bridgerton-card bi-card">
+      <mat-card-header class="bi-card-header">
+        <div class="bridgerton-card-heading">
+          <span class="bridgerton-card-kicker">Pour</span>
+          <span class="bridgerton-card-title">{{ selectedPersonneLabel() }}</span>
+        </div>
+      </mat-card-header>
+      <mat-card-content>
+        <form class="bi-form" [formGroup]="form" (ngSubmit)="submit()">
+          <mat-form-field appearance="outline" class="bi-field" subscriptSizing="dynamic">
+            <mat-label>Nouvelle idée</mat-label>
+            <textarea
+              matInput
+              cdkTextareaAutosize
+              cdkAutosizeMinRows="4"
+              cdkAutosizeMaxRows="14"
+              formControlName="contenu"
+              [maxlength]="maxLen"
+              placeholder="Musique, animation, déco, surprise pour les mariés…"
+            ></textarea>
+            <mat-hint align="end">{{ form.controls.contenu.value.length }} / {{ maxLen }}</mat-hint>
+          </mat-form-field>
+          <div class="bi-form-actions">
+            <button mat-flat-button color="primary" type="submit" [disabled]="!canSubmit">
+              <mat-icon>send</mat-icon>
+              Enregistrer
+            </button>
+          </div>
+        </form>
+
+        @if (loading()) {
+          <div class="bi-loading">
+            <mat-progress-spinner diameter="36" mode="indeterminate" color="primary"></mat-progress-spinner>
+            <span>Chargement de vos messages…</span>
+          </div>
+        } @else {
+          <div class="bi-list-section" role="region" aria-labelledby="bi-list-title">
+            <h2 id="bi-list-title" class="bi-list-heading">Déjà déposés</h2>
+            @if (idees().length === 0) {
+              <p class="bi-empty">Aucun message pour l’instant — la boîte attend votre première idée.</p>
+            } @else {
+              <ul class="bi-list">
+                @for (item of idees(); track item.id) {
+                  <li class="bi-item">
+                    <div class="bi-item-head">
+                      <time class="bi-date" [attr.datetime]="item.created_at">{{ formatDate(item.created_at) }}</time>
+                      <button
+                        mat-icon-button
+                        type="button"
+                        class="bi-delete"
+                        aria-label="Supprimer ce message"
+                        (click)="remove(item.id)"
+                        [disabled]="saving()">
+                        <mat-icon>delete_outline</mat-icon>
+                      </button>
+                    </div>
+                    <p class="bi-text">{{ item.contenu }}</p>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+  }
+</div>

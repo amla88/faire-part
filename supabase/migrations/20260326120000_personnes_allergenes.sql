@@ -9,6 +9,9 @@ COMMENT ON COLUMN public.personnes.allergenes_alimentaires IS
 COMMENT ON COLUMN public.personnes.regimes_remarques IS
   'Régimes (végétarien, halal, etc.), préférences ou autres précisions pour le traiteur.';
 
+-- Impossible de changer le type de retour (colonnes) avec CREATE OR REPLACE seul (42P13).
+DROP FUNCTION IF EXISTS public.get_personnes_by_famille(bigint);
+
 CREATE OR REPLACE FUNCTION public.get_personnes_by_famille(p_famille_id bigint)
  RETURNS TABLE(
    id bigint,

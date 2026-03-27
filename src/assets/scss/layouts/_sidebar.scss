@@ -1,97 +1,159 @@
 @use "../variables" as *;
 
+// Navigation latérale — alignée sur Bridgerton + touches de vert sauge (léger).
+
 .mat-drawer.sidebarNav {
-  width: $sidenav-desktop;
-  flex-shrink: 0;
-  transition: swift-ease-out(width);
-  position: absolute;
-  overflow-x: hidden;
-  border-right: 1px solid var(--bridgerton-gold-border-soft);
-  border-radius: 0px !important;
-  background: linear-gradient(180deg, #fffef9 0%, rgba(250, 246, 241, 0.98) 100%);
+	width: $sidenav-desktop;
+	flex-shrink: 0;
+	transition: swift-ease-out(width);
+	position: absolute;
+	overflow-x: hidden;
+	border-right: 1px solid color-mix(in srgb, var(--bridgerton-sage) 28%, var(--bridgerton-gold-border-soft));
+	border-radius: 0 !important;
+	// Fond crème avec une présence sauge très douce
+	background: linear-gradient(
+		175deg,
+		color-mix(in srgb, var(--bridgerton-sage) 11%, var(--bridgerton-cream)) 0%,
+		var(--bridgerton-cream-deep) 42%,
+		color-mix(in srgb, var(--bridgerton-sage) 5%, #fffef9) 100%
+	);
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.65),
+		4px 0 24px rgba(44, 36, 51, 0.05);
 }
 
 .branding {
-  padding: 20px;
+	padding: 18px 20px 20px;
+	border-bottom: 1px solid color-mix(in srgb, var(--bridgerton-sage) 22%, transparent);
+	background: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, transparent 100%);
 }
 
 .sidebar-list {
-  &.mdc-list {
-    padding: 0 24px;
+	&.mdc-list {
+		padding: 8px 18px 24px;
 
-    .mdc-list-group__subheader {
-      margin: 12px 0;
-      text-transform: uppercase;
-      font-size: 0.75rem;
-      font-weight: 700;
-      margin-top: 24px;
-    }
+		// Sous-titres de section (Home, Pages, Auth…)
+		.nav-caption,
+		.mat-mdc-subheader,
+		.mdc-list-group__subheader {
+			font-family: 'Italiana', serif;
+			font-size: 0.65rem;
+			letter-spacing: 0.24em;
+			text-transform: uppercase;
+			font-weight: 400;
+			color: color-mix(in srgb, var(--bridgerton-sage-deep) 45%, var(--bridgerton-gold));
+			margin: 18px 0 6px;
+			padding: 0 10px;
+			line-height: 1.4;
+		}
 
-    .menu-list-item {
-      height: 45px;
-      padding: 8px 10px !important;
-      margin-bottom: 2px;
+		.nav-caption:first-of-type,
+		.mat-mdc-subheader:first-of-type {
+			margin-top: 6px;
+		}
 
-      &:before,
-      &:focus {
-        z-index: -1;
-      }
+		.menu-list-item {
+			height: auto;
+			min-height: 44px;
+			padding: 10px 12px !important;
+			margin-bottom: 4px;
+			border-radius: 2px;
+			color: var(--bridgerton-ink);
+			transition:
+				background-color 0.18s ease,
+				box-shadow 0.18s ease,
+				border-color 0.18s ease;
 
+			&:before,
+			&:focus {
+				z-index: -1;
+			}
 
-      .item-chip {
-        height: 18px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 10px;
-      }
+			// Désactiver le state layer Material trop « primary » sur ce menu
+			--mat-list-hover-state-layer-opacity: 0;
+			--mat-list-focus-state-layer-opacity: 0;
 
-      &.activeMenu {
-        background-color: var(--mat-sys-primary);
+			&:hover:not(.activeMenu) {
+				background-color: color-mix(in srgb, var(--bridgerton-sage) 16%, transparent) !important;
+			}
 
-        .mdc-list-item__primary-text {
-          color: $white !important;
-        }
+			.item-chip {
+				height: 18px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 10px;
+			}
 
-        .mat-mdc-list-item-icon {
-          color: $white !important;
-        }
-      }
+			&.activeMenu {
+				background: linear-gradient(
+					90deg,
+					color-mix(in srgb, var(--bridgerton-sage) 38%, transparent) 0%,
+					color-mix(in srgb, var(--bridgerton-sage) 12%, transparent) 100%
+				) !important;
+				box-shadow: inset 3px 0 0 0 var(--bridgerton-sage-mid);
+				border-left: none;
 
-      .mdc-list-item__start {
-        margin-right: 14px;
-        margin-left: 0 !important;
-        width: 20px;
-        height: 20px;
-        line-height: 0px;
-        fill: transparent !important;
-      }
+				.mdc-list-item__primary-text,
+				.hide-menu {
+					color: var(--bridgerton-ink) !important;
+					font-weight: 600;
+				}
 
-      .mdc-list-item__primary-text {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
+				.mat-mdc-list-item-icon,
+				.routeIcon {
+					color: var(--bridgerton-sage-deep) !important;
+					opacity: 1;
+				}
 
-        .arrow-icon {
-          display: flex;
-          gap: 2px;
+				.mat-icon {
+					color: var(--bridgerton-sage-deep) !important;
+				}
+			}
 
-          .mat-icon {
-            font-size: 18px;
-            width: 18px;
-            height: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          }
-        }
-      }
-    }
-  }
+			.mdc-list-item__start {
+				margin-right: 14px;
+				margin-left: 0 !important;
+				width: 22px;
+				height: 22px;
+				line-height: 0;
+				fill: transparent !important;
+			}
+
+			.routeIcon {
+				color: color-mix(in srgb, var(--bridgerton-sage-deep) 55%, var(--bridgerton-muted));
+				stroke-width: 1.75px;
+			}
+
+			.mdc-list-item__primary-text {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				font-family: 'Plus Jakarta Sans', sans-serif;
+				font-size: 0.9rem;
+				letter-spacing: 0.01em;
+
+				.arrow-icon {
+					display: flex;
+					gap: 2px;
+
+					.mat-icon {
+						font-size: 18px;
+						width: 18px;
+						height: 18px;
+						display: flex;
+						align-items: center;
+						justify-content: center;
+						color: color-mix(in srgb, var(--bridgerton-sage-deep) 50%, var(--bridgerton-muted));
+					}
+				}
+			}
+		}
+	}
 }
 
 .flex-layout {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
+	display: flex;
+	flex-direction: column;
+	height: 100%;
 }

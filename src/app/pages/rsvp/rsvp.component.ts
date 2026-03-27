@@ -8,6 +8,8 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterModule, Router } from '@angular/router';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import { NgSupabaseService } from 'src/app/services/ng-supabase.service';
@@ -28,6 +30,8 @@ import { AvatarMacaronComponent } from 'src/app/shared/avatar-macaron/avatar-mac
     MatFormFieldModule,
     MatInputModule,
     MatIconModule,
+    MatProgressSpinnerModule,
+    MatSnackBarModule,
     RouterModule,
     TextFieldModule,
     AvatarMacaronComponent,
@@ -41,6 +45,7 @@ export class RsvpComponent implements OnInit {
   private avatar = inject(AvatarService);
   private fb = inject(FormBuilder);
   private router = inject(Router);
+  private snack = inject(MatSnackBar);
 
   loading = true;
   saving = false;
@@ -148,12 +153,19 @@ export class RsvpComponent implements OnInit {
         if (alt.error) throw alt.error;
       }
 
-      // success
-      alert('Vos réponses ont été consignées avec grâce dans le registre du domaine.');
+      this.snack.open(
+        'Vos réponses ont été consignées avec grâce dans le registre du domaine.',
+        undefined,
+        { duration: 4000 }
+      );
       this.router.navigateByUrl('/');
     } catch (err: any) {
       console.error('Erreur lors de la sauvegarde des réponses :', err);
-      alert('Erreur lors de l\'enregistrement : ' + (err?.message || String(err)));
+      this.snack.open(
+        'Erreur lors de l’enregistrement : ' + (err?.message || String(err)),
+        'OK',
+        { duration: 6000 }
+      );
     } finally {
       this.saving = false;
     }

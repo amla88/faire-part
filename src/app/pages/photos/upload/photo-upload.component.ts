@@ -1,4 +1,5 @@
 import { Component, ChangeDetectionStrategy, signal, inject, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -6,6 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { Router } from '@angular/router';
 import { PhotoService } from 'src/app/services/photo.service';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 
@@ -27,6 +29,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 export class PhotoUploadComponent {
   private fb = inject(FormBuilder);
   private snack = inject(MatSnackBar);
+  private router = inject(Router);
   private photo = inject(PhotoService);
   private sanitizer = inject(DomSanitizer);
   private destroyRef = inject(DestroyRef);
@@ -133,8 +136,16 @@ export class PhotoUploadComponent {
         }
       }
 
-      const res = await this.photo.uploadGuestPhoto(file);
-      this.snack.open('Photo envoyée pour modération', undefined, { duration: 3000 });
+      await this.photo.uploadGuestPhoto(file);
+      const ref = this.snack.open(
+        'Photo enregistrée. Retrouvez-la dans votre album.',
+        'Voir l’album',
+        { duration: 8000 }
+      );
+      ref
+        .onAction()
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(() => void this.router.navigateByUrl('/photos/album'));
       // reset
       this.form.reset();
       this.previewUrl.set(null);

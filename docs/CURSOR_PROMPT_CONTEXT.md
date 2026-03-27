@@ -13,8 +13,8 @@
   - Boîte à idées (messages libres)
   - (Option) un mode “jeu vidéo” 2D (Phaser) pour remplir les infos de manière ludique
 - Thème visuel (important):
-  - Mariage basé sur `Bridgerton` (esthétique “régence”, élégante)
-  - + `geek / pixel art` (éléments ludiques, style rétro, UI “pixel” ou accents pixel)
+  - **Référence actuelle de l’UI invité** : esthétique **Bridgerton** (régence, crème, or, en-têtes typographiques *Italiana* / *Cormorant Garamond*, cartes `bridgerton-card`, etc.) — voir § “Cohérence graphique”.
+  - **À terme** : accents **geek / pixel art** (ludiques, rétro) en complément, sans casser la base élégante.
 
 ## 2) Choix d’UX / produit
 - L’UX invite doit offrir 2 modes:
@@ -33,11 +33,18 @@
   - Connexion via Supabase + stockage `localStorage`:
     - `app_user` (user/cache)
     - `app_token` (token invité)
+- Tableau de bord invité (`/dashboard`) : hero Bridgerton + résumé des réponses (`response-summary`).
 - RSVP (présence / événements):
   - Route `src/app/app.routes.ts`: `/rsvp`
   - RPC `get_personnes_by_famille`
   - RPC `record_rsvp` (fallback `upsert_rsvp`)
   - Composant: `src/app/pages/rsvp/rsvp.component.ts`
+- Anecdotes (plusieurs par personne, visibles uniquement pour la personne sélectionnée via RPC token) :
+  - Route `/anecdotes` — `AnecdoteService` + RPC `list_anecdotes_for_token`, `insert_anecdote_for_token`, `delete_anecdote_for_token`
+  - Table `personne_anecdotes` (migration `supabase/migrations/20260327120000_personne_anecdotes.sql`)
+- Boîte à idées (même principe que les anecdotes, table séparée) :
+  - Route `/idees` — `IdeeService` + RPC `list_idees_for_token`, `insert_idee_for_token`, `delete_idee_for_token`
+  - Table `personne_idees` (migration `supabase/migrations/20260327140000_personne_idees.sql`)
 - Avatar:
   - Route `/avatar` protégée (`AuthGuard`)
   - Composant: `src/app/pages/avatar/avatar-editor.component.ts`
@@ -54,7 +61,7 @@
     - Suppression via API IONOS `POST /api/photos-delete.php`
   - Stockage actuel: IONOS (fichiers sous `public/assets-mariage/personne-<id>/...`)
 
-## 4) Techtack / framework (côté app)
+## 4) Tech stack / framework (côté app)
 - Frontend:
   - Angular 20 (standalone components/routes)
   - Angular Material + Angular CDK
@@ -66,7 +73,15 @@
   - Edge Functions Supabase (Deno + `jsr:@supabase/...`)
   - Supabase client `@supabase/supabase-js` côté front
 
-## 5) Déploiement (GitHub Actions → IONOS)
+## 5) Cohérence graphique (source de vérité)
+- **Ne pas** utiliser le dossier `.exemple` comme référence visuelle : il sert au plus comme **réserve technique** (patterns Angular Material, snippets) si besoin ponctuel.
+- **Référence UI** : le code déjà stylé dans `src/`, en particulier :
+  - Variables : `src/assets/scss/_bridgerton-tokens.scss` (`--bridgerton-cream`, `--bridgerton-gold`, `--bridgerton-ink`, etc.)
+  - Cartes & cadres : `src/assets/scss/pages/_bridgerton-card.scss` (classe `.bridgerton-card`, titres `.bridgerton-card-kicker` / `.bridgerton-card-title`)
+  - Exemples de pages : `dashboard`, `photo-album`, `photo-upload`, `avatar-editor`, `response-summary` / `rsvp` selon ce qui est déjà harmonisé.
+- Pour toute nouvelle page ou composant invité : réutiliser ces tokens, les mêmes familles de polices (chargées globalement) et les mêmes motifs (en-tête avec “eyebrow”, filet, ornement ❦ si pertinent).
+
+## 6) Déploiement (GitHub Actions → IONOS)
 - Workflow: `.github/workflows/deploy-pages.yml`
 - Déclenchement: `push` sur `main`
 - Étapes clés:
@@ -76,7 +91,7 @@
   - injection secrets Supabase dans `dist/.../browser/index.html` et `404.html` (meta tags)
   - déploiement via SFTP/`lftp` vers IONOS (mirror sur dossier `public`)
 
-## 6) Configuration actuelle (Supabase & injection)
+## 7) Configuration actuelle (Supabase & injection)
 - `.env.local` contient notamment:
   - `SUPABASE_URL`
   - `SUPABASE_ANON_KEY`
@@ -86,7 +101,7 @@
   - Script: `tools/inject-env.js` (écrit `src/index.html`)
   - Puis le workflow injecte à nouveau via secrets GitHub (sed).
 
-## 7) Accès DB: comment l’app “parle” à Supabase
+## 8) Accès DB: comment l’app “parle” à Supabase
 - La plupart des opérations invitée passent par RPC SECURITY DEFINER:
   - `get_famille_by_token(p_token)`
   - `get_personnes_by_famille(p_famille_id)`
@@ -96,7 +111,7 @@
 - Quelques accès directs:
   - tableaux `familles`, `personnes` etc via le client Supabase côté admin.
 
-## 8) Stockage images: points techniques importants
+## 9) Stockage images: points techniques importants
 - L’API PHP IONOS (`public/api/`) :
   - valide le token via RPC `get_famille_by_token`
   - vérifie que `personneId` appartient à la famille (`get_personnes_by_famille`)
@@ -105,9 +120,8 @@
   - redimensionne et ré-encode (suppression des métadonnées)
   - HEIC/HEIF est converti côté navigateur avant envoi (front)
 
-## 9) Exclusions / conventions pour Cursor
-- Ne pas modifier `/.exemple` (référence design seulement).
+## 10) Exclusions / conventions pour Cursor
+- Ne pas modifier le dossier **`.exemple`** sauf besoin explicite de copier une **technique** (composant Material, pattern de code) ; ce n’est **pas** le gabarit graphique du produit.
 - Respecter l’existant: Angular Material, conventions routes, protections `AuthGuard` / `adminGuard`.
-- En cas de besoin UI, s’aligner sur le style des composants et boutons du projet `.exemple` (sans changer ses fichiers).
+- Pour l’UI invité, **s’aligner sur le style Bridgerton déjà présent dans `src/`** (tokens + cartes + pages de référence ci‑dessus), pas sur `.exemple`.
 - Priorité aux intégrations “câblées” (front ↔ RPC/edge functions ↔ UI).
-

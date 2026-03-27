@@ -1,0 +1,176 @@
+<div class="anecdotes-page anecdotes-bridgerton">
+  <header class="anecdotes-header">
+    <p class="anecdotes-eyebrow">Le salon des confidences</p>
+    <h1 class="anecdotes-title">Anecdotes</h1>
+    <p class="anecdotes-lede">
+      Quelques lignes pour la famille des mariés — visibles uniquement par vous, pour ce profil.
+      Ajoutez autant de souvenirs que vous voulez.
+    </p>
+    <div class="anecdotes-flourish" aria-hidden="true"></div>
+  </header>
+
+  @if (selectedPersonneId() === null) {
+    <mat-card class="bridgerton-card anecdotes-card">
+      <mat-card-content class="anecdotes-no-person">
+        <mat-icon class="anecdotes-no-person-icon" aria-hidden="true">person_search</mat-icon>
+        <p class="anecdotes-no-person-title">Aucune personne sélectionnée</p>
+        <p class="anecdotes-no-person-text">
+          Choisissez d’abord pour qui vous écrivez dans le menu « Changer de personne ».
+        </p>
+        <a mat-stroked-button color="primary" routerLink="/person" class="anecdotes-link-btn">
+          <mat-icon>swap_horiz</mat-icon>
+          Choisir une personne
+        </a>
+      </mat-card-content>
+    </mat-card>
+  } @else {
+    <mat-card class="bridgerton-card anecdotes-card">
+      <mat-card-header class="anecdotes-card-header">
+        <div class="bridgerton-card-heading">
+          <span class="bridgerton-card-kicker">Pour</span>
+          <span class="bridgerton-card-title">{{ selectedPersonneLabel() }}</span>
+        </div>
+      </mat-card-header>
+
+      <mat-card-content>
+
+        <form
+
+          class="anecdotes-form"
+
+          [formGroup]="form"
+
+          (ngSubmit)="submit()"
+
+        >
+
+          <mat-form-field appearance="outline" class="anecdotes-field" subscriptSizing="dynamic">
+
+            <mat-label>Nouvelle anecdote</mat-label>
+
+            <textarea
+
+              matInput
+
+              cdkTextareaAutosize
+
+              cdkAutosizeMinRows="4"
+
+              cdkAutosizeMaxRows="14"
+
+              formControlName="contenu"
+
+              [maxlength]="maxLen"
+
+              placeholder="Un souvenir, un moment volé, une déclaration à faire sourire…"
+
+            ></textarea>
+
+            <mat-hint align="end">{{ form.controls.contenu.value.length }} / {{ maxLen }}</mat-hint>
+
+          </mat-form-field>
+
+
+
+          <div class="anecdotes-form-actions">
+
+            <button
+
+              mat-flat-button
+
+              color="primary"
+
+              type="submit"
+
+              [disabled]="!canSubmit"
+
+            >
+
+              <mat-icon>send</mat-icon>
+
+              Enregistrer
+
+            </button>
+
+          </div>
+
+        </form>
+
+
+
+        @if (loading()) {
+
+          <div class="anecdotes-loading">
+
+            <mat-progress-spinner diameter="36" mode="indeterminate" color="primary"></mat-progress-spinner>
+
+            <span>Chargement de vos anecdotes…</span>
+
+          </div>
+
+        } @else {
+
+          <div class="anecdotes-list-section" role="region" aria-labelledby="anecdotes-list-title">
+
+            <h2 id="anecdotes-list-title" class="anecdotes-list-heading">Déjà partagées</h2>
+
+            @if (anecdotes().length === 0) {
+
+              <p class="anecdotes-empty">Aucune anecdote pour l’instant — le registre attend votre première plume.</p>
+
+            } @else {
+
+              <ul class="anecdotes-list">
+
+                @for (a of anecdotes(); track a.id) {
+
+                  <li class="anecdote-item">
+
+                    <div class="anecdote-item-head">
+
+                      <time class="anecdote-date" [attr.datetime]="a.created_at">{{ formatDate(a.created_at) }}</time>
+
+                      <button
+
+                        mat-icon-button
+
+                        type="button"
+
+                        class="anecdote-delete"
+
+                        aria-label="Supprimer cette anecdote"
+
+                        (click)="remove(a.id)"
+
+                        [disabled]="saving()"
+
+                      >
+
+                        <mat-icon>delete_outline</mat-icon>
+
+                      </button>
+
+                    </div>
+
+                    <p class="anecdote-text">{{ a.contenu }}</p>
+
+                  </li>
+
+                }
+
+              </ul>
+
+            }
+
+          </div>
+
+        }
+
+      </mat-card-content>
+
+    </mat-card>
+
+  }
+
+</div>
+

@@ -1,0 +1,236 @@
+:host {
+	display: block;
+}
+
+.anecdotes-bridgerton {
+	min-height: 100%;
+	padding: 8px 12px 40px;
+	background:
+		radial-gradient(ellipse 100% 55% at 50% -12%, rgba(232, 224, 235, 0.4), transparent 52%),
+		radial-gradient(ellipse 65% 40% at 100% 18%, rgba(171, 188, 166, 0.12), transparent 48%),
+		linear-gradient(180deg, var(--bridgerton-cream) 0%, var(--bridgerton-cream-deep) 100%);
+}
+
+.anecdotes-page {
+	max-width: 720px;
+	margin: 0 auto;
+}
+
+.anecdotes-header {
+	text-align: center;
+	margin-bottom: 22px;
+	padding: 8px 4px 0;
+}
+
+.anecdotes-eyebrow {
+	font-family: 'Italiana', serif;
+	font-size: 0.75rem;
+	letter-spacing: 0.32em;
+	text-transform: uppercase;
+	color: var(--bridgerton-gold);
+	margin: 0 0 10px;
+}
+
+.anecdotes-title {
+	font-family: 'Cormorant Garamond', serif;
+	font-weight: 600;
+	font-size: clamp(1.85rem, 4vw, 2.35rem);
+	line-height: 1.15;
+	color: var(--bridgerton-ink);
+	margin: 0 0 12px;
+	letter-spacing: 0.02em;
+}
+
+.anecdotes-lede {
+	font-family: 'Plus Jakarta Sans', sans-serif;
+	font-size: 0.95rem;
+	line-height: 1.65;
+	color: var(--bridgerton-muted);
+	margin: 0 auto;
+	max-width: 36em;
+}
+
+.anecdotes-flourish {
+	height: 1px;
+	max-width: 220px;
+	margin: 20px auto 0;
+	background: linear-gradient(
+		90deg,
+		transparent,
+		rgba(184, 149, 106, 0.45) 25%,
+		rgba(184, 149, 106, 0.45) 75%,
+		transparent
+	);
+	position: relative;
+}
+
+.anecdotes-flourish::after {
+	content: '❦';
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	font-size: 0.7rem;
+	color: var(--bridgerton-gold);
+	opacity: 0.85;
+	background: linear-gradient(180deg, var(--bridgerton-cream), var(--bridgerton-cream-deep));
+	padding: 0 8px;
+	line-height: 1;
+}
+
+.anecdotes-card {
+	padding: 18px 14px 22px !important;
+}
+
+.anecdotes-card-header {
+	display: block;
+	padding: 4px 8px 12px !important;
+	margin: 0 !important;
+}
+
+.anecdotes-form {
+	margin-bottom: 28px;
+}
+
+.anecdotes-field {
+	width: 100%;
+}
+
+.anecdotes-form-actions {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: 8px;
+
+	button .mat-icon {
+		margin-right: 6px;
+		margin-left: -2px;
+		font-size: 18px;
+		width: 18px;
+		height: 18px;
+		vertical-align: middle;
+	}
+}
+
+.anecdotes-loading {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 14px;
+	padding: 28px 12px;
+	color: var(--bridgerton-muted);
+	font-family: 'Plus Jakarta Sans', sans-serif;
+	font-size: 0.95rem;
+}
+
+.anecdotes-list-section {
+	padding-top: 8px;
+	border-top: 1px solid var(--bridgerton-gold-border-soft);
+}
+
+.anecdotes-list-heading {
+	font-family: 'Italiana', serif;
+	font-size: 0.7rem;
+	letter-spacing: 0.22em;
+	text-transform: uppercase;
+	color: var(--bridgerton-gold);
+	margin: 0 0 14px;
+	font-weight: 400;
+}
+
+.anecdotes-empty {
+	font-family: 'Plus Jakarta Sans', sans-serif;
+	font-size: 0.92rem;
+	color: var(--bridgerton-muted);
+	font-style: italic;
+	margin: 0;
+	line-height: 1.55;
+}
+
+.anecdotes-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.anecdote-item {
+	border: 1px solid var(--bridgerton-gold-border-soft);
+	border-radius: 2px;
+	padding: 12px 14px 14px;
+	background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(250, 246, 241, 0.85) 100%);
+}
+
+.anecdote-item-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 10px;
+}
+
+.anecdote-date {
+	font-family: 'Plus Jakarta Sans', sans-serif;
+	font-size: 0.78rem;
+	color: var(--bridgerton-gold);
+	letter-spacing: 0.04em;
+}
+
+.anecdote-delete {
+	color: var(--bridgerton-muted);
+}
+
+.anecdote-delete:hover:not([disabled]) {
+	color: var(--bridgerton-crimson);
+}
+
+.anecdote-text {
+	font-family: 'Cormorant Garamond', serif;
+	font-size: 1.05rem;
+	line-height: 1.55;
+	color: var(--bridgerton-ink);
+	margin: 0;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.anecdotes-no-person {
+	text-align: center;
+	padding: 28px 16px 32px;
+}
+
+.anecdotes-no-person-icon {
+	font-size: 48px !important;
+	width: 48px !important;
+	height: 48px !important;
+	color: var(--bridgerton-gold);
+	opacity: 0.85;
+	margin-bottom: 14px;
+}
+
+.anecdotes-no-person-title {
+	font-family: 'Cormorant Garamond', serif;
+	font-size: 1.35rem;
+	font-weight: 600;
+	color: var(--bridgerton-ink);
+	margin: 0 0 8px;
+}
+
+.anecdotes-no-person-text {
+	font-family: 'Plus Jakarta Sans', sans-serif;
+	font-size: 0.95rem;
+	color: var(--bridgerton-muted);
+	margin: 0 0 20px;
+	line-height: 1.55;
+}
+
+.anecdotes-link-btn {
+	font-family: 'Plus Jakarta Sans', sans-serif !important;
+	font-weight: 500 !important;
+
+	.mat-icon {
+		margin-right: 8px;
+		vertical-align: middle;
+	}
+}
