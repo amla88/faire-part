@@ -91,13 +91,15 @@
                     <p class="musiques-hit-title">{{ t.name }}</p>
                     <p class="musiques-hit-meta">{{ t.artist_label }} · {{ t.album_name }}</p>
                     <p class="musiques-hit-dur">{{ formatDuration(t.duration_ms) }}</p>
-                    @if (t.preview_url) {
-                      <audio class="musiques-audio" controls [src]="t.preview_url" preload="metadata">
-                        Pré-écoute (~30&nbsp;s)
-                      </audio>
-                    } @else {
-                      <p class="musiques-no-preview">Pas d’extrait sur Spotify pour ce titre.</p>
-                    }
+                    <a
+                      class="musiques-open-spotify"
+                      [href]="t.external_url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Écouter sur Spotify
+                      <mat-icon class="musiques-open-ico">open_in_new</mat-icon>
+                    </a>
                   </div>
                   <button
                     mat-flat-button
@@ -114,6 +116,36 @@
               }
             </ul>
           }
+        </div>
+
+        <div class="musiques-search-block m-t-24">
+          <h2 class="musiques-section-title">Ou proposer un lien manuellement</h2>
+          <form class="musiques-manual-form" [formGroup]="manualForm" (ngSubmit)="addManualTrack()">
+            <mat-form-field appearance="outline" class="musiques-field" subscriptSizing="dynamic">
+              <mat-label>Titre</mat-label>
+              <input matInput formControlName="title" placeholder="Ex: Bad Romance" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="musiques-field" subscriptSizing="dynamic">
+              <mat-label>Artiste</mat-label>
+              <input matInput formControlName="artist" placeholder="Ex: Lady Gaga" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="musiques-field" subscriptSizing="dynamic">
+              <mat-label>Lien (YouTube, Deezer, Apple Music...)</mat-label>
+              <input matInput formControlName="url" placeholder="https://..." />
+              <mat-hint>Le lien doit commencer par http:// ou https://</mat-hint>
+            </mat-form-field>
+            <div class="musiques-form-actions">
+              <button
+                mat-flat-button
+                color="primary"
+                type="submit"
+                [disabled]="!canAddMore || saving() || manualForm.invalid"
+              >
+                <mat-icon>add</mat-icon>
+                Ajouter ce lien
+              </button>
+            </div>
+          </form>
         </div>
 
         <h2 class="musiques-section-title m-t-24">Vos propositions</h2>
@@ -145,9 +177,6 @@
                   <p class="musiques-hit-meta">{{ m.auteur }} · {{ m.album_name || '—' }}</p>
                   @if (m.commentaire) {
                     <p class="musiques-saved-note">« {{ m.commentaire }} »</p>
-                  }
-                  @if (m.preview_url) {
-                    <audio class="musiques-audio" controls [src]="m.preview_url" preload="metadata"></audio>
                   }
                   <a
                     class="musiques-open-spotify"

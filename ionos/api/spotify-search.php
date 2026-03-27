@@ -89,7 +89,8 @@ if (!$access) {
   exit;
 }
 
-$limit = 15;
+// Doc Spotify Search (GET /search) : limit dans 0–10 (défaut 5). Au-delà → « Invalid limit ».
+$limit = 10;
 $url = 'https://api.spotify.com/v1/search?' . http_build_query([
   'q' => $q,
   'type' => 'track',
@@ -200,6 +201,19 @@ if (is_array($items)) {
       'external_url' => $extUrl,
       'preview_url' => $preview,
     ];
+  }
+}
+
+// Recherche = SimpleTrack : preview_url souvent null (politique Spotify). Enrichir via GET /tracks.
+if (count($tracksOut) > 0) {
+  $ids = [];
+  foreach ($tracksOut as $row) {
+    if (isset($row['id']) && is_string($row['id']) && $row['id'] !== '') {
+      $ids[] = $row['id'];
+    }
+  }
+  if (count($ids) > 0) {
+    $tracksOut = enrichTracksPreviewUrls($tracksOut, $ids, $access, $clientId, $clientSecret);
   }
 }
 
@@ -329,6 +343,51 @@ function httpJson(string $method, string $url, array $headers, ?string $body = n
   }
   $decoded = json_decode($res, true);
   return is_array($decoded) ? $decoded : null;
+}
+
+/**
+ * GET /tracks retourne des Track complets ; preview_url peut être renseigné alors qu’il est absent en /search.
+ * Selon l’app (mode dev / extension), Spotify peut toutefois garder preview_url à null.
+ *
+ * @param array<int, array<string, mixed>> $tracksOut
+ * @param list<string> $ids
+ * @return array<int, array<string, mixed>>
+ */
+function enrichTracksPreviewUrls(array $tracksOut, array $ids, string $access, string $clientId, string $clientSecret): array {
+  $url = 'https://api.spotify.com/v1/tracks?' . http_build_query([
+    'ids' => implode(',', $ids),
+    'market' => 'FR',
+  ]);
+  $headers = ['Authorization: Bearer ' . $access];
+  $res = spotifyApiGetJson($url, $headers);
+  if (!is_array($res) && spotifyLastHttpStatus() === 401) {
+    @unlink(__DIR__ . '/.spotify-token-cache.json');
+    $newAccess = spotifyGetAccessToken($clientId, $clientSecret);
+    if ($newAccess) {
+      $res = spotifyApiGetJson($url, ['Authorization: Bearer ' . $newAccess]);
+    }
+  }
+  if (!is_array($res) || !isset($res['tracks']) || !is_array($res['tracks'])) {
+    return $tracksOut;
+  }
+  $previewById = [];
+  foreach ($res['tracks'] as $tr) {
+    if (!is_array($tr) || !isset($tr['id'])) {
+      continue;
+    }
+    $pid = (string)$tr['id'];
+    if (isset($tr['preview_url']) && is_string($tr['preview_url']) && $tr['preview_url'] !== '') {
+      $previewById[$pid] = $tr['preview_url'];
+    }
+  }
+  foreach ($tracksOut as &$t) {
+    $id = isset($t['id']) ? (string)$t['id'] : '';
+    if ($id !== '' && isset($previewById[$id])) {
+      $t['preview_url'] = $previewById[$id];
+    }
+  }
+  unset($t);
+  return $tracksOut;
 }
 
 function publicBaseUrl(): string {

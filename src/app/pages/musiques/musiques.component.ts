@@ -29,7 +29,7 @@ import {
   of,
 } from 'rxjs';
 import { AuthService, PersonneSummary } from 'src/app/services/auth.service';
-import { MusiqueService, MusiqueRow, SpotifySearchTrack } from 'src/app/services/musique.service';
+import { ManualTrackInput, MusiqueService, MusiqueRow, SpotifySearchTrack } from 'src/app/services/musique.service';
 
 @Component({
   selector: 'app-musiques',
@@ -74,6 +74,12 @@ export class MusiquesComponent implements OnInit, OnDestroy {
 
   commentForm = this.fb.nonNullable.group({
     note: ['', [Validators.maxLength(500)]],
+  });
+
+  manualForm = this.fb.nonNullable.group({
+    title: ['', [Validators.required, Validators.maxLength(200)]],
+    artist: ['', [Validators.required, Validators.maxLength(200)]],
+    url: ['', [Validators.required, Validators.pattern(/^https?:\/\/.+/i), Validators.maxLength(500)]],
   });
 
   private readonly dateFmt = new Intl.DateTimeFormat('fr-FR', {
@@ -171,6 +177,39 @@ export class MusiquesComponent implements OnInit, OnDestroy {
       if (id != null) {
         this.snack.open('Proposition enregistrée', undefined, { duration: 2500 });
         this.commentForm.patchValue({ note: '' });
+        await this.load();
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Enregistrement impossible';
+      this.snack.open(msg, 'OK', { duration: 5000 });
+    } finally {
+      this.saving.set(false);
+    }
+  }
+
+  async addManualTrack(): Promise<void> {
+    const pid = this.selectedPersonneId();
+    if (pid == null) return;
+    if (this.rows().length >= this.maxProposals) return;
+    if (this.manualForm.invalid) {
+      this.manualForm.markAllAsTouched();
+      return;
+    }
+
+    this.saving.set(true);
+    try {
+      const note = this.commentForm.controls.note.value?.trim() ?? '';
+      const payload: ManualTrackInput = {
+        title: this.manualForm.controls.title.value.trim(),
+        artist: this.manualForm.controls.artist.value.trim(),
+        url: this.manualForm.controls.url.value.trim(),
+        comment: note,
+      };
+      const id = await this.musiqueService.insertManual(pid, payload);
+      if (id != null) {
+        this.snack.open('Proposition enregistrée', undefined, { duration: 2500 });
+        this.commentForm.patchValue({ note: '' });
+        this.manualForm.reset();
         await this.load();
       }
     } catch (e: unknown) {

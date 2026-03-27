@@ -128,6 +128,25 @@
 	margin-bottom: 12px;
 }
 
+.musiques-manual-form {
+	display: block;
+}
+
+.musiques-form-actions {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: 4px;
+
+	button .mat-icon {
+		margin-right: 6px;
+		margin-left: -2px;
+		font-size: 18px;
+		width: 18px;
+		height: 18px;
+		vertical-align: middle;
+	}
+}
+
 .musiques-search-field .mat-mdc-form-field-icon-prefix .mat-icon {
 	color: var(--bridgerton-gold);
 	opacity: 0.9;

@@ -32,6 +32,13 @@ export interface SpotifySearchTrack {
   preview_url: string | null;
 }
 
+export interface ManualTrackInput {
+  title: string;
+  artist: string;
+  url: string;
+  comment?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class MusiqueService {
   private supabase = inject(NgSupabaseService);
@@ -94,6 +101,33 @@ export class MusiqueService {
     });
     if (error) {
       console.error('insert_musique_for_token', error);
+      throw new Error(this.mapRpcError(error.message));
+    }
+    const id = data as number | null;
+    return id != null ? Number(id) : null;
+  }
+
+  async insertManual(personneId: number, manual: ManualTrackInput): Promise<number | null> {
+    const token = this.getToken();
+    if (!token) return null;
+    const client = this.supabase.getClient();
+    const { data, error } = await client.rpc('insert_musique_for_token', {
+      p_token: token,
+      p_personne_id: personneId,
+      p_titre: manual.title.trim(),
+      p_auteur: manual.artist.trim(),
+      p_lien: manual.url.trim(),
+      p_commentaire: (manual.comment || '').trim(),
+      p_spotify_track_id: null,
+      p_spotify_uri: null,
+      p_album_name: null,
+      p_album_image_url: null,
+      p_duration_ms: null,
+      p_preview_url: null,
+      p_artists_json: [manual.artist.trim()],
+    });
+    if (error) {
+      console.error('insert_musique_for_token(manual)', error);
       throw new Error(this.mapRpcError(error.message));
     }
     const id = data as number | null;
