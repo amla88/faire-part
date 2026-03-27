@@ -264,6 +264,22 @@ export class MusiquesComponent implements OnInit, OnDestroy {
     }
   }
 
+  linkLabel(url: string): string {
+    const raw = (url || '').toLowerCase();
+    let host = '';
+    try {
+      host = new URL(url).hostname.toLowerCase();
+    } catch {
+      host = raw;
+    }
+    if (host.includes('spotify.')) return 'Ouvrir sur Spotify';
+    if (host.includes('youtube.') || host.includes('youtu.be')) return 'Ouvrir sur YouTube';
+    if (host.includes('deezer.')) return 'Ouvrir sur Deezer';
+    if (host.includes('music.apple.') || host.includes('itunes.apple.')) return 'Ouvrir sur Apple Music';
+    if (host.includes('soundcloud.')) return 'Ouvrir sur SoundCloud';
+    return 'Ouvrir le lien';
+  }
+
   get canAddMore(): boolean {
     return this.selectedPersonneId() != null && this.rows().length < this.maxProposals && !this.saving();
   }
