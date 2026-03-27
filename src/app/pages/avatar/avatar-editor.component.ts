@@ -76,6 +76,7 @@ export class AvatarEditorComponent {
 
   // Listes d'options pour les selects
   readonly topOptions = [
+    { value: 'noHair', label: 'Chauve' },
     { value: 'bigHair', label: 'Cheveux volumineux' },
     { value: 'bob', label: 'Carré' },
     { value: 'bun', label: 'Chignon' },
