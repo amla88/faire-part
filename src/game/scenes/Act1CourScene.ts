@@ -5,6 +5,7 @@ import { quests, QuestFlags } from '../systems/QuestSystem';
 import { SceneInput } from '../systems/SceneInput';
 import { getDialogue } from '../data/dialogues.catalog';
 import { gameBackend } from '../services/GameBackendBridge';
+import { gameState } from '../core/game-state';
 
 export class Act1CourScene extends Phaser.Scene {
   private inputState!: SceneInput;
@@ -20,6 +21,7 @@ export class Act1CourScene extends Phaser.Scene {
   private questText!: Phaser.GameObjects.Text;
   private choicesText!: Phaser.GameObjects.Text;
   private saving = false;
+  private toChefQueued = false;
 
   constructor() {
     super('Act1CourScene');
@@ -28,11 +30,11 @@ export class Act1CourScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale;
 
-    this.cameras.main.setBackgroundColor('#231f2a');
+    this.cameras.main.setBackgroundColor('#f3ebe4');
 
     // Sol (prototype).
-    this.add.rectangle(width / 2, height / 2, width * 0.92, height * 0.78, 0x2b2534, 0.95);
-    this.add.rectangle(width / 2, height / 2, width * 0.92, height * 0.78, 0x000000, 0.08).setStrokeStyle(3, 0xc9a55c, 0.3);
+    this.add.rectangle(width / 2, height / 2, width * 0.92, height * 0.78, 0xffffff, 0.22);
+    this.add.rectangle(width / 2, height / 2, width * 0.92, height * 0.78, 0x000000, 0.04).setStrokeStyle(2, 0xabbca6, 0.25);
 
     // Player (placeholder).
     this.player = this.add.rectangle(width / 2 - 140, height / 2 + 60, 22, 26, 0xf5c16c, 0.85);
@@ -134,22 +136,60 @@ export class Act1CourScene extends Phaser.Scene {
       const closeEnough = dist < 70;
 
       if (closeEnough && interactJustDown) {
-        this.dialogueBox.start(getDialogue('act1.register'), () => {
-          this.openRegisterChoices();
-        });
+        this.choicesText.setText('Consultation du registre…');
+        gameBackend
+          .getSelectedPersonneRow()
+          .then((row) => {
+            this.choicesText.setText('');
+            const already =
+              !!row &&
+              (row.present_reception === true ||
+                row.present_repas === true ||
+                row.present_soiree === true ||
+                String(row.allergenes_alimentaires || '').trim().length > 0 ||
+                String(row.regimes_remarques || '').trim().length > 0);
+
+            if (already) {
+              this.dialogueBox.start(getDialogue('act1.already'), () => {
+                // Déjà rempli via Angular: on laisse quand même la main pour modifier/valider.
+                this.questText.setText('Registre déjà rempli (modifiable).');
+                this.hintText.setText('Vous pouvez confirmer ou ajuster.');
+                this.openRegisterChoices({
+                  present_reception: row.present_reception === true,
+                  present_repas: row.present_repas === true,
+                  present_soiree: row.present_soiree === true,
+                });
+              });
+              return;
+            }
+
+            this.dialogueBox.start(getDialogue('act1.register'), () => {
+              this.openRegisterChoices();
+            });
+          })
+          .catch(() => {
+            this.choicesText.setText('');
+            this.dialogueBox.start(getDialogue('act1.register'), () => {
+              this.openRegisterChoices();
+            });
+          });
       }
     }
 
     this.inputState.commit();
   }
 
-  private openRegisterChoices(): void {
+  private openRegisterChoices(defaults?: {
+    present_reception?: boolean;
+    present_repas?: boolean;
+    present_soiree?: boolean;
+  }): void {
     this.formBox.startToggles({
       title: 'Présence au domaine',
       toggles: [
-        { key: 'present_reception', label: 'Réception', value: true },
-        { key: 'present_repas', label: 'Repas', value: true },
-        { key: 'present_soiree', label: 'Soirée', value: true },
+        { key: 'present_reception', label: 'Réception', value: defaults?.present_reception ?? true },
+        { key: 'present_repas', label: 'Repas', value: defaults?.present_repas ?? true },
+        { key: 'present_soiree', label: 'Soirée', value: defaults?.present_soiree ?? true },
       ],
       onSubmit: (values) => {
         if (this.saving) return;
@@ -164,9 +204,9 @@ export class Act1CourScene extends Phaser.Scene {
           .then(() => {
             quests.done(QuestFlags.act1RegisterDone);
             this.questText.setText('Présence consignée dans le registre !');
-            this.hintText.setText('Acte 1 validé. Passage à l’Acte 2…');
+            this.hintText.setText('Un dernier message…');
             this.choicesText.setText('');
-            this.time.delayedCall(600, () => this.scene.start('Act2OfficeScene'));
+            this.playToChefThenGoAct2();
           })
           .catch((e) => {
             this.choicesText.setText('');
@@ -177,6 +217,17 @@ export class Act1CourScene extends Phaser.Scene {
             this.saving = false;
           });
       },
+    });
+  }
+
+  private playToChefThenGoAct2(): void {
+    if (this.toChefQueued) return;
+    this.toChefQueued = true;
+    this.dialogueBox.start(getDialogue('act1.toChef'), () => {
+      this.time.delayedCall(200, () => {
+        gameState.setAct('act2');
+        this.scene.start('Act2OfficeScene');
+      });
     });
   }
 }

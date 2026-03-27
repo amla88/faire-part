@@ -1,5 +1,5 @@
 <div class="jeu-page">
-  <div class="game-shell" [class.portrait]="isPortrait()">
+  <div #gameShell class="game-shell" [class.portrait]="isPortrait()">
     <div #gameHost class="game-host"></div>
 
     @if (isPortrait()) {
@@ -18,9 +18,20 @@
           <p><strong>PC:</strong> fleches ou ZQSD pour se deplacer, Espace pour interagir.</p>
           <p><strong>Mobile/Tablette:</strong> utilisez les boutons directionnels, puis le bouton <strong>Parler</strong> pour interagir.</p>
           <p>Vous pouvez masquer les controles avec le bouton en haut a droite.</p>
-          <button mat-flat-button color="primary" (click)="startGame()">
-            Commencer
-          </button>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            @if (hasSave()) {
+              <button mat-flat-button color="primary" (click)="resumeGame()">
+                Reprendre
+              </button>
+              <button mat-stroked-button type="button" (click)="restartGame()">
+                Recommencer
+              </button>
+            } @else {
+              <button mat-flat-button color="primary" (click)="startGame()">
+                Commencer
+              </button>
+            }
+          </div>
         </mat-card>
       </div>
     }

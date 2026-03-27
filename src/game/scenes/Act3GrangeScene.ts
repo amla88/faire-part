@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { SceneInput } from '../systems/SceneInput';
 import { quests, QuestFlags } from '../systems/QuestSystem';
 import { gameBackend } from '../services/GameBackendBridge';
+import { gameState } from '../core/game-state';
 
 export class Act3GrangeScene extends Phaser.Scene {
   private inputState!: SceneInput;
@@ -12,12 +13,13 @@ export class Act3GrangeScene extends Phaser.Scene {
   }
 
   create(): void {
+    gameState.setAct('act3');
     const { width, height } = this.scale;
-    this.cameras.main.setBackgroundColor('#231c1a');
+    this.cameras.main.setBackgroundColor('#f3ebe4');
     this.add.text(18, 14, 'ACTE 3 - Grande grange (prototype)', {
       fontFamily: 'monospace',
       fontSize: '14px',
-      color: '#f8e8c9',
+      color: '#2c2433',
     });
 
     this.inputState = new SceneInput(this);
@@ -28,7 +30,7 @@ export class Act3GrangeScene extends Phaser.Scene {
       {
         fontFamily: 'monospace',
         fontSize: '14px',
-        color: '#f4dfbf',
+        color: '#2c2433',
         align: 'center',
       }
     ).setOrigin(0.5);

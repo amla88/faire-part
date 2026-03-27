@@ -46,6 +46,18 @@ export class GameBackendBridge {
     return res as any;
   }
 
+  async getSelectedPersonneRow(): Promise<any | null> {
+    const user = this.getUser();
+    if (!user?.famille_id) return null;
+    const familleId = Number(user.famille_id);
+    const personneId = Number(user.selected_personne_id ?? user.personne_principale_id);
+    if (!Number.isFinite(personneId)) return null;
+    const res = await this.rpc<any[]>('get_personnes_by_famille', { p_famille_id: familleId });
+    if (res.error) return null;
+    const rows = (res.data || []) as any[];
+    return rows.find((r) => Number(r.id) === personneId) ?? null;
+  }
+
   /** Acte 1/2: consigner présence + allergènes pour la personne sélectionnée */
   async recordRsvpForSelected(opts: {
     present_reception: boolean;

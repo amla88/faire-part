@@ -5,7 +5,7 @@
 
 .jeu-page {
   min-height: calc(100vh - 64px);
-  background: #1d1624;
+  background: var(--bridgerton-cream);
   padding: 8px;
 }
 
@@ -13,8 +13,8 @@
   position: relative;
   max-width: 1280px;
   margin: 0 auto;
-  background: #130f18;
-  border: 1px solid rgba(201, 165, 92, 0.35);
+  background: color-mix(in srgb, var(--bridgerton-sage) 10%, var(--bridgerton-cream));
+  border: 1px solid color-mix(in srgb, var(--bridgerton-sage) 30%, var(--bridgerton-gold-border-soft));
   min-height: calc(100vh - 90px);
   overflow: hidden;
 }
@@ -34,9 +34,9 @@
 }
 
 .overlay-card {
-  background: rgba(38, 28, 47, 0.96);
-  color: #f4dfbf;
-  border: 1px solid rgba(201, 165, 92, 0.45);
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 246, 241, 0.96) 100%);
+  color: var(--bridgerton-ink);
+  border: 1px solid var(--bridgerton-gold-border-soft);
   padding: 14px 16px;
 }
 
@@ -70,9 +70,9 @@
   bottom: 20px;
   width: 110px;
   height: 40px;
-  border: 1px solid rgba(201, 165, 92, 0.55);
-  background: rgba(34, 23, 42, 0.9);
-  color: #f4dfbf;
+  border: 1px solid color-mix(in srgb, var(--bridgerton-sage) 55%, var(--bridgerton-gold-border-soft));
+  background: color-mix(in srgb, var(--bridgerton-sage) 18%, var(--bridgerton-cream));
+  color: var(--bridgerton-ink);
   border-radius: 8px;
   font-weight: 700;
   font-size: 14px;
@@ -82,9 +82,9 @@
   position: absolute;
   width: 44px;
   height: 44px;
-  border: 1px solid rgba(201, 165, 92, 0.55);
-  background: rgba(34, 23, 42, 0.9);
-  color: #f4dfbf;
+  border: 1px solid color-mix(in srgb, var(--bridgerton-sage) 55%, var(--bridgerton-gold-border-soft));
+  background: color-mix(in srgb, var(--bridgerton-sage) 18%, var(--bridgerton-cream));
+  color: var(--bridgerton-ink);
   border-radius: 8px;
   font-weight: 700;
   font-size: 20px;

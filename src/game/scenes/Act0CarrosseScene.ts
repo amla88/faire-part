@@ -11,7 +11,6 @@ export class Act0CarrosseScene extends Phaser.Scene {
   private currentIndex = 0;
 
   private dialogueBox!: DialogueBox;
-  private dialogueDone = false;
   private selectionLocked = false;
 
   constructor() {
@@ -21,7 +20,7 @@ export class Act0CarrosseScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale;
 
-    this.cameras.main.setBackgroundColor('#2c2433');
+    this.cameras.main.setBackgroundColor('#f3ebe4');
 
     // Faux decor de "carrosse" pixelise pour un prototype de deplacement.
     const room = this.add.rectangle(width / 2, height / 2, width * 0.86, height * 0.74, 0x4b3b33);
@@ -32,13 +31,13 @@ export class Act0CarrosseScene extends Phaser.Scene {
     this.add.text(18, 14, 'ACTE 0 - Carrosse (prototype)', {
       fontFamily: 'monospace',
       fontSize: '14px',
-      color: '#f8e8c9',
+      color: '#2c2433',
     });
 
     this.add.text(width / 2, height * 0.16, 'Choisissez votre personnage', {
       fontFamily: 'monospace',
       fontSize: '13px',
-      color: '#f4dfbf',
+      color: '#2c2433',
     }).setOrigin(0.5);
 
     // Silhouettes cible (placeholder).
@@ -52,7 +51,7 @@ export class Act0CarrosseScene extends Phaser.Scene {
       const rect = this.add.rectangle(t.x, t.y, 24, 38, 0x1b1821);
       rect.setInteractive({ useHandCursor: true });
       rect.on('pointerdown', () => {
-        if (this.selectionLocked || this.dialogueBox.active || this.dialogueDone) return;
+        if (this.selectionLocked || this.dialogueBox.active) return;
         this.currentIndex = index;
         this.updateHighlight();
         this.validateSelection();
@@ -80,15 +79,6 @@ export class Act0CarrosseScene extends Phaser.Scene {
       return;
     }
 
-    if (this.dialogueDone) {
-      if (validate) {
-        gameState.setAct('act1');
-        this.scene.start('Act1CourScene');
-      }
-      this.inputState.commit();
-      return;
-    }
-
     if (!this.optionRects.length) return;
 
     const leftPressed = this.inputState.leftJustDown();
@@ -102,7 +92,7 @@ export class Act0CarrosseScene extends Phaser.Scene {
       this.updateHighlight();
     }
 
-    if (validate && !this.dialogueDone) {
+    if (validate) {
       this.validateSelection();
     }
 
@@ -110,7 +100,7 @@ export class Act0CarrosseScene extends Phaser.Scene {
   }
 
   private validateSelection(): void {
-    if (this.selectionLocked || this.dialogueDone || this.dialogueBox.active) return;
+    if (this.selectionLocked || this.dialogueBox.active) return;
     this.selectionLocked = true;
 
     const labels: PlayerArchetype[] = ['Lady', 'Gentleman', 'Reine de la nuit', 'Duc de la scene'];
@@ -119,13 +109,12 @@ export class Act0CarrosseScene extends Phaser.Scene {
     quests.done(QuestFlags.act0Chosen);
 
     this.dialogueBox.start(getDialogue('act0.intro'), () => {
-      this.dialogueDone = true;
       quests.done(QuestFlags.act0IntroSeen);
-      this.add.text(this.scale.width / 2, this.scale.height - 90, 'Acte 0 terminé. Appuyez sur Espace / Enter.', {
-        fontFamily: 'monospace',
-        fontSize: '13px',
-        color: '#f4dfbf',
-      }).setOrigin(0.5);
+      // Pas de validation supplémentaire: enchaîner directement sur l'acte 1.
+      this.time.delayedCall(50, () => {
+        gameState.setAct('act1');
+        this.scene.start('Act1CourScene');
+      });
     });
   }
 

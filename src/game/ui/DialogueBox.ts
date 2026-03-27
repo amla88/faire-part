@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { createCardGraphics } from './BridgertonCard';
 
 export interface DialogueStep {
   speaker: string;
@@ -11,7 +12,8 @@ export interface DialogueData {
 }
 
 export class DialogueBox {
-  private bg: Phaser.GameObjects.Rectangle;
+  private shadow: Phaser.GameObjects.Graphics;
+  private bg: Phaser.GameObjects.Graphics;
   private portrait: Phaser.GameObjects.Rectangle;
   private speakerText: Phaser.GameObjects.Text;
   private bodyText: Phaser.GameObjects.Text;
@@ -29,27 +31,25 @@ export class DialogueBox {
     const x = Math.floor(width / 2);
     const y = Math.floor(height - boxH / 2 - 10);
 
-    // Palette "vert sauge" (alignée sur le site)
-    const sageDeep = 0x2a3228;
-    const sage = 0xabbca6;
-    const cream = 0xfaf6f1;
+    // Style "card" du site (crème + bord doré doux).
+    const g = createCardGraphics(scene, x, y, boxW, boxH);
+    this.shadow = g.shadow;
+    this.bg = g.card;
 
-    this.bg = scene.add.rectangle(x, y, boxW, boxH, sageDeep, 0.92);
-    this.bg.setStrokeStyle(2, sage, 0.6);
-
-    this.portrait = scene.add.rectangle(x - boxW / 2 + 28, y, 46, 46, sage, 0.22);
-    this.portrait.setStrokeStyle(2, cream, 0.35);
+    // Portrait: accent sauge
+    this.portrait = scene.add.rectangle(x - boxW / 2 + 28, y, 46, 46, 0xabbca6, 0.28);
+    this.portrait.setStrokeStyle(2, 0x2a3228, 0.28);
 
     this.speakerText = scene.add.text(x - boxW / 2 + 88, y - boxH / 2 + 16, '', {
       fontFamily: 'monospace',
       fontSize: '14px',
-      color: '#faf6f1',
+      color: '#2c2433',
     });
 
     this.bodyText = scene.add.text(x - boxW / 2 + 88, y - boxH / 2 + 34, '', {
       fontFamily: 'monospace',
       fontSize: '14px',
-      color: '#f3ebe4',
+      color: '#2c2433',
       wordWrap: { width: boxW - 88 - 18 },
       lineSpacing: 4,
     });
@@ -97,6 +97,7 @@ export class DialogueBox {
   }
 
   private show(): void {
+    this.shadow.setVisible(true);
     this.bg.setVisible(true);
     this.portrait.setVisible(true);
     this.speakerText.setVisible(true);
@@ -104,6 +105,7 @@ export class DialogueBox {
   }
 
   private hide(): void {
+    this.shadow.setVisible(false);
     this.bg.setVisible(false);
     this.portrait.setVisible(false);
     this.speakerText.setVisible(false);

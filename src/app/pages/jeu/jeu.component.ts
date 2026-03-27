@@ -13,6 +13,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { createGame } from 'src/game/core/create-game';
 import { resetVirtualInputState, virtualInputState } from 'src/game/core/input-state';
+import { gameState } from 'src/game/core/game-state';
 
 @Component({
   selector: 'app-jeu',
@@ -24,6 +25,7 @@ import { resetVirtualInputState, virtualInputState } from 'src/game/core/input-s
 })
 export class JeuComponent implements AfterViewInit, OnDestroy {
   @ViewChild('gameHost', { static: true }) gameHost!: ElementRef<HTMLDivElement>;
+  @ViewChild('gameShell', { static: true }) gameShell!: ElementRef<HTMLDivElement>;
 
   readonly showControls = signal(true);
   readonly showIntro = signal(true);
@@ -34,10 +36,12 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
 
   private game: import('phaser').Game | null = null;
   private resizeHandler = () => this.computeOrientation();
+  readonly hasSave = signal(false);
 
   ngAfterViewInit(): void {
     this.computeOrientation();
     window.addEventListener('resize', this.resizeHandler);
+    this.hasSave.set(gameState.hasSave());
     this.game = createGame(this.gameHost.nativeElement);
   }
 
@@ -51,7 +55,40 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
   }
 
   startGame(): void {
+    // "Nouvelle partie" doit réellement démarrer une run fraîche.
+    this.restartGame();
+  }
+
+  resumeGame(): void {
     this.showIntro.set(false);
+    try {
+      // relancer le boot pour reprendre à l'acte sauvegardé
+      this.game?.scene.start('BootScene');
+    } catch {}
+  }
+
+  restartGame(): void {
+    gameState.reset();
+    this.hasSave.set(false);
+    this.showIntro.set(false);
+    resetVirtualInputState();
+    try {
+      const game = this.game;
+      if (!game) return;
+
+      // Stopper toutes les scènes actives (sinon on peut rester sur l'acte courant en pratique)
+      const activeScenes = game.scene.getScenes(true);
+      for (const s of activeScenes) {
+        try {
+          game.scene.stop(s.scene.key);
+        } catch {
+          // ignore
+        }
+      }
+
+      // Redémarrer depuis l'acte 0
+      game.scene.start('Act0CarrosseScene');
+    } catch {}
   }
 
   toggleControls(): void {
@@ -63,7 +100,8 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
 
   async toggleFullscreen(): Promise<void> {
     if (!this.fullscreenAvailable()) return;
-    const el = this.gameHost?.nativeElement;
+    // Fullscreen sur le conteneur complet, pour garder l'UI overlay visible.
+    const el = this.gameShell?.nativeElement ?? this.gameHost?.nativeElement;
     if (!document.fullscreenElement && el?.requestFullscreen) {
       await el.requestFullscreen();
       return;
