@@ -109,6 +109,7 @@ export class FormBox {
   startTextFields(args: {
     title: string;
     fields: Array<{ name: string; label: string; placeholder?: string; multiline?: boolean; maxLength?: number }>;
+    defaults?: Record<string, string>;
     onSubmit: (values: Record<string, string>) => void;
   }): void {
     this.clearLines();
@@ -143,6 +144,8 @@ export class FormBox {
       (el as any).name = f.name;
       (el as any).placeholder = f.placeholder || '';
       (el as any).maxLength = f.maxLength ?? 2000;
+      const def = (args.defaults?.[f.name] ?? '').toString();
+      (el as any).value = def;
       el.style.width = '100%';
       el.style.boxSizing = 'border-box';
       el.style.border = '1px solid rgba(171,188,166,0.85)';

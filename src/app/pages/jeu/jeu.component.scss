@@ -51,6 +51,11 @@
   padding: 12px;
 }
 
+/* L'écran "tourner l'appareil" doit passer avant tout le reste */
+.orientation-lock {
+  z-index: 30;
+}
+
 .intro-card {
   max-width: 560px;
 }

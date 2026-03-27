@@ -37,12 +37,24 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
   private game: import('phaser').Game | null = null;
   private resizeHandler = () => this.computeOrientation();
   readonly hasSave = signal(false);
+  private userInteracted = false;
 
   ngAfterViewInit(): void {
     this.computeOrientation();
     window.addEventListener('resize', this.resizeHandler);
     this.hasSave.set(gameState.hasSave());
     this.game = createGame(this.gameHost.nativeElement);
+    // Certains navigateurs n'autorisent le fullscreen qu'après un geste utilisateur.
+    // On mémorise le premier pointerdown dans la zone du jeu.
+    try {
+      this.gameShell.nativeElement.addEventListener(
+        'pointerdown',
+        () => {
+          this.userInteracted = true;
+        },
+        { passive: true }
+      );
+    } catch {}
   }
 
   ngOnDestroy(): void {
@@ -124,7 +136,16 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
   }
 
   private computeOrientation(): void {
-    this.isPortrait.set(window.innerHeight > window.innerWidth);
+    const wasPortrait = this.isPortrait();
+    const nowPortrait = window.innerHeight > window.innerWidth;
+    this.isPortrait.set(nowPortrait);
+
+    // Quand on repasse en paysage, tenter le fullscreen automatiquement.
+    if (wasPortrait && !nowPortrait && this.userInteracted) {
+      try {
+        void this.toggleFullscreen();
+      } catch {}
+    }
   }
 }
 

@@ -123,40 +123,88 @@ export class Act2OfficeScene extends Phaser.Scene {
 
   private openHealthForm(): void {
     if (this.formBox.active || quests.isDone(QuestFlags.act2AllergensDone)) return;
-    this.formBox.startTextFields({
-      title: 'Santé & bien-être',
-      fields: [
-        { name: 'allergenes_alimentaires', label: 'Allergènes (optionnel)', placeholder: 'Noix, gluten…', multiline: true, maxLength: 2000 },
-        { name: 'regimes_remarques', label: 'Remarques / régimes (optionnel)', placeholder: 'Végétarien, sans lactose…', multiline: true, maxLength: 2000 },
-      ],
-      onSubmit: (values) => {
-        if (this.saving) return;
-        this.saving = true;
-        this.info.setText('Sauvegarde en cours…');
-        gameBackend
-          .recordRsvpForSelected({
-            present_reception: false,
-            present_repas: false,
-            present_soiree: false,
-            allergenes_alimentaires: values['allergenes_alimentaires'] || '',
-            regimes_remarques: values['regimes_remarques'] || '',
-          })
-          .then(() => {
-            quests.done(QuestFlags.act2AllergensDone);
-            this.info.setText('Acte 2 validé. Passage à l’Acte 3…');
-            this.time.delayedCall(600, () => {
-              gameState.setAct('act3');
-              this.scene.start('Act3GrangeScene');
-            });
-          })
-          .catch((e) => {
-            this.info.setText('Erreur: ' + String(e?.message || e));
-          })
-          .finally(() => {
-            this.saving = false;
-          });
-      },
-    });
+    this.info.setText('Chargement du registre…');
+    gameBackend
+      .getSelectedPersonneRow()
+      .then((row) => {
+        const defaults: Record<string, string> = {
+          allergenes_alimentaires: String(row?.allergenes_alimentaires ?? ''),
+          regimes_remarques: String(row?.regimes_remarques ?? ''),
+        };
+        this.formBox.startTextFields({
+          title: 'Santé & bien-être',
+          fields: [
+            { name: 'allergenes_alimentaires', label: 'Allergènes (optionnel)', placeholder: 'Noix, gluten…', multiline: true, maxLength: 2000 },
+            { name: 'regimes_remarques', label: 'Remarques / régimes (optionnel)', placeholder: 'Végétarien, sans lactose…', multiline: true, maxLength: 2000 },
+          ],
+          defaults,
+          onSubmit: (values) => {
+            if (this.saving) return;
+            this.saving = true;
+            this.info.setText('Sauvegarde en cours…');
+            gameBackend
+              .recordRsvpForSelected({
+                // Ne touche pas aux présences ici; on ne met à jour que les champs texte.
+                present_reception: row?.present_reception === true,
+                present_repas: row?.present_repas === true,
+                present_soiree: row?.present_soiree === true,
+                allergenes_alimentaires: values['allergenes_alimentaires'] || '',
+                regimes_remarques: values['regimes_remarques'] || '',
+              })
+              .then(() => {
+                quests.done(QuestFlags.act2AllergensDone);
+                this.info.setText('Acte 2 validé. Passage à l’Acte 3…');
+                this.time.delayedCall(600, () => {
+                  gameState.setAct('act3');
+                  this.scene.start('Act3GrangeScene');
+                });
+              })
+              .catch((e) => {
+                this.info.setText('Erreur: ' + String(e?.message || e));
+              })
+              .finally(() => {
+                this.saving = false;
+              });
+          },
+        });
+      })
+      .catch(() => {
+        // Fallback: pas de defaults
+        this.formBox.startTextFields({
+          title: 'Santé & bien-être',
+          fields: [
+            { name: 'allergenes_alimentaires', label: 'Allergènes (optionnel)', placeholder: 'Noix, gluten…', multiline: true, maxLength: 2000 },
+            { name: 'regimes_remarques', label: 'Remarques / régimes (optionnel)', placeholder: 'Végétarien, sans lactose…', multiline: true, maxLength: 2000 },
+          ],
+          onSubmit: (values) => {
+            if (this.saving) return;
+            this.saving = true;
+            this.info.setText('Sauvegarde en cours…');
+            gameBackend
+              .recordRsvpForSelected({
+                present_reception: false,
+                present_repas: false,
+                present_soiree: false,
+                allergenes_alimentaires: values['allergenes_alimentaires'] || '',
+                regimes_remarques: values['regimes_remarques'] || '',
+              })
+              .then(() => {
+                quests.done(QuestFlags.act2AllergensDone);
+                this.info.setText('Acte 2 validé. Passage à l’Acte 3…');
+                this.time.delayedCall(600, () => {
+                  gameState.setAct('act3');
+                  this.scene.start('Act3GrangeScene');
+                });
+              })
+              .catch((e) => {
+                this.info.setText('Erreur: ' + String(e?.message || e));
+              })
+              .finally(() => {
+                this.saving = false;
+              });
+          },
+        });
+      });
   }
 
   // (le code précédent qui ouvrait le form sur n'importe quel appui est remplacé)
