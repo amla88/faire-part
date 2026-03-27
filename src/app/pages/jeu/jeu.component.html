@@ -41,11 +41,69 @@
         <mat-icon>{{ showControls() ? 'visibility_off' : 'visibility' }}</mat-icon>
         {{ showControls() ? 'Masquer UI' : 'Afficher UI' }}
       </button>
+      @if (mapUnlocked() && !isPortrait()) {
+        <button mat-flat-button color="primary" type="button" (click)="toggleMap()">
+          <mat-icon>map</mat-icon>
+          Carte
+        </button>
+      }
       <button mat-stroked-button type="button" (click)="toggleFullscreen()" [disabled]="!fullscreenAvailable()">
         <mat-icon>fullscreen</mat-icon>
         Plein ecran
       </button>
     </div>
+
+    @if (showMap() && !isPortrait()) {
+      <div class="intro-overlay">
+        <mat-card class="overlay-card intro-card">
+          <h2>Carte du domaine</h2>
+          <p>Choisissez votre destination. Les étapes validées sont marquées.</p>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button mat-stroked-button type="button" class="map-btn" [class.done]="isDone('act1.register_done')" (click)="goTo('Act1CourScene')">
+              Cour d'honneur (Acte 1) @if (isDone('act1.register_done')) { <span class="badge">✓</span> }
+            </button>
+            <button mat-stroked-button type="button" class="map-btn" [class.done]="isDone('act2.allergens_done')" (click)="goTo('Act2OfficeScene')">
+              Office des saveurs (Acte 2) @if (isDone('act2.allergens_done')) { <span class="badge">✓</span> }
+            </button>
+            <button mat-stroked-button type="button" class="map-btn" [class.done]="isDone('act3.avatar_done')" (click)="goTo('Act3GrangeScene')">
+              Grande grange (Acte 3) @if (isDone('act3.avatar_done')) { <span class="badge">✓</span> }
+            </button>
+            <button mat-stroked-button type="button" (click)="goTo('HubOpenWorldScene')">Domaine (Hub)</button>
+            <button
+              mat-stroked-button
+              type="button"
+              class="map-btn"
+              [class.done]="isDone('act4.anecdote_done') || isDone('act4.photo_done')"
+              (click)="goTo('Act4VergerScene')"
+            >
+              Verger (Acte 4)
+              @if (isDone('act4.anecdote_done') || isDone('act4.photo_done')) { <span class="badge">✓</span> }
+            </button>
+            <button mat-stroked-button type="button" class="map-btn" [class.done]="isDone('act5.idea_done')" (click)="goTo('Act5GlorietteScene')">
+              Gloriette (Acte 5) @if (isDone('act5.idea_done')) { <span class="badge">✓</span> }
+            </button>
+            <button mat-stroked-button type="button" class="map-btn" [class.done]="isDone('act6.music_done')" (click)="goTo('Act6EcurieScene')">
+              Écurie (Acte 6) @if (isDone('act6.music_done')) { <span class="badge">✓</span> }
+            </button>
+            <button
+              mat-flat-button
+              color="primary"
+              type="button"
+              class="map-btn final"
+              [disabled]="!allStepsDone()"
+              [class.done]="allStepsDone()"
+              (click)="goTo('Act7FinalGazetteScene')"
+            >
+              Final (Gazette + compte à rebours)
+              @if (allStepsDone()) { <span class="badge">✓</span> } @else { <span class="badge">…</span> }
+            </button>
+          </div>
+          <div style="display:flex; justify-content:flex-end; margin-top:12px;">
+            <button mat-stroked-button type="button" (click)="toggleMap()">Fermer</button>
+          </div>
+        </mat-card>
+      </div>
+    }
 
     @if (showControls() && !isPortrait()) {
       <div class="touch-controls">

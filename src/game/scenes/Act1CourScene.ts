@@ -141,7 +141,17 @@ export class Act1CourScene extends Phaser.Scene {
           .getSelectedPersonneRow()
           .then((row) => {
             this.choicesText.setText('');
-            const already =
+            const defaults = row
+              ? {
+                  present_reception: row.present_reception === true,
+                  present_repas: row.present_repas === true,
+                  present_soiree: row.present_soiree === true,
+                }
+              : undefined;
+
+            // IMPORTANT: même si "tout est false", on doit préremplir depuis la DB
+            // pour éviter de réécrire des valeurs par défaut.
+            const alreadyHasAnything =
               !!row &&
               (row.present_reception === true ||
                 row.present_repas === true ||
@@ -149,22 +159,13 @@ export class Act1CourScene extends Phaser.Scene {
                 String(row.allergenes_alimentaires || '').trim().length > 0 ||
                 String(row.regimes_remarques || '').trim().length > 0);
 
-            if (already) {
-              this.dialogueBox.start(getDialogue('act1.already'), () => {
-                // Déjà rempli via Angular: on laisse quand même la main pour modifier/valider.
+            const dlg = alreadyHasAnything ? getDialogue('act1.already') : getDialogue('act1.register');
+            this.dialogueBox.start(dlg, () => {
+              if (alreadyHasAnything) {
                 this.questText.setText('Registre déjà rempli (modifiable).');
                 this.hintText.setText('Vous pouvez confirmer ou ajuster.');
-                this.openRegisterChoices({
-                  present_reception: row.present_reception === true,
-                  present_repas: row.present_repas === true,
-                  present_soiree: row.present_soiree === true,
-                });
-              });
-              return;
-            }
-
-            this.dialogueBox.start(getDialogue('act1.register'), () => {
-              this.openRegisterChoices();
+              }
+              this.openRegisterChoices(defaults);
             });
           })
           .catch(() => {
@@ -187,9 +188,9 @@ export class Act1CourScene extends Phaser.Scene {
     this.formBox.startToggles({
       title: 'Présence au domaine',
       toggles: [
-        { key: 'present_reception', label: 'Réception', value: defaults?.present_reception ?? true },
-        { key: 'present_repas', label: 'Repas', value: defaults?.present_repas ?? true },
-        { key: 'present_soiree', label: 'Soirée', value: defaults?.present_soiree ?? true },
+        { key: 'present_reception', label: 'Réception', value: defaults?.present_reception ?? false },
+        { key: 'present_repas', label: 'Repas', value: defaults?.present_repas ?? false },
+        { key: 'present_soiree', label: 'Soirée', value: defaults?.present_soiree ?? false },
       ],
       onSubmit: (values) => {
         if (this.saving) return;
@@ -203,6 +204,9 @@ export class Act1CourScene extends Phaser.Scene {
           })
           .then(() => {
             quests.done(QuestFlags.act1RegisterDone);
+            try {
+              void gameBackend.upsertGameProgressForSelected(gameState.snapshot.flags);
+            } catch {}
             this.questText.setText('Présence consignée dans le registre !');
             this.hintText.setText('Un dernier message…');
             this.choicesText.setText('');

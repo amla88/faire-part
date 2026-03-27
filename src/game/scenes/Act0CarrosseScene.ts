@@ -4,6 +4,7 @@ import { gameState, PlayerArchetype } from '../core/game-state';
 import { quests, QuestFlags } from '../systems/QuestSystem';
 import { SceneInput } from '../systems/SceneInput';
 import { getDialogue } from '../data/dialogues.catalog';
+import { gameBackend } from '../services/GameBackendBridge';
 
 export class Act0CarrosseScene extends Phaser.Scene {
   private inputState!: SceneInput;
@@ -110,6 +111,10 @@ export class Act0CarrosseScene extends Phaser.Scene {
 
     this.dialogueBox.start(getDialogue('act0.intro'), () => {
       quests.done(QuestFlags.act0IntroSeen);
+      // Sync progression serveur (best-effort)
+      try {
+        void gameBackend.upsertGameProgressForSelected(gameState.snapshot.flags);
+      } catch {}
       // Pas de validation supplémentaire: enchaîner directement sur l'acte 1.
       this.time.delayedCall(50, () => {
         gameState.setAct('act1');

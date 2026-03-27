@@ -26,6 +26,7 @@ const env = parseEnv(envRaw);
 const supabaseUrl = env.SUPABASE_URL;
 const supabaseKey = env.SUPABASE_ANON_KEY;
 const qrCodeBaseUrl = env.QR_CODE_BASE_URL;
+const weddingDateIso = env.WEDDING_DATE_ISO;
 
 if (!supabaseUrl || !supabaseKey) {
   console.warn('SUPABASE_URL or SUPABASE_ANON_KEY not found in .env.local');
@@ -52,6 +53,9 @@ function upsertMeta(name, content) {
 upsertMeta('supabase-url', supabaseUrl);
 upsertMeta('supabase-anon-key', supabaseKey);
 upsertMeta('qr-code-base-url', qrCodeBaseUrl);
+if (weddingDateIso) {
+  upsertMeta('wedding-date-iso', weddingDateIso);
+}
 
 fs.writeFileSync(indexPath, index, 'utf8');
 console.log('Injected SUPABASE and QR code meta tags into src/index.html');

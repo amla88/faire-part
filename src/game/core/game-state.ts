@@ -1,6 +1,6 @@
 export type PlayerArchetype = 'Lady' | 'Gentleman' | 'Reine de la nuit' | 'Duc de la scene';
 
-export type ActId = 'act0' | 'act1' | 'act2' | 'act3';
+export type ActId = 'act0' | 'act1' | 'act2' | 'act3' | 'hub' | 'act4' | 'act5' | 'act6' | 'act7';
 
 export interface GameStateSnapshot {
   act: ActId;
@@ -35,7 +35,18 @@ export class GameState {
       const parsed = JSON.parse(raw) as Partial<GameStateSnapshot> | null;
       if (!parsed || typeof parsed !== 'object') return false;
       const act = parsed.act;
-      if (act !== 'act0' && act !== 'act1' && act !== 'act2' && act !== 'act3') return false;
+      if (
+        act !== 'act0' &&
+        act !== 'act1' &&
+        act !== 'act2' &&
+        act !== 'act3' &&
+        act !== 'hub' &&
+        act !== 'act4' &&
+        act !== 'act5' &&
+        act !== 'act6' &&
+        act !== 'act7'
+      )
+        return false;
       const flags = parsed.flags && typeof parsed.flags === 'object' ? (parsed.flags as Record<string, boolean>) : {};
       const player = parsed.player;
       this.state = { act, flags, player: player as any };

@@ -5,7 +5,11 @@ export type DialogueId =
   | 'act1.register'
   | 'act1.already'
   | 'act1.toChef'
-  | 'act2.chefIntro';
+  | 'act2.chefIntro'
+  | 'act3.mapUnlock'
+  | 'act4.vergerIntro'
+  | 'act5.glorietteIntro'
+  | 'act6.ecurieIntro';
 
 export const dialoguesCatalog: Record<DialogueId, DialogueData> = {
   'act0.intro': {
@@ -55,6 +59,58 @@ export const dialoguesCatalog: Record<DialogueId, DialogueData> = {
         portraitColor: 0xabbca6,
         text:
           "Ah, vous voilà ! J’ai des casseroles, des timings… et des invités. Or, un invité malheureux, c’est un bug critique. Dites-moi : y a-t-il des noix, du gluten, ou quelque sortilège alimentaire que je dois bannir de mon code… euh, de ma cuisine ?",
+      },
+    ],
+  },
+  'act3.mapUnlock': {
+    steps: [
+      {
+        speaker: 'Madame Chromatique',
+        portraitColor: 0xabbca6,
+        text:
+          "Splendide. Votre effigie est désormais gravée avec la précision d’un hexadécimal… et l’élégance d’un bal à la Cour.",
+      },
+      {
+        speaker: 'Madame Chromatique',
+        portraitColor: 0xabbca6,
+        text:
+          "Mais prenez garde, cher invité : le Domaine est vaste, capricieux, et semé de couloirs où l’on se perd plus vite que dans un changelog mal tenu.",
+      },
+      {
+        speaker: 'Madame Chromatique',
+        portraitColor: 0xabbca6,
+        text:
+          "Tenez. Une carte. Elle vous évitera de tourner en rond comme un curseur sans focus. Désormais, libre à vous d’errer : revenir au Registre, saluer le Chef… ou courir vers de nouvelles scènes.",
+      },
+    ],
+  },
+  'act4.vergerIntro': {
+    steps: [
+      {
+        speaker: 'Le Vicomte des Murmures',
+        portraitColor: 0xc9a55c,
+        text:
+          "Psst… Approchez. Dans ce verger, les secrets tombent plus vite que les pommes. Confiez-moi une anecdote : je la consignerai avec plus de soin qu’un mot de passe dans un gestionnaire.",
+      },
+    ],
+  },
+  'act5.glorietteIntro': {
+    steps: [
+      {
+        speaker: "La Baronne de l'Inspiration",
+        portraitColor: 0xc9a55c,
+        text:
+          "Ah… ce regard. Il a l’éclat d’une idée prête à compiler. Écrivez votre suggestion : je la livrerai aux hôtes comme un patch élégant, sans jamais froisser le protocole.",
+      },
+    ],
+  },
+  'act6.ecurieIntro': {
+    steps: [
+      {
+        speaker: 'Le Maestro Polyphonique',
+        portraitColor: 0xabbca6,
+        text:
+          "La piste de danse est un système vivant : il lui faut des entrées, des sorties… et le bon tempo. Donnez-moi une chanson — titre, auteur, lien — et je l’ajouterai à la partition.",
       },
     ],
   },

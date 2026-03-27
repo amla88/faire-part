@@ -15,6 +15,11 @@ export class BootScene extends Phaser.Scene {
     const s = gameState.snapshot;
     const has = (k: string) => s.flags?.[k] === true;
 
+    if (has(QuestFlags.hubMapUnlocked)) {
+      gameState.setAct('hub');
+      this.scene.start('HubOpenWorldScene');
+      return;
+    }
     if (has(QuestFlags.act3AvatarDone)) {
       gameState.setAct('act3');
       this.scene.start('Act3GrangeScene');
