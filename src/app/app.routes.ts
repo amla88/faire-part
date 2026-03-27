@@ -41,6 +41,11 @@ export const routes: Routes = [
           import('./pages/musiques/musiques.component').then((m) => m.MusiquesComponent),
       },
       {
+        path: 'jeu',
+        loadComponent: () =>
+          import('./pages/jeu/jeu.component').then((m) => m.JeuComponent),
+      },
+      {
         path: 'profile',
         loadComponent: () =>
           import('./pages/profile/profile.component').then((m) => m.ProfileComponent),

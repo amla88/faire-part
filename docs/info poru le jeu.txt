@@ -1,0 +1,9 @@
+Map & level design:
+Tiled Map Editor pour dessiner les maps (Cour, Verger, Grange…).
+Export en JSON → chargés par Phaser (tilemaps, collisions).
+Assets:
+Pixel art (16×16 ou 32×32) pour tilesets + sprites (héros, PNJ, portraits de dialogue).
+Dialogues façon JRPG: boîte de texte + portrait PNJ dans un petit cadre type “bust shot”.
+État jeu:
+Petit “game state” en mémoire (acte atteint, tâches faites, lieux débloqués).
+Synchronisation ponctuelle avec Supabase (quand une tâche est terminée → on appelle le RPC correspondant).

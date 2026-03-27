@@ -1,0 +1,108 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.jeu-page {
+  min-height: calc(100vh - 64px);
+  background: #1d1624;
+  padding: 8px;
+}
+
+.game-shell {
+  position: relative;
+  max-width: 1280px;
+  margin: 0 auto;
+  background: #130f18;
+  border: 1px solid rgba(201, 165, 92, 0.35);
+  min-height: calc(100vh - 90px);
+  overflow: hidden;
+}
+
+.game-host {
+  width: 100%;
+  height: calc(100vh - 90px);
+}
+
+.top-actions {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 8px;
+  z-index: 20;
+}
+
+.overlay-card {
+  background: rgba(38, 28, 47, 0.96);
+  color: #f4dfbf;
+  border: 1px solid rgba(201, 165, 92, 0.45);
+  padding: 14px 16px;
+}
+
+.intro-overlay,
+.orientation-lock {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 10, 18, 0.72);
+  z-index: 25;
+  padding: 12px;
+}
+
+.intro-card {
+  max-width: 560px;
+}
+
+.touch-controls {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  width: 138px;
+  height: 138px;
+  z-index: 20;
+}
+
+.ctl {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(201, 165, 92, 0.55);
+  background: rgba(34, 23, 42, 0.9);
+  color: #f4dfbf;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.ctl.up {
+  left: 47px;
+  top: 0;
+}
+.ctl.left {
+  left: 0;
+  top: 47px;
+}
+.ctl.right {
+  right: 0;
+  top: 47px;
+}
+.ctl.down {
+  left: 47px;
+  bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .top-actions {
+    left: 10px;
+    right: 10px;
+    justify-content: space-between;
+  }
+
+  .top-actions button {
+    font-size: 12px;
+    padding-inline: 8px;
+  }
+}
+

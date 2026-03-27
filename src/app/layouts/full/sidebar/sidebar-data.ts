@@ -8,6 +8,7 @@ export const navItems: NavItem[] = [
     iconName: 'layout-grid-add',
     route: '/dashboard',
   },
+  { displayName: 'Chronique pixel', iconName: 'device-gamepad-2', route: '/jeu' },
 
   { navCap: 'Les salons' },
   { displayName: 'Votre effigie', iconName: 'user', route: '/avatar' },
