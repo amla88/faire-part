@@ -1,6 +1,7 @@
 @use "sass:map";
 @use "@angular/material" as mat;
 
+@use "bridgerton-tokens";
 @use "themecolors/blue_theme";
 
 @use "variables" as *;
@@ -20,4 +21,5 @@
 @use "helpers/index";
 
 @use "pages/auth";
+@use "pages/bridgerton-card";
 @use "pages/dashboards";

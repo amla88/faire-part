@@ -1,12 +1,42 @@
-<mat-card appearance="outlined">
+<div class="photo-upload-page photo-bridgerton">
+  <header class="photo-upload-header">
+    <p class="photo-upload-eyebrow">Souvenirs &amp; secrets de salon</p>
+    <p class="photo-upload-invite">
+      Témoins, décor, lumière du jour&nbsp;: tout ce qui sied au bon ton. Quant à ces clichés qui frôlent le scandale — faits pour épicer le toast et faire pâlir une tante…
+      ou pas. Nous vous laissons seuls arbitres de ce que le salon peut voir sans rougir.
+    </p>
+    <div class="photo-upload-flourish" aria-hidden="true"></div>
+  </header>
+
+  <mat-card class="bridgerton-card photo-upload-card">
   <mat-card-header>
     <mat-card-title>Téléverser une photo</mat-card-title>
     <mat-card-subtitle>Formats acceptés: JPG/JPEG, PNG, WebP, GIF, HEIC/HEIF (iPhone). Les HEIC/HEIF sont convertis avant envoi.</mat-card-subtitle>
   </mat-card-header>
 
   <mat-card-content>
-    <div class="picker">
-      <input type="file" accept="image/*,.heic,.heif" (change)="onFileChange($event)" />
+    <div class="picker bridgerton-file-picker">
+      <input
+        #fileInput
+        id="photo-upload-file-input"
+        class="bridgerton-file-input"
+        type="file"
+        accept="image/*,.heic,.heif"
+        (change)="onFileChange($event)"
+      />
+      <button
+        mat-flat-button
+        color="primary"
+        type="button"
+        class="bridgerton-file-picker-btn"
+        (click)="fileInput.click()"
+      >
+        <mat-icon>add_photo_alternate</mat-icon>
+        Choisir un fichier
+      </button>
+      @if (!fileInfo()) {
+        <span class="bridgerton-file-hint">Aucun fichier sélectionné</span>
+      }
     </div>
 
     @if (fileInfo()) {
@@ -47,3 +77,4 @@
     </button>
   </mat-card-actions>
 </mat-card>
+</div>

@@ -3,20 +3,8 @@
 }
 
 .dashboard-bridgerton {
-	--bridgerton-cream: #faf6f1;
-	--bridgerton-blush: #f5e6e8;
-	--bridgerton-mauve: #e8e0eb;
-	--bridgerton-ink: #2c2433;
-	--bridgerton-wine: #6b3d4f;
-	--bridgerton-gold: #b8956a;
-	--bridgerton-muted: rgba(44, 36, 51, 0.65);
-
 	min-height: 100%;
 	padding: 8px 4px 32px;
-	background:
-		radial-gradient(ellipse 120% 80% at 50% -20%, rgba(232, 224, 235, 0.55), transparent 50%),
-		radial-gradient(ellipse 80% 50% at 100% 30%, rgba(245, 230, 232, 0.4), transparent 45%),
-		linear-gradient(180deg, var(--bridgerton-cream) 0%, #f3ebe4 100%);
 }
 
 .dashboard-hero {
@@ -42,7 +30,7 @@
 	content: '';
 	position: absolute;
 	inset: 8px;
-	border: 1px solid rgba(184, 149, 106, 0.2);
+	border: 1px solid var(--bridgerton-gold-border-soft);
 	pointer-events: none;
 	border-radius: 1px;
 }

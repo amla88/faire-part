@@ -5,21 +5,24 @@
 html {
   @include mat.theme(
     (
-      color: mat.$azure-palette,
+      color: mat.$rose-palette,
       typography: $font-family,
     )
   );
 
   @include mat.theme-overrides(
     (
-      primary: rgb(93, 135, 255),
-      error: rgb(250, 137, 107),
+      primary: rgb(161, 64, 68),
+      secondary: rgb(171, 188, 166),
+      tertiary: rgb(184, 149, 106),
+      error: rgb(180, 74, 70),
       body-medium-size: 14px,
-      body-large-size: 14px,
-      outline-variant: #d7dde2,
-      level1: 0px 12px 24px -4px rgb(145 158 171 / 30%),
-      level2: rgba(145, 158, 171, 0.12) 0px 1px 16px,
-      level3: 0px 12px 24px -4px rgb(145 158 171 / 30%),
+      body-large-size: 15px,
+      outline-variant: #c8d0c4,
+      outline: #b8c4b0,
+      level1: 0px 10px 28px -6px rgb(44 36 51 / 12%),
+      level2: rgba(44, 36, 51, 0.08) 0px 2px 14px,
+      level3: 0px 12px 32px -8px rgb(161 64 68 / 14%),
     )
   );
 }

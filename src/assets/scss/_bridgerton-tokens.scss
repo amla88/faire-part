@@ -1,0 +1,19 @@
+// Bridgerton palette — shared across guest & admin layouts
+// Accent sage #ABBCA6, crimson accent #A14044, cream + gold framing
+
+:root {
+	--bridgerton-cream: #faf6f1;
+	--bridgerton-cream-deep: #f3ebe4;
+	--bridgerton-blush: #f5e6e8;
+	--bridgerton-mauve: #e8e0eb;
+	--bridgerton-ink: #2c2433;
+	--bridgerton-wine: #6b3d4f;
+	--bridgerton-gold: #b8956a;
+	--bridgerton-sage: #abbca6;
+	--bridgerton-sage-deep: color-mix(in srgb, var(--bridgerton-sage) 42%, #2a3228 58%);
+	--bridgerton-sage-mid: color-mix(in srgb, var(--bridgerton-sage) 72%, #4a5646 28%);
+	--bridgerton-crimson: #a14044;
+	--bridgerton-muted: rgba(44, 36, 51, 0.65);
+	--bridgerton-gold-border: rgba(184, 149, 106, 0.35);
+	--bridgerton-gold-border-soft: rgba(184, 149, 106, 0.22);
+}

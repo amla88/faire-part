@@ -11,6 +11,11 @@ body {
   line-height: 1.334rem;
   overflow-x: hidden;
   color: var(--mat-sys-on-background);
+  background: var(--bridgerton-cream);
+}
+
+.mat-drawer-container {
+  background: var(--bridgerton-cream);
 }
 
 .app-topstrip{
@@ -121,7 +126,7 @@ a {
   color: var(--mat-sys-on-background);
 
   &:hover {
-    color: $primary;
+    color: var(--bridgerton-crimson);
   }
 }
 

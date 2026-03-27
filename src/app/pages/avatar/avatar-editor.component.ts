@@ -20,7 +20,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { AvatarService } from 'src/app/services/avatar.service';
 import { AuthService } from 'src/app/services/auth.service';
 
-type ColorPickerTarget = 'hair' | 'clothes' | 'skin' | 'background';
+type ColorPickerTarget = 'hair' | 'clothes' | 'skin' | 'background' | 'accessories';
 
 @Component({
   selector: 'app-avatar-editor',
@@ -62,6 +62,7 @@ export class AvatarEditorComponent {
   // Options pour avataaar
   top = signal('longButNotTooLong');
   accessories = signal('kurt');
+  accessoriesColor = signal('262e33');
   hairColor = signal('a55728');
   facialHair = signal('beardMedium');
   clothing = signal('blazerAndShirt');
@@ -171,6 +172,21 @@ export class AvatarEditorComponent {
     { value: 'skull', label: 'Crâne' },
     { value: 'skullOutline', label: 'Contour de crâne' },
   ];
+  /** Montures / accessoires (lunettes, etc.) — tons neutres et métalliques */
+  readonly accessoriesColorOptions = [
+    { value: '262e33', label: 'Noir' },
+    { value: '3c4f5c', label: 'Gris ardoise' },
+    { value: '724133', label: 'Écaille' },
+    { value: '929598', label: 'Gris métal' },
+    { value: '5199e4', label: 'Bleu' },
+    { value: '25557c', label: 'Bleu marine' },
+    { value: '65c9ff', label: 'Bleu clair' },
+    { value: 'b58143', label: 'Doré' },
+    { value: 'c0c0c0', label: 'Argent' },
+    { value: 'ff5c5c', label: 'Rouge' },
+    { value: 'ff488e', label: 'Rose' },
+    { value: 'ffffff', label: 'Blanc' },
+  ];
   readonly clothesColorOptions = [
     { value: '3c4f5c', label: 'Gris foncé' },
     { value: '65c9ff', label: 'Bleu ciel' },
@@ -254,6 +270,7 @@ export class AvatarEditorComponent {
     clothes: '3c4f5c',
     skin: 'edb98a',
     background: 'b6e3f4',
+    accessories: '262e33',
   };
 
 
@@ -282,6 +299,7 @@ export class AvatarEditorComponent {
     this.clothing.set(options.clothing?.[0] || 'blazerAndShirt');
     this.clothingGraphic.set(options.clothingGraphicProbability === 0 ? this.noneOptionValue : (options.clothingGraphic?.[0] || 'bat'));
     this.clothesColor.set(options.clothesColor?.[0] || '3c4f5c');
+    this.accessoriesColor.set(options.accessoriesColor?.[0] || '262e33');
     this.eyes.set(options.eyes?.[0] || 'default');
     this.eyebrows.set(options.eyebrows?.[0] || 'default');
     this.mouth.set(options.mouth?.[0] || 'default');
@@ -302,6 +320,7 @@ export class AvatarEditorComponent {
         top: [this.top()],
         accessories: [this.getDicebearValue(this.accessories(), 'kurt')],
         accessoriesProbability: this.getProbability(this.accessories()),
+        accessoriesColor: [this.accessoriesColor()],
         hairColor: [this.hairColor()],
         hatColor: [this.hairColor()],
         facialHair: [this.getDicebearValue(this.facialHair(), 'beardMedium')],
@@ -340,6 +359,9 @@ export class AvatarEditorComponent {
     this.clothing.set(this.clothingOptions[Math.floor(Math.random() * this.clothingOptions.length)].value);
     this.clothingGraphic.set(this.clothingGraphicOptions[Math.floor(Math.random() * this.clothingGraphicOptions.length)].value);
     this.clothesColor.set(this.clothesColorOptions[Math.floor(Math.random() * this.clothesColorOptions.length)].value);
+    this.accessoriesColor.set(
+      this.accessoriesColorOptions[Math.floor(Math.random() * this.accessoriesColorOptions.length)].value
+    );
     this.eyes.set(this.eyesOptions[Math.floor(Math.random() * this.eyesOptions.length)].value);
     this.eyebrows.set(this.eyebrowsOptions[Math.floor(Math.random() * this.eyebrowsOptions.length)].value);
     this.mouth.set(this.mouthOptions[Math.floor(Math.random() * this.mouthOptions.length)].value);
@@ -365,6 +387,7 @@ export class AvatarEditorComponent {
       top: [this.top()],
       accessories: [this.getDicebearValue(this.accessories(), 'kurt')],
       accessoriesProbability: this.getProbability(this.accessories()),
+      accessoriesColor: [this.accessoriesColor()],
       hairColor: [this.hairColor()],
       hatColor: [this.hairColor()],
       facialHair: [this.getDicebearValue(this.facialHair(), 'beardMedium')],
@@ -427,6 +450,7 @@ export class AvatarEditorComponent {
     this.seed.set('default-seed');
     this.top.set('longButNotTooLong');
     this.accessories.set('kurt');
+    this.accessoriesColor.set('262e33');
     this.hairColor.set('a55728');
     this.facialHair.set('beardMedium');
     this.clothing.set('blazerAndShirt');
@@ -485,6 +509,8 @@ export class AvatarEditorComponent {
         return this.skinColor();
       case 'background':
         return this.backgroundColor();
+      case 'accessories':
+        return this.accessoriesColor();
     }
   }
 
@@ -514,6 +540,8 @@ export class AvatarEditorComponent {
         return this.skinColorOptions;
       case 'background':
         return this.backgroundColorOptions;
+      case 'accessories':
+        return this.accessoriesColorOptions;
     }
   }
 
@@ -546,6 +574,9 @@ export class AvatarEditorComponent {
         break;
       case 'background':
         this.backgroundColor.set(value);
+        break;
+      case 'accessories':
+        this.accessoriesColor.set(value);
         break;
     }
   }

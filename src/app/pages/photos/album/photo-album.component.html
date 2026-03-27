@@ -1,13 +1,33 @@
-<div class="page-wrapper">
-  <mat-card appearance="outlined">
-    <mat-card-header>
-      <mat-card-title>Mon album photo</mat-card-title>
-  <mat-card-subtitle>Retrouve toutes les photos envoyees par ta famille.</mat-card-subtitle>
+<div class="album-page album-bridgerton">
+  <header class="album-header">
+    <p class="album-eyebrow">Souvenirs partagés</p>
+    <h1 class="album-title">Album photo</h1>
+    <p class="album-lede">
+      Retrouvez ici les clichés envoyés par votre famille pour le mariage.
+    </p>
+    <div class="album-flourish" aria-hidden="true"></div>
+  </header>
+
+  <mat-card class="bridgerton-card album-main-card">
+    <mat-card-header class="album-card-header">
+      <div class="album-card-header-text">
+        <div class="bridgerton-card-heading">
+          <span class="bridgerton-card-kicker">Le registre</span>
+          <mat-card-title class="bridgerton-card-title">Vos images</mat-card-title>
+        </div>
+        <mat-card-subtitle class="album-card-subtitle">
+          @if (hasPhotos()) {
+            <span class="album-count">{{ photoCount() }} photo{{ photoCount() > 1 ? 's' : '' }}</span>
+          } @else {
+            Par date, nom ou taille de fichier.
+          }
+        </mat-card-subtitle>
+      </div>
     </mat-card-header>
 
-    <mat-card-actions align="end" class="card-actions">
-      <div class="toolbar">
-        <mat-form-field appearance="outline" class="sort-field">
+    <mat-card-actions class="album-toolbar">
+      <div class="album-toolbar-fields">
+        <mat-form-field appearance="outline" class="sort-field" subscriptSizing="dynamic">
           <mat-label>Trier par</mat-label>
           <mat-select [value]="sortBy()" (selectionChange)="sortBy.set($event.value)">
             <mat-option value="date">Date</mat-option>
@@ -16,7 +36,7 @@
           </mat-select>
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="sort-field">
+        <mat-form-field appearance="outline" class="sort-field" subscriptSizing="dynamic">
           <mat-label>Ordre</mat-label>
           <mat-select [value]="sortDir()" (selectionChange)="sortDir.set($event.value)">
             <mat-option value="desc">Décroissant</mat-option>
@@ -24,44 +44,76 @@
           </mat-select>
         </mat-form-field>
       </div>
-      <button mat-stroked-button (click)="refresh()" [disabled]="loading()">
-        Rafraichir
+      <button
+        mat-stroked-button
+        color="primary"
+        type="button"
+        class="refresh-btn"
+        (click)="refresh()"
+        [disabled]="loading()">
+        <mat-icon>refresh</mat-icon>
+        Rafraîchir
       </button>
     </mat-card-actions>
 
-    <mat-card-content>
+    <mat-card-content class="album-card-content">
       @if (loading()) {
-        <div class="loading">
-          <mat-progress-spinner diameter="32" mode="indeterminate"></mat-progress-spinner>
-          <span>Chargement...</span>
+        <div class="album-loading">
+          <mat-progress-spinner diameter="40" mode="indeterminate" color="primary"></mat-progress-spinner>
+          <span>Chargement de l’album…</span>
         </div>
       } @else {
         @if (error()) {
-          <div class="error">{{ error() }}</div>
+          <div class="album-error" role="alert">{{ error() }}</div>
         } @else {
           @if (!hasPhotos()) {
-            <div class="empty">Aucune photo n'a encore ete transferee. Lance-toi&nbsp;!</div>
+            <div class="album-empty">
+              <mat-icon class="album-empty-icon" aria-hidden="true">photo_library</mat-icon>
+              <p class="album-empty-title">Aucune photo pour l’instant</p>
+              <p class="album-empty-text">
+                Les images partagées par vos proches apparaîtront ici.
+              </p>
+              <a mat-stroked-button color="primary" routerLink="/photos/upload" class="album-empty-cta">
+                <mat-icon>add_photo_alternate</mat-icon>
+                Ajouter des photos
+              </a>
+            </div>
           } @else {
             <div class="album-grid">
               @for (photo of sortedPhotos(); track photo.key) {
                 <article class="photo-card">
                   <a [href]="photo.url" target="_blank" rel="noopener" class="image-link">
-                    <img [src]="photo.url" [alt]="photo.name" loading="lazy" />
+                    <span class="image-link-inner">
+                      <img [src]="photo.url" [alt]="photo.name" loading="lazy" />
+                    </span>
+                    <span class="image-link-hint" aria-hidden="true">
+                      <mat-icon>open_in_new</mat-icon>
+                      Agrandir
+                    </span>
                   </a>
                   <div class="photo-actions">
                     <button
                       mat-icon-button
                       type="button"
-                      aria-label="Supprimer"
+                      class="photo-delete-btn"
+                      aria-label="Supprimer cette photo"
                       (click)="deletePhoto(photo)"
                       [disabled]="isDeleting(photo) || loading()">
-                      <mat-icon>delete</mat-icon>
+                      <mat-icon>delete_outline</mat-icon>
                     </button>
                   </div>
                   <div class="photo-meta">
-                    <strong class="photo-name">{{ photo.name }}</strong>
-                    <span class="photo-date">{{ formatDate(photo.lastModified) }}</span>
-                    <span class="photo-size">{{ formatSize(photo.size) }}</span>
+                    <strong class="photo-name" [title]="photo.name">{{ photo.name }}</strong>
+                    <div class="photo-meta-row">
+                      <span class="photo-meta-item">
+                        <mat-icon class="photo-meta-icon">schedule</mat-icon>
+                        {{ formatDate(photo.lastModified) }}
+                      </span>
+                      <span class="photo-meta-item">
+                        <mat-icon class="photo-meta-icon">sd_storage</mat-icon>
+                        {{ formatSize(photo.size) }}
+                      </span>
+                    </div>
                   </div>
                 </article>
               }

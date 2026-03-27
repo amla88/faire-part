@@ -6,4 +6,14 @@ html {
   .text-body {
     color: $text-color;
   }
+
+  .pageWrapper h1,
+  .pageWrapper h2,
+  .pageWrapper h3,
+  .pageWrapper .mat-headline-small,
+  .pageWrapper .mat-headline-medium {
+    font-family: 'Cormorant Garamond', serif;
+    letter-spacing: 0.02em;
+    color: var(--bridgerton-ink);
+  }
 }

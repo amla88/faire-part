@@ -1,15 +1,18 @@
-<div class="avatar-editor-container">
-  <!-- Header -->
+<div class="avatar-editor-container avatar-editor-bridgerton">
   <div class="editor-header">
-    <h1>Éditeur d'Avatar</h1>
-    <p class="subtitle">Personnalisez votre avatar pour le mariage</p>
+    <p class="editor-eyebrow">Le salon des portraits</p>
+    <h1 class="editor-title">Éditeur d’avatar</h1>
+    <p class="editor-lede">Personnalisez votre effigie pour le mariage — cheveux, tenue et couleurs à votre gré.</p>
+    <div class="editor-flourish" aria-hidden="true"></div>
   </div>
 
   <div class="editor-content">
-    <!-- Section Prévisualisation -->
-    <mat-card class="preview-section">
+    <mat-card class="bridgerton-card preview-section">
       <mat-card-header>
-        <mat-card-title>Aperçu</mat-card-title>
+        <mat-card-title class="avatar-card-title">
+          <span class="avatar-section-kicker">L’atelier</span>
+          <span class="avatar-section-heading">Aperçu</span>
+        </mat-card-title>
       </mat-card-header>
       <mat-card-content>
         <div class="preview-container" [class.loading]="isLoading()">
@@ -27,7 +30,7 @@
         <!-- Actions rapides -->
         <div class="preview-actions">
           <button
-            mat-raised-button
+            mat-flat-button
             color="primary"
             (click)="generateRandomSeed()"
             class="action-btn"
@@ -36,8 +39,8 @@
             Générer aléatoire
           </button>
           <button
-            mat-raised-button
-            color="accent"
+            mat-stroked-button
+            color="primary"
             (click)="downloadAvatar()"
             class="action-btn"
           >
@@ -45,19 +48,19 @@
             Télécharger
           </button>
           <button
-            mat-raised-button
+            mat-button
             (click)="resetAvatar()"
-            class="action-btn"
+            class="action-btn action-btn--text"
           >
             <mat-icon>restart_alt</mat-icon>
             Réinitialiser
           </button>
           <button
-            mat-stroked-button
+            mat-flat-button
             color="primary"
             (click)="saveAvatar()"
             [disabled]="isLoading() || isSaving() || !avatarDataUri()"
-            class="action-btn"
+            class="action-btn action-btn--save"
           >
             <mat-icon>save</mat-icon>
             Enregistrer
@@ -67,174 +70,196 @@
     </mat-card>
 
     <!-- Section Paramètres -->
-    <mat-card class="settings-section">
+    <mat-card class="bridgerton-card settings-section">
       <mat-card-header>
-        <mat-card-title>Paramètres</mat-card-title>
+        <mat-card-title class="avatar-card-title">
+          <span class="avatar-section-kicker">Le registre</span>
+          <span class="avatar-section-heading">Paramètres</span>
+        </mat-card-title>
       </mat-card-header>
       <mat-card-content class="grid-settings">
-        <!-- Top -->
-        <mat-form-field appearance="outline">
-          <mat-label>Cheveux/Chapeau</mat-label>
-          <mat-select [value]="top()" (selectionChange)="top.set($event.value)">
-            @for (option of topOptions; track option.value) {
-              <mat-option [value]="option.value">{{ option.label }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
+        <div class="settings-group">
+          <h3 class="settings-group-heading">Visage</h3>
+          <mat-form-field appearance="outline">
+            <mat-label>Yeux</mat-label>
+            <mat-select [value]="eyes()" (selectionChange)="eyes.set($event.value)">
+              @for (option of eyesOptions; track option.value) {
+                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Sourcils</mat-label>
+            <mat-select [value]="eyebrows()" (selectionChange)="eyebrows.set($event.value)">
+              @for (option of eyebrowsOptions; track option.value) {
+                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Bouche</mat-label>
+            <mat-select [value]="mouth()" (selectionChange)="mouth.set($event.value)">
+              @for (option of mouthOptions; track option.value) {
+                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="color-field">
+            <mat-label>Couleur de peau</mat-label>
+            <input matInput [value]="getCurrentColorDisplay('skin')" readonly />
+            <div class="color-field-suffix" matSuffix>
+              <span
+                class="color-current-swatch"
+                [class.transparent]="getCurrentColorValue('skin') === transparentColor"
+                [style.background]="getCurrentColorValue('skin') !== transparentColor ? '#' + getCurrentColorHex('skin') : 'transparent'"
+                aria-hidden="true"></span>
+              <button
+                mat-icon-button
+                type="button"
+                [matMenuTriggerFor]="colorPickerMenu"
+                (click)="openColorPicker('skin')"
+                aria-label="Choisir la couleur de peau">
+                <mat-icon>palette</mat-icon>
+              </button>
+            </div>
+          </mat-form-field>
+        </div>
 
-        <!-- Accessories -->
-        <mat-form-field appearance="outline">
-          <mat-label>Accessoires</mat-label>
-          <mat-select [value]="accessories()" (selectionChange)="accessories.set($event.value)">
-            @for (option of accessoriesOptions; track option.value) {
-              <mat-option [value]="option.value">{{ option.label }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
+        <div class="settings-group">
+          <h3 class="settings-group-heading">Cheveux et coiffure</h3>
+          <mat-form-field appearance="outline">
+            <mat-label>Cheveux / chapeau</mat-label>
+            <mat-select [value]="top()" (selectionChange)="top.set($event.value)">
+              @for (option of topOptions; track option.value) {
+                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="color-field">
+            <mat-label>Couleur de cheveux</mat-label>
+            <input matInput [value]="getCurrentColorDisplay('hair')" readonly />
+            <div class="color-field-suffix" matSuffix>
+              <span
+                class="color-current-swatch"
+                [class.transparent]="getCurrentColorValue('hair') === transparentColor"
+                [style.background]="getCurrentColorValue('hair') !== transparentColor ? '#' + getCurrentColorHex('hair') : 'transparent'"
+                aria-hidden="true"></span>
+              <button
+                mat-icon-button
+                type="button"
+                [matMenuTriggerFor]="colorPickerMenu"
+                (click)="openColorPicker('hair')"
+                aria-label="Choisir la couleur des cheveux">
+                <mat-icon>palette</mat-icon>
+              </button>
+            </div>
+          </mat-form-field>
+        </div>
 
-        <!-- Hair Color -->
-        <mat-form-field appearance="outline">
-          <mat-label>Couleur de cheveux</mat-label>
-          <span
-            matPrefix
-            class="color-current-dot"
-            [class.transparent]="getCurrentColorValue('hair') === transparentColor"
-            [style.background]="getCurrentColorValue('hair') !== transparentColor ? '#' + getCurrentColorHex('hair') : 'transparent'">
-          </span>
-          <input matInput [value]="getCurrentColorDisplay('hair')" readonly />
-          <button
-            mat-icon-button
-            matSuffix
-            type="button"
-            [matMenuTriggerFor]="colorPickerMenu"
-            (click)="openColorPicker('hair')"
-            aria-label="Choisir la couleur des cheveux">
-            <mat-icon>palette</mat-icon>
-          </button>
-        </mat-form-field>
+        <div class="settings-group">
+          <h3 class="settings-group-heading">Barbe et moustache</h3>
+          <mat-form-field appearance="outline">
+            <mat-label>Poils faciaux</mat-label>
+            <mat-select [value]="facialHair()" (selectionChange)="facialHair.set($event.value)">
+              @for (option of facialHairOptions; track option.value) {
+                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
 
-        <!-- Facial Hair -->
-        <mat-form-field appearance="outline">
-          <mat-label>Poils faciaux</mat-label>
-          <mat-select [value]="facialHair()" (selectionChange)="facialHair.set($event.value)">
-            @for (option of facialHairOptions; track option.value) {
-              <mat-option [value]="option.value">{{ option.label }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
+        <div class="settings-group">
+          <h3 class="settings-group-heading">Accessoires</h3>
+          <mat-form-field appearance="outline">
+            <mat-label>Accessoires</mat-label>
+            <mat-select [value]="accessories()" (selectionChange)="accessories.set($event.value)">
+              @for (option of accessoriesOptions; track option.value) {
+                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="color-field">
+            <mat-label>Couleur des accessoires</mat-label>
+            <input matInput [value]="getCurrentColorDisplay('accessories')" readonly />
+            <div class="color-field-suffix" matSuffix>
+              <span
+                class="color-current-swatch"
+                [class.transparent]="getCurrentColorValue('accessories') === transparentColor"
+                [style.background]="getCurrentColorValue('accessories') !== transparentColor ? '#' + getCurrentColorHex('accessories') : 'transparent'"
+                aria-hidden="true"></span>
+              <button
+                mat-icon-button
+                type="button"
+                [matMenuTriggerFor]="colorPickerMenu"
+                (click)="openColorPicker('accessories')"
+                aria-label="Choisir la couleur des accessoires">
+                <mat-icon>palette</mat-icon>
+              </button>
+            </div>
+          </mat-form-field>
+        </div>
 
-        <!-- Clothes -->
-        <mat-form-field appearance="outline">
-          <mat-label>Vêtements</mat-label>
-          <mat-select [value]="clothing()" (selectionChange)="clothing.set($event.value)">
-            @for (option of clothingOptions; track option.value) {
-              <mat-option [value]="option.value">{{ option.label }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
+        <div class="settings-group">
+          <h3 class="settings-group-heading">Tenue</h3>
+          <mat-form-field appearance="outline">
+            <mat-label>Vêtements</mat-label>
+            <mat-select [value]="clothing()" (selectionChange)="clothing.set($event.value)">
+              @for (option of clothingOptions; track option.value) {
+                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="color-field">
+            <mat-label>Couleur du vêtement</mat-label>
+            <input matInput [value]="getCurrentColorDisplay('clothes')" readonly />
+            <div class="color-field-suffix" matSuffix>
+              <span
+                class="color-current-swatch"
+                [class.transparent]="getCurrentColorValue('clothes') === transparentColor"
+                [style.background]="getCurrentColorValue('clothes') !== transparentColor ? '#' + getCurrentColorHex('clothes') : 'transparent'"
+                aria-hidden="true"></span>
+              <button
+                mat-icon-button
+                type="button"
+                [matMenuTriggerFor]="colorPickerMenu"
+                (click)="openColorPicker('clothes')"
+                aria-label="Choisir la couleur des vêtements">
+                <mat-icon>palette</mat-icon>
+              </button>
+            </div>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Motif du t-shirt</mat-label>
+            <mat-select [value]="clothingGraphic()" (selectionChange)="clothingGraphic.set($event.value)">
+              @for (option of clothingGraphicOptions; track option.value) {
+                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
 
-        <!-- Clothes Color -->
-        <mat-form-field appearance="outline">
-          <mat-label>Couleur vêtement</mat-label>
-          <span
-            matPrefix
-            class="color-current-dot"
-            [class.transparent]="getCurrentColorValue('clothes') === transparentColor"
-            [style.background]="getCurrentColorValue('clothes') !== transparentColor ? '#' + getCurrentColorHex('clothes') : 'transparent'">
-          </span>
-          <input matInput [value]="getCurrentColorDisplay('clothes')" readonly />
-          <button
-            mat-icon-button
-            matSuffix
-            type="button"
-            [matMenuTriggerFor]="colorPickerMenu"
-            (click)="openColorPicker('clothes')"
-            aria-label="Choisir la couleur des vêtements">
-            <mat-icon>palette</mat-icon>
-          </button>
-        </mat-form-field>
-
-        <!-- Clothing Graphic -->
-        <mat-form-field appearance="outline">
-          <mat-label>Graphique Vêtement</mat-label>
-          <mat-select [value]="clothingGraphic()" (selectionChange)="clothingGraphic.set($event.value)">
-            @for (option of clothingGraphicOptions; track option.value) {
-              <mat-option [value]="option.value">{{ option.label }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-
-        <!-- Eyes -->
-        <mat-form-field appearance="outline">
-          <mat-label>Yeux</mat-label>
-          <mat-select [value]="eyes()" (selectionChange)="eyes.set($event.value)">
-            @for (option of eyesOptions; track option.value) {
-              <mat-option [value]="option.value">{{ option.label }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-
-        <!-- Eyebrows -->
-        <mat-form-field appearance="outline">
-          <mat-label>Sourcils</mat-label>
-          <mat-select [value]="eyebrows()" (selectionChange)="eyebrows.set($event.value)">
-            @for (option of eyebrowsOptions; track option.value) {
-              <mat-option [value]="option.value">{{ option.label }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-
-        <!-- Mouth -->
-        <mat-form-field appearance="outline">
-          <mat-label>Bouche</mat-label>
-          <mat-select [value]="mouth()" (selectionChange)="mouth.set($event.value)">
-            @for (option of mouthOptions; track option.value) {
-              <mat-option [value]="option.value">{{ option.label }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-
-        <!-- Skin Color -->
-        <mat-form-field appearance="outline">
-          <mat-label>Couleur de peau</mat-label>
-          <span
-            matPrefix
-            class="color-current-dot"
-            [class.transparent]="getCurrentColorValue('skin') === transparentColor"
-            [style.background]="getCurrentColorValue('skin') !== transparentColor ? '#' + getCurrentColorHex('skin') : 'transparent'">
-          </span>
-          <input matInput [value]="getCurrentColorDisplay('skin')" readonly />
-          <button
-            mat-icon-button
-            matSuffix
-            type="button"
-            [matMenuTriggerFor]="colorPickerMenu"
-            (click)="openColorPicker('skin')"
-            aria-label="Choisir la couleur de peau">
-            <mat-icon>palette</mat-icon>
-          </button>
-        </mat-form-field>
-        
-        <!-- Background Color -->
-        <mat-form-field appearance="outline">
-          <mat-label>Couleur de fond</mat-label>
-          <span
-            matPrefix
-            class="color-current-dot"
-            [class.transparent]="getCurrentColorValue('background') === transparentColor"
-            [style.background]="getCurrentColorValue('background') !== transparentColor ? '#' + getCurrentColorHex('background') : 'transparent'">
-          </span>
-          <input matInput [value]="getCurrentColorDisplay('background')" readonly />
-          <button
-            mat-icon-button
-            matSuffix
-            type="button"
-            [matMenuTriggerFor]="colorPickerMenu"
-            (click)="openColorPicker('background')"
-            aria-label="Choisir la couleur de fond">
-            <mat-icon>palette</mat-icon>
-          </button>
-        </mat-form-field>
+        <div class="settings-group">
+          <h3 class="settings-group-heading">Fond</h3>
+          <mat-form-field appearance="outline" class="color-field">
+            <mat-label>Couleur de fond</mat-label>
+            <input matInput [value]="getCurrentColorDisplay('background')" readonly />
+            <div class="color-field-suffix" matSuffix>
+              <span
+                class="color-current-swatch"
+                [class.transparent]="getCurrentColorValue('background') === transparentColor"
+                [style.background]="getCurrentColorValue('background') !== transparentColor ? '#' + getCurrentColorHex('background') : 'transparent'"
+                aria-hidden="true"></span>
+              <button
+                mat-icon-button
+                type="button"
+                [matMenuTriggerFor]="colorPickerMenu"
+                (click)="openColorPicker('background')"
+                aria-label="Choisir la couleur de fond">
+                <mat-icon>palette</mat-icon>
+              </button>
+            </div>
+          </mat-form-field>
+        </div>
       </mat-card-content>
     </mat-card>
   </div>

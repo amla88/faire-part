@@ -18,10 +18,11 @@
     position: absolute;
     height: 100%;
     width: 100%;
-    opacity: 0.3;
-    background: radial-gradient(rgb(210, 241, 223),
-        rgb(211, 215, 250),
-        rgb(186, 216, 244)) 0% 0% / 400% 400%;
+    opacity: 0.45;
+    background: radial-gradient(
+        rgba(232, 224, 235, 0.9),
+        rgba(171, 188, 166, 0.45),
+        rgba(245, 230, 232, 0.75)) 0% 0% / 400% 400%;
     animation: 15s ease 0s infinite normal none running gradient;
     z-index: -1;
   }

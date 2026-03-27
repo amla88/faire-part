@@ -6,8 +6,9 @@
   transition: swift-ease-out(width);
   position: absolute;
   overflow-x: hidden;
-  border-right: 1px solid $borderColor;
+  border-right: 1px solid var(--bridgerton-gold-border-soft);
   border-radius: 0px !important;
+  background: linear-gradient(180deg, #fffef9 0%, rgba(250, 246, 241, 0.98) 100%);
 }
 
 .branding {

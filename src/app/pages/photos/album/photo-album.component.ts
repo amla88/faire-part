@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -15,6 +16,7 @@ import { ConfirmDialogData } from 'src/app/shared/dialogs/confirm-dialog/confirm
   selector: 'app-photo-album',
   imports: [
     CommonModule,
+    RouterLink,
     MatCardModule,
     MatButtonModule,
     MatProgressSpinnerModule,
@@ -65,6 +67,8 @@ export class PhotoAlbumComponent {
   });
 
   readonly hasPhotos = computed(() => this.sortedPhotos().length > 0);
+
+  readonly photoCount = computed(() => this.sortedPhotos().length);
 
   private readonly dateFormatter = new Intl.DateTimeFormat('fr-FR', {
     dateStyle: 'medium',

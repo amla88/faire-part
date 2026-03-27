@@ -1,15 +1,14 @@
-<mat-card class="cardWithShadow bridgerton-card">
-	<mat-card-title>
-		<div class="card-actions">
-			<div class="bridgerton-card-heading">
-				<span class="bridgerton-card-kicker">Registre du domaine</span>
-				<span class="bridgerton-card-title">Mes réponses</span>
-			</div>
-			<button mat-stroked-button color="primary" type="button" routerLink="/rsvp" class="bridgerton-rsvp-btn">
-				Modifier mes réponses
-			</button>
+<mat-card class="bridgerton-card">
+	<div class="card-actions" role="region" aria-labelledby="bridgerton-summary-title">
+		<div class="bridgerton-card-heading">
+			<span class="bridgerton-card-kicker">Registre du domaine</span>
+			<span id="bridgerton-summary-title" class="bridgerton-card-title">Mes réponses</span>
 		</div>
-	</mat-card-title>
+		<button mat-flat-button color="primary" type="button" routerLink="/rsvp" class="bridgerton-rsvp-btn">
+			<mat-icon>edit_note</mat-icon>
+			Modifier mes réponses
+		</button>
+	</div>
 	<mat-card-content>
 		<div *ngIf="loading" class="bridgerton-loading">Chargement…</div>
 
