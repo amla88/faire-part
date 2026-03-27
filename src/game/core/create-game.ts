@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { Act0CarrosseScene } from '../scenes/Act0CarrosseScene';
+import { Act1CourScene } from '../scenes/Act1CourScene';
 
 export function createGame(container: HTMLElement): Phaser.Game {
   const config: Phaser.Types.Core.GameConfig = {
@@ -13,7 +14,7 @@ export function createGame(container: HTMLElement): Phaser.Game {
       width: 960,
       height: 540,
     },
-    scene: [Act0CarrosseScene],
+    scene: [Act0CarrosseScene, Act1CourScene],
     input: {
       keyboard: true,
       mouse: true,

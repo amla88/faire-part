@@ -64,6 +64,20 @@
   z-index: 20;
 }
 
+.touch-action {
+  position: absolute;
+  right: 16px;
+  bottom: 20px;
+  width: 110px;
+  height: 40px;
+  border: 1px solid rgba(201, 165, 92, 0.55);
+  background: rgba(34, 23, 42, 0.9);
+  color: #f4dfbf;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
 .ctl {
   position: absolute;
   width: 44px;

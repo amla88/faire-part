@@ -16,7 +16,7 @@
         <mat-card class="overlay-card intro-card">
           <h2>Comment jouer</h2>
           <p><strong>PC:</strong> fleches ou ZQSD pour se deplacer, Espace pour interagir.</p>
-          <p><strong>Mobile/Tablette:</strong> utilisez les boutons directionnels.</p>
+          <p><strong>Mobile/Tablette:</strong> utilisez les boutons directionnels, puis le bouton <strong>Parler</strong> pour interagir.</p>
           <p>Vous pouvez masquer les controles avec le bouton en haut a droite.</p>
           <button mat-flat-button color="primary" (click)="startGame()">
             Commencer
@@ -63,6 +63,16 @@
           (pointerleave)="pressDir('down', false)"
         >↓</button>
       </div>
+
+      <button
+        class="touch-action"
+        type="button"
+        (pointerdown)="pressInteract(true); pressConfirm(true)"
+        (pointerup)="pressInteract(false); pressConfirm(false)"
+        (pointerleave)="pressInteract(false); pressConfirm(false)"
+      >
+        Parler / Valider
+      </button>
     }
   </div>
 </div>

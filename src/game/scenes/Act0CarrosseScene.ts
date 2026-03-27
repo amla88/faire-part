@@ -1,11 +1,17 @@
 import Phaser from 'phaser';
+import { DialogueBox } from '../ui/DialogueBox';
+import { act0IntroDialogue } from '../data/act0.dialogues';
 import { virtualInputState } from '../core/input-state';
 
 export class Act0CarrosseScene extends Phaser.Scene {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private zqsd!: Record<'Z' | 'Q' | 'S' | 'D' | 'SPACE', Phaser.Input.Keyboard.Key>;
-  private player!: Phaser.GameObjects.Rectangle;
-  private speed = 150;
+  private optionRects: Phaser.GameObjects.Rectangle[] = [];
+  private currentIndex = 0;
+
+  private dialogueBox!: DialogueBox;
+  private dialogueDone = false;
+  private prevConfirm = false;
 
   constructor() {
     super('Act0CarrosseScene');
@@ -28,7 +34,7 @@ export class Act0CarrosseScene extends Phaser.Scene {
       color: '#f8e8c9',
     });
 
-    this.add.text(width / 2, height * 0.16, 'Deplacez-vous vers les silhouettes', {
+    this.add.text(width / 2, height * 0.16, 'Choisissez votre personnage', {
       fontFamily: 'monospace',
       fontSize: '13px',
       color: '#f4dfbf',
@@ -41,72 +47,89 @@ export class Act0CarrosseScene extends Phaser.Scene {
       { x: width * 0.59, y: height * 0.5, label: 'Reine de la nuit' },
       { x: width * 0.72, y: height * 0.5, label: 'Duc de la scene' },
     ];
-    targets.forEach((t) => {
-      this.add.rectangle(t.x, t.y, 24, 38, 0x1b1821);
+    this.optionRects = targets.map((t) => {
+      const rect = this.add.rectangle(t.x, t.y, 24, 38, 0x1b1821);
       this.add.text(t.x, t.y + 30, t.label, {
         fontFamily: 'monospace',
         fontSize: '10px',
         color: '#f2dfc3',
       }).setOrigin(0.5, 0);
+      return rect;
     });
 
-    this.player = this.add.rectangle(width / 2, height * 0.6, 16, 16, 0x7ed2ff);
-    this.player.setStrokeStyle(2, 0xffffff);
+    this.dialogueBox = new DialogueBox(this);
 
     this.cursors = this.input.keyboard?.createCursorKeys() as Phaser.Types.Input.Keyboard.CursorKeys;
     this.zqsd = this.input.keyboard?.addKeys(
       'Z,Q,S,D,SPACE'
     ) as Record<'Z' | 'Q' | 'S' | 'D' | 'SPACE', Phaser.Input.Keyboard.Key>;
 
-    // Limites de deplacement dans le decor.
-    const body = this.player;
-    body.setData('minX', room.x - room.width / 2 + 14);
-    body.setData('maxX', room.x + room.width / 2 - 14);
-    body.setData('minY', room.y - room.height / 2 + 14);
-    body.setData('maxY', room.y + room.height / 2 - 14);
+    this.updateHighlight();
   }
 
   override update(_: number, delta: number): void {
-    const dt = delta / 1000;
-    const dir = this.readDirection();
+    const spaceOrEnterJustDown =
+      Phaser.Input.Keyboard.JustDown(this.zqsd.SPACE) ||
+      Phaser.Input.Keyboard.JustDown(this.cursors.space!) ||
+      Phaser.Input.Keyboard.JustDown(this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER));
 
-    const nx = this.player.x + dir.x * this.speed * dt;
-    const ny = this.player.y + dir.y * this.speed * dt;
+    const confirmJustDown = virtualInputState.confirm && !this.prevConfirm;
+    const validate = spaceOrEnterJustDown || confirmJustDown;
 
-    const minX = this.player.getData('minX') as number;
-    const maxX = this.player.getData('maxX') as number;
-    const minY = this.player.getData('minY') as number;
-    const maxY = this.player.getData('maxY') as number;
-
-    this.player.x = Phaser.Math.Clamp(nx, minX, maxX);
-    this.player.y = Phaser.Math.Clamp(ny, minY, maxY);
-  }
-
-  private readDirection(): { x: number; y: number } {
-    const kLeft = !!(this.cursors?.left?.isDown || this.zqsd?.Q?.isDown);
-    const kRight = !!(this.cursors?.right?.isDown || this.zqsd?.D?.isDown);
-    const kUp = !!(this.cursors?.up?.isDown || this.zqsd?.Z?.isDown);
-    const kDown = !!(this.cursors?.down?.isDown || this.zqsd?.S?.isDown);
-
-    const left = kLeft || virtualInputState.left;
-    const right = kRight || virtualInputState.right;
-    const up = kUp || virtualInputState.up;
-    const down = kDown || virtualInputState.down;
-
-    let x = 0;
-    let y = 0;
-    if (left) x -= 1;
-    if (right) x += 1;
-    if (up) y -= 1;
-    if (down) y += 1;
-
-    if (x !== 0 && y !== 0) {
-      const inv = 1 / Math.sqrt(2);
-      x *= inv;
-      y *= inv;
+    if (this.dialogueBox.active) {
+      if (validate) this.dialogueBox.next();
+      this.prevConfirm = virtualInputState.confirm;
+      return;
     }
 
-    return { x, y };
+    if (this.dialogueDone) {
+      if (validate) {
+        this.scene.start('Act1CourScene');
+      }
+      this.prevConfirm = virtualInputState.confirm;
+      return;
+    }
+
+    if (!this.optionRects.length) return;
+
+    const leftPressed =
+      Phaser.Input.Keyboard.JustDown(this.cursors.left!) ||
+      Phaser.Input.Keyboard.JustDown(this.zqsd.Q);
+    const rightPressed =
+      Phaser.Input.Keyboard.JustDown(this.cursors.right!) ||
+      Phaser.Input.Keyboard.JustDown(this.zqsd.D);
+
+    if (leftPressed) {
+      this.currentIndex = (this.currentIndex + this.optionRects.length - 1) % this.optionRects.length;
+      this.updateHighlight();
+    } else if (rightPressed) {
+      this.currentIndex = (this.currentIndex + 1) % this.optionRects.length;
+      this.updateHighlight();
+    }
+
+    if (validate && !this.dialogueDone) {
+      // Dialogue d'accueil (Phase B) après la sélection.
+      this.dialogueBox.start(act0IntroDialogue, () => {
+        this.dialogueDone = true;
+        this.add.text(this.scale.width / 2, this.scale.height - 90, 'Acte 0 terminé. Appuyez sur Espace.', {
+          fontFamily: 'monospace',
+          fontSize: '13px',
+          color: '#f4dfbf',
+        }).setOrigin(0.5);
+      });
+    }
+
+    this.prevConfirm = virtualInputState.confirm;
+  }
+
+  private updateHighlight(): void {
+    this.optionRects.forEach((rect, index) => {
+      if (index === this.currentIndex) {
+        rect.setStrokeStyle(3, 0xf5c16c, 1);
+      } else {
+        rect.setStrokeStyle(1, 0x000000, 0.5);
+      }
+    });
   }
 }
 

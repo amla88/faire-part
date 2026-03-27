@@ -29,7 +29,7 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
   readonly showIntro = signal(true);
   readonly isPortrait = signal(false);
   readonly fullscreenAvailable = signal(
-    typeof document !== 'undefined' && !!document.documentElement.requestFullscreen
+    typeof document !== 'undefined' && !!document.fullscreenEnabled
   );
 
   private game: import('phaser').Game | null = null;
@@ -63,15 +63,26 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
 
   async toggleFullscreen(): Promise<void> {
     if (!this.fullscreenAvailable()) return;
-    if (!document.fullscreenElement) {
-      await document.documentElement.requestFullscreen();
-    } else {
+    const el = this.gameHost?.nativeElement;
+    if (!document.fullscreenElement && el?.requestFullscreen) {
+      await el.requestFullscreen();
+      return;
+    }
+    if (document.fullscreenElement) {
       await document.exitFullscreen();
     }
   }
 
   pressDir(dir: 'up' | 'down' | 'left' | 'right', pressed: boolean): void {
     virtualInputState[dir] = pressed;
+  }
+
+  pressInteract(pressed: boolean): void {
+    virtualInputState.interact = pressed;
+  }
+
+  pressConfirm(pressed: boolean): void {
+    virtualInputState.confirm = pressed;
   }
 
   private computeOrientation(): void {
