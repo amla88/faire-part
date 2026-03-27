@@ -1,17 +1,18 @@
 import Phaser from 'phaser';
 import { DialogueBox } from '../ui/DialogueBox';
-import { act0IntroDialogue } from '../data/act0.dialogues';
-import { virtualInputState } from '../core/input-state';
+import { gameState, PlayerArchetype } from '../core/game-state';
+import { quests, QuestFlags } from '../systems/QuestSystem';
+import { SceneInput } from '../systems/SceneInput';
+import { getDialogue } from '../data/dialogues.catalog';
 
 export class Act0CarrosseScene extends Phaser.Scene {
-  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-  private zqsd!: Record<'Z' | 'Q' | 'S' | 'D' | 'SPACE', Phaser.Input.Keyboard.Key>;
+  private inputState!: SceneInput;
   private optionRects: Phaser.GameObjects.Rectangle[] = [];
   private currentIndex = 0;
 
   private dialogueBox!: DialogueBox;
   private dialogueDone = false;
-  private prevConfirm = false;
+  private selectionLocked = false;
 
   constructor() {
     super('Act0CarrosseScene');
@@ -47,8 +48,15 @@ export class Act0CarrosseScene extends Phaser.Scene {
       { x: width * 0.59, y: height * 0.5, label: 'Reine de la nuit' },
       { x: width * 0.72, y: height * 0.5, label: 'Duc de la scene' },
     ];
-    this.optionRects = targets.map((t) => {
+    this.optionRects = targets.map((t, index) => {
       const rect = this.add.rectangle(t.x, t.y, 24, 38, 0x1b1821);
+      rect.setInteractive({ useHandCursor: true });
+      rect.on('pointerdown', () => {
+        if (this.selectionLocked || this.dialogueBox.active || this.dialogueDone) return;
+        this.currentIndex = index;
+        this.updateHighlight();
+        this.validateSelection();
+      });
       this.add.text(t.x, t.y + 30, t.label, {
         fontFamily: 'monospace',
         fontSize: '10px',
@@ -58,46 +66,33 @@ export class Act0CarrosseScene extends Phaser.Scene {
     });
 
     this.dialogueBox = new DialogueBox(this);
-
-    this.cursors = this.input.keyboard?.createCursorKeys() as Phaser.Types.Input.Keyboard.CursorKeys;
-    this.zqsd = this.input.keyboard?.addKeys(
-      'Z,Q,S,D,SPACE'
-    ) as Record<'Z' | 'Q' | 'S' | 'D' | 'SPACE', Phaser.Input.Keyboard.Key>;
+    this.inputState = new SceneInput(this);
 
     this.updateHighlight();
   }
 
   override update(_: number, delta: number): void {
-    const spaceOrEnterJustDown =
-      Phaser.Input.Keyboard.JustDown(this.zqsd.SPACE) ||
-      Phaser.Input.Keyboard.JustDown(this.cursors.space!) ||
-      Phaser.Input.Keyboard.JustDown(this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER));
-
-    const confirmJustDown = virtualInputState.confirm && !this.prevConfirm;
-    const validate = spaceOrEnterJustDown || confirmJustDown;
+    const validate = this.inputState.actionJustDown();
 
     if (this.dialogueBox.active) {
       if (validate) this.dialogueBox.next();
-      this.prevConfirm = virtualInputState.confirm;
+      this.inputState.commit();
       return;
     }
 
     if (this.dialogueDone) {
       if (validate) {
+        gameState.setAct('act1');
         this.scene.start('Act1CourScene');
       }
-      this.prevConfirm = virtualInputState.confirm;
+      this.inputState.commit();
       return;
     }
 
     if (!this.optionRects.length) return;
 
-    const leftPressed =
-      Phaser.Input.Keyboard.JustDown(this.cursors.left!) ||
-      Phaser.Input.Keyboard.JustDown(this.zqsd.Q);
-    const rightPressed =
-      Phaser.Input.Keyboard.JustDown(this.cursors.right!) ||
-      Phaser.Input.Keyboard.JustDown(this.zqsd.D);
+    const leftPressed = this.inputState.leftJustDown();
+    const rightPressed = this.inputState.rightJustDown();
 
     if (leftPressed) {
       this.currentIndex = (this.currentIndex + this.optionRects.length - 1) % this.optionRects.length;
@@ -108,18 +103,30 @@ export class Act0CarrosseScene extends Phaser.Scene {
     }
 
     if (validate && !this.dialogueDone) {
-      // Dialogue d'accueil (Phase B) après la sélection.
-      this.dialogueBox.start(act0IntroDialogue, () => {
-        this.dialogueDone = true;
-        this.add.text(this.scale.width / 2, this.scale.height - 90, 'Acte 0 terminé. Appuyez sur Espace.', {
-          fontFamily: 'monospace',
-          fontSize: '13px',
-          color: '#f4dfbf',
-        }).setOrigin(0.5);
-      });
+      this.validateSelection();
     }
 
-    this.prevConfirm = virtualInputState.confirm;
+    this.inputState.commit();
+  }
+
+  private validateSelection(): void {
+    if (this.selectionLocked || this.dialogueDone || this.dialogueBox.active) return;
+    this.selectionLocked = true;
+
+    const labels: PlayerArchetype[] = ['Lady', 'Gentleman', 'Reine de la nuit', 'Duc de la scene'];
+    const chosen = labels[this.currentIndex] ?? 'Lady';
+    gameState.setPlayer(chosen);
+    quests.done(QuestFlags.act0Chosen);
+
+    this.dialogueBox.start(getDialogue('act0.intro'), () => {
+      this.dialogueDone = true;
+      quests.done(QuestFlags.act0IntroSeen);
+      this.add.text(this.scale.width / 2, this.scale.height - 90, 'Acte 0 terminé. Appuyez sur Espace / Enter.', {
+        fontFamily: 'monospace',
+        fontSize: '13px',
+        color: '#f4dfbf',
+      }).setOrigin(0.5);
+    });
   }
 
   private updateHighlight(): void {

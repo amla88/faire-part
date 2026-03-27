@@ -1,24 +1,25 @@
 import Phaser from 'phaser';
 import { DialogueBox } from '../ui/DialogueBox';
-import { act1RegisterDialogue } from '../data/act1.dialogues';
-import { virtualInputState } from '../core/input-state';
+import { FormBox } from '../ui/FormBox';
+import { quests, QuestFlags } from '../systems/QuestSystem';
+import { SceneInput } from '../systems/SceneInput';
+import { getDialogue } from '../data/dialogues.catalog';
+import { gameBackend } from '../services/GameBackendBridge';
 
 export class Act1CourScene extends Phaser.Scene {
-  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-  private zqsd!: Record<'Z' | 'Q' | 'S' | 'D' | 'SPACE', Phaser.Input.Keyboard.Key>;
+  private inputState!: SceneInput;
 
   private dialogueBox!: DialogueBox;
+  private formBox!: FormBox;
 
   private player!: Phaser.GameObjects.Rectangle;
   private npc!: Phaser.GameObjects.Rectangle;
   private npcLabel!: Phaser.GameObjects.Text;
-  private questDone = false;
 
   private hintText!: Phaser.GameObjects.Text;
   private questText!: Phaser.GameObjects.Text;
-
-  private prevInteract = false;
-  private prevConfirm = false;
+  private choicesText!: Phaser.GameObjects.Text;
+  private saving = false;
 
   constructor() {
     super('Act1CourScene');
@@ -43,16 +44,15 @@ export class Act1CourScene extends Phaser.Scene {
     this.npc = this.add.rectangle(npcX, npcY, 28, 40, 0x4b86c5, 0.3);
     this.npc.setStrokeStyle(2, 0x90c7ff, 0.45);
 
-    this.npcLabel = this.add.text(npcX, npcY + 44, 'Majordome', {
+    this.npcLabel = this.add.text(npcX, npcY + 44, 'M. de La Plume', {
       fontFamily: 'monospace',
       fontSize: '11px',
       color: '#f2dfc3',
     }).setOrigin(0.5, 0);
 
     this.dialogueBox = new DialogueBox(this);
-
-    this.cursors = this.input.keyboard?.createCursorKeys() as Phaser.Types.Input.Keyboard.CursorKeys;
-    this.zqsd = this.input.keyboard?.addKeys('Z,Q,S,D,SPACE') as Record<'Z' | 'Q' | 'S' | 'D' | 'SPACE', Phaser.Input.Keyboard.Key>;
+    this.formBox = new FormBox(this);
+    this.inputState = new SceneInput(this);
 
     this.hintText = this.add.text(width / 2, height - 86, 'Approchez le PNJ puis appuyez sur Espace / Parler', {
       fontFamily: 'monospace',
@@ -67,44 +67,40 @@ export class Act1CourScene extends Phaser.Scene {
       color: '#8af39a',
       align: 'center',
     }).setOrigin(0.5);
+
+    this.choicesText = this.add.text(width / 2, height - 42, '', {
+      fontFamily: 'monospace',
+      fontSize: '12px',
+      color: '#f4dfbf',
+      align: 'center',
+    }).setOrigin(0.5);
   }
 
   override update(_: number, delta: number): void {
     const dt = delta / 1000;
 
-    const moveLeft =
-      !!this.cursors.left?.isDown ||
-      !!this.zqsd.Q?.isDown ||
-      !!virtualInputState.left;
-    const moveRight =
-      !!this.cursors.right?.isDown ||
-      !!this.zqsd.D?.isDown ||
-      !!virtualInputState.right;
-    const moveUp =
-      !!this.cursors.up?.isDown ||
-      !!this.zqsd.Z?.isDown ||
-      !!virtualInputState.up;
-    const moveDown =
-      !!this.cursors.down?.isDown ||
-      !!this.zqsd.S?.isDown ||
-      !!virtualInputState.down;
+    const moveLeft = this.inputState.moveLeft;
+    const moveRight = this.inputState.moveRight;
+    const moveUp = this.inputState.moveUp;
+    const moveDown = this.inputState.moveDown;
 
-    const spaceOrEnterJustDown =
-      Phaser.Input.Keyboard.JustDown(this.cursors.space!) ||
-      Phaser.Input.Keyboard.JustDown(this.zqsd.SPACE) ||
-      Phaser.Input.Keyboard.JustDown(this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER));
-
-    const confirmJustDown = virtualInputState.confirm && !this.prevConfirm;
-
-    const interactJustDown =
-      spaceOrEnterJustDown ||
-      (virtualInputState.interact && !this.prevInteract) ||
-      confirmJustDown;
+    const interactJustDown = this.inputState.actionJustDown();
 
     if (this.dialogueBox.active) {
       if (interactJustDown) this.dialogueBox.next();
-      this.prevInteract = virtualInputState.interact;
-      this.prevConfirm = virtualInputState.confirm;
+      this.inputState.commit();
+      return;
+    }
+
+    if (this.formBox.active) {
+      this.formBox.handleToggleInput({
+        up: this.inputState.upJustDown(),
+        down: this.inputState.downJustDown(),
+        left: this.inputState.leftJustDown(),
+        right: this.inputState.rightJustDown(),
+        action: interactJustDown,
+      });
+      this.inputState.commit();
       return;
     }
 
@@ -133,21 +129,55 @@ export class Act1CourScene extends Phaser.Scene {
       this.player.y = Phaser.Math.Clamp(this.player.y + vy * speed * dt, minY, maxY);
     }
 
-    if (!this.questDone) {
+    if (!quests.isDone(QuestFlags.act1RegisterDone)) {
       const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.npc.x, this.npc.y);
       const closeEnough = dist < 70;
 
       if (closeEnough && interactJustDown) {
-        this.dialogueBox.start(act1RegisterDialogue, () => {
-          this.questDone = true;
-          this.questText.setText('Quête du registre validée (prototype) !');
-          this.hintText.setText('Bravo. Prototype terminé pour Phase B.');
+        this.dialogueBox.start(getDialogue('act1.register'), () => {
+          this.openRegisterChoices();
         });
       }
     }
 
-    this.prevInteract = virtualInputState.interact;
-    this.prevConfirm = virtualInputState.confirm;
+    this.inputState.commit();
+  }
+
+  private openRegisterChoices(): void {
+    this.formBox.startToggles({
+      title: 'Présence au domaine',
+      toggles: [
+        { key: 'present_reception', label: 'Réception', value: true },
+        { key: 'present_repas', label: 'Repas', value: true },
+        { key: 'present_soiree', label: 'Soirée', value: true },
+      ],
+      onSubmit: (values) => {
+        if (this.saving) return;
+        this.saving = true;
+        this.choicesText.setText('Enregistrement en cours…');
+        gameBackend
+          .recordRsvpForSelected({
+            present_reception: !!values['present_reception'],
+            present_repas: !!values['present_repas'],
+            present_soiree: !!values['present_soiree'],
+          })
+          .then(() => {
+            quests.done(QuestFlags.act1RegisterDone);
+            this.questText.setText('Présence consignée dans le registre !');
+            this.hintText.setText('Acte 1 validé. Passage à l’Acte 2…');
+            this.choicesText.setText('');
+            this.time.delayedCall(600, () => this.scene.start('Act2OfficeScene'));
+          })
+          .catch((e) => {
+            this.choicesText.setText('');
+            this.hintText.setText('Erreur en sauvegardant. Réessayez.');
+            this.questText.setText(String(e?.message || e));
+          })
+          .finally(() => {
+            this.saving = false;
+          });
+      },
+    });
   }
 }
 

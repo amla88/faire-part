@@ -29,22 +29,27 @@ export class DialogueBox {
     const x = Math.floor(width / 2);
     const y = Math.floor(height - boxH / 2 - 10);
 
-    this.bg = scene.add.rectangle(x, y, boxW, boxH, 0x1a121f, 0.92);
-    this.bg.setStrokeStyle(2, 0xc9a55c, 0.55);
+    // Palette "vert sauge" (alignée sur le site)
+    const sageDeep = 0x2a3228;
+    const sage = 0xabbca6;
+    const cream = 0xfaf6f1;
 
-    this.portrait = scene.add.rectangle(x - boxW / 2 + 28, y, 46, 46, 0xc9a55c, 0.35);
-    this.portrait.setStrokeStyle(2, 0xf4dfbf, 0.35);
+    this.bg = scene.add.rectangle(x, y, boxW, boxH, sageDeep, 0.92);
+    this.bg.setStrokeStyle(2, sage, 0.6);
+
+    this.portrait = scene.add.rectangle(x - boxW / 2 + 28, y, 46, 46, sage, 0.22);
+    this.portrait.setStrokeStyle(2, cream, 0.35);
 
     this.speakerText = scene.add.text(x - boxW / 2 + 88, y - boxH / 2 + 16, '', {
       fontFamily: 'monospace',
       fontSize: '14px',
-      color: '#f8e8c9',
+      color: '#faf6f1',
     });
 
     this.bodyText = scene.add.text(x - boxW / 2 + 88, y - boxH / 2 + 34, '', {
       fontFamily: 'monospace',
       fontSize: '14px',
-      color: '#f4dfbf',
+      color: '#f3ebe4',
       wordWrap: { width: boxW - 88 - 18 },
       lineSpacing: 4,
     });
