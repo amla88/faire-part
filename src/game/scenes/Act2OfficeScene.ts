@@ -65,13 +65,6 @@ export class Act2OfficeScene extends Phaser.Scene {
 
   override update(): void {
     const dt = 1 / 60;
-    const act = this.inputState.actionJustDown();
-    if (this.dialogueBox.active) {
-      if (act) this.dialogueBox.next();
-      this.inputState.commit();
-      return;
-    }
-
     if (this.formBox.active) {
       this.info.setVisible(false);
       // champs texte: on laisse la DOM box gérer la saisie.
@@ -79,6 +72,13 @@ export class Act2OfficeScene extends Phaser.Scene {
       return;
     }
     this.info.setVisible(true);
+
+    const act = this.inputState.actionJustDown();
+    if (this.dialogueBox.active) {
+      if (act) this.dialogueBox.next();
+      this.inputState.commit();
+      return;
+    }
 
     // Déplacement simple
     const moveLeft = this.inputState.moveLeft;

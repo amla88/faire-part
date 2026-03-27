@@ -64,6 +64,16 @@
   z-index: 20;
 }
 
+.touch-controls,
+.touch-controls * ,
+.touch-action {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+
 .touch-action {
   position: absolute;
   right: 16px;
@@ -88,6 +98,12 @@
   border-radius: 8px;
   font-weight: 700;
   font-size: 20px;
+}
+
+.ctl,
+.touch-action {
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .ctl.up {

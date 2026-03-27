@@ -54,24 +54,28 @@
           (pointerdown)="pressDir('up', true)"
           (pointerup)="pressDir('up', false)"
           (pointerleave)="pressDir('up', false)"
+          (contextmenu)="$event.preventDefault()"
         >↑</button>
         <button
           class="ctl left"
           (pointerdown)="pressDir('left', true)"
           (pointerup)="pressDir('left', false)"
           (pointerleave)="pressDir('left', false)"
+          (contextmenu)="$event.preventDefault()"
         >←</button>
         <button
           class="ctl right"
           (pointerdown)="pressDir('right', true)"
           (pointerup)="pressDir('right', false)"
           (pointerleave)="pressDir('right', false)"
+          (contextmenu)="$event.preventDefault()"
         >→</button>
         <button
           class="ctl down"
           (pointerdown)="pressDir('down', true)"
           (pointerup)="pressDir('down', false)"
           (pointerleave)="pressDir('down', false)"
+          (contextmenu)="$event.preventDefault()"
         >↓</button>
       </div>
 
@@ -81,6 +85,7 @@
         (pointerdown)="pressInteract(true); pressConfirm(true)"
         (pointerup)="pressInteract(false); pressConfirm(false)"
         (pointerleave)="pressInteract(false); pressConfirm(false)"
+        (contextmenu)="$event.preventDefault()"
       >
         Parler / Valider
       </button>

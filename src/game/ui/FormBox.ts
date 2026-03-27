@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { createCardGraphics, drawCardGraphics } from './BridgertonCard';
+import { resetVirtualInputState } from '../core/input-state';
 
 export type ToggleOption = { key: string; label: string; value: boolean };
 
@@ -14,6 +15,7 @@ export class FormBox {
   private domElement: Phaser.GameObjects.DOMElement | null = null;
   private domKeydownHandler: ((e: KeyboardEvent) => void) | null = null;
   private prevKeyboardEnabled: boolean | null = null;
+  private prevGlobalCaptureDisabled: boolean | null = null;
 
   public active = false;
   private cursor = 0;
@@ -69,7 +71,7 @@ export class FormBox {
     this.renderToggles();
     this.hintEnabled = true;
     this.hintText.setVisible(true);
-    this.hintText.setText('Taper une ligne pour changer • Espace/Enter ou bouton tactile pour valider');
+    this.hintText.setText('Touchez une ligne pour activer/désactiver • Espace/Enter ou bouton tactile pour valider');
   }
 
   /** Retourne true si l'input a été consommé. */
@@ -116,6 +118,8 @@ export class FormBox {
     this.titleText.setText(args.title);
     this.active = true;
     this.show();
+    // Évite qu'un bouton tactile "resté appuyé" fasse avancer une autre UI derrière.
+    resetVirtualInputState();
     // En mode formulaire texte, le hint se superpose facilement -> on le masque.
     this.hintEnabled = false;
     this.hintText.setVisible(false);
@@ -206,6 +210,15 @@ export class FormBox {
     if (keyboard) {
       this.prevKeyboardEnabled = !!keyboard.enabled;
       keyboard.enabled = false;
+      // Phaser peut quand même "capturer" des touches globalement.
+      // disableGlobalCapture() libère Z/Q/S/D/Espace pour les inputs DOM.
+      try {
+        // On ne peut pas lire l'état; on mémorise qu'on l'a désactivé ici.
+        keyboard.disableGlobalCapture?.();
+        this.prevGlobalCaptureDisabled = true;
+      } catch {
+        // ignore
+      }
     }
 
     // Raccourcis clavier pendant la saisie (Chrome): Enter valide, Escape annule.
@@ -309,22 +322,27 @@ export class FormBox {
     const y0 = Math.floor(this.centerY - this.boxH / 2 + 44);
 
     this.linesText = this.toggles.map((t, i) => {
-      const prefix = i === this.cursor ? '▶ ' : '  ';
-      const val = t.value ? 'Oui' : 'Non';
-      const line = this.scene.add.text(x0, y0 + i * 22, `${prefix}${t.label}: ${val}`, {
+      const isSelected = i === this.cursor;
+      const valTag = t.value ? '[ OUI ]' : '[ NON ]';
+      const label = (t.label || '').padEnd(12, ' ');
+      const line = this.scene.add.text(x0, y0 + i * 28, `${label} ${valTag}`, {
         fontFamily: 'monospace',
-        fontSize: '13px',
-        color: i === this.cursor ? '#2c2433' : '#2c2433',
+        fontSize: '14px',
+        color: '#2c2433',
       });
+      line.setPadding(10, 6, 10, 6);
+      // Gros feedback visuel (mobile): ligne "bouton" + état.
+      if (t.value) {
+        line.setBackgroundColor(isSelected ? 'rgba(171,188,166,0.55)' : 'rgba(171,188,166,0.35)');
+      } else {
+        line.setBackgroundColor(isSelected ? 'rgba(44,36,51,0.10)' : 'rgba(44,36,51,0.06)');
+      }
       line.setInteractive({ useHandCursor: true });
       line.on('pointerdown', () => {
         if (!this.active) return;
-        const same = this.cursor === i;
         this.cursor = i;
-        if (same) {
-          const tt = this.toggles[this.cursor];
-          if (tt) tt.value = !tt.value;
-        }
+        const tt = this.toggles[this.cursor];
+        if (tt) tt.value = !tt.value;
         this.renderToggles();
       });
       return line;
@@ -362,6 +380,15 @@ export class FormBox {
         // ignore
       }
       this.prevKeyboardEnabled = null;
+    }
+    if (this.prevGlobalCaptureDisabled) {
+      try {
+        const keyboard = this.scene.input?.keyboard as any;
+        keyboard?.enableGlobalCapture?.();
+      } catch {
+        // ignore
+      }
+      this.prevGlobalCaptureDisabled = null;
     }
     if (this.domKeydownHandler) {
       try {

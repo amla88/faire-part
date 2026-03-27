@@ -8,6 +8,10 @@ export class SceneInput {
 
   private prevInteract = false;
   private prevConfirm = false;
+  private prevUp = false;
+  private prevDown = false;
+  private prevLeft = false;
+  private prevRight = false;
 
   constructor(private scene: Phaser.Scene) {
     this.cursors = scene.input.keyboard?.createCursorKeys() as Phaser.Types.Input.Keyboard.CursorKeys;
@@ -19,19 +23,27 @@ export class SceneInput {
   }
 
   leftJustDown(): boolean {
-    return Phaser.Input.Keyboard.JustDown(this.cursors.left!) || Phaser.Input.Keyboard.JustDown(this.keys.Q);
+    const key = Phaser.Input.Keyboard.JustDown(this.cursors.left!) || Phaser.Input.Keyboard.JustDown(this.keys.Q);
+    const virt = virtualInputState.left && !this.prevLeft;
+    return key || virt;
   }
 
   rightJustDown(): boolean {
-    return Phaser.Input.Keyboard.JustDown(this.cursors.right!) || Phaser.Input.Keyboard.JustDown(this.keys.D);
+    const key = Phaser.Input.Keyboard.JustDown(this.cursors.right!) || Phaser.Input.Keyboard.JustDown(this.keys.D);
+    const virt = virtualInputState.right && !this.prevRight;
+    return key || virt;
   }
 
   upJustDown(): boolean {
-    return Phaser.Input.Keyboard.JustDown(this.cursors.up!) || Phaser.Input.Keyboard.JustDown(this.keys.Z);
+    const key = Phaser.Input.Keyboard.JustDown(this.cursors.up!) || Phaser.Input.Keyboard.JustDown(this.keys.Z);
+    const virt = virtualInputState.up && !this.prevUp;
+    return key || virt;
   }
 
   downJustDown(): boolean {
-    return Phaser.Input.Keyboard.JustDown(this.cursors.down!) || Phaser.Input.Keyboard.JustDown(this.keys.S);
+    const key = Phaser.Input.Keyboard.JustDown(this.cursors.down!) || Phaser.Input.Keyboard.JustDown(this.keys.S);
+    const virt = virtualInputState.down && !this.prevDown;
+    return key || virt;
   }
 
   get moveLeft(): boolean {
@@ -64,6 +76,10 @@ export class SceneInput {
   commit(): void {
     this.prevInteract = virtualInputState.interact;
     this.prevConfirm = virtualInputState.confirm;
+    this.prevUp = virtualInputState.up;
+    this.prevDown = virtualInputState.down;
+    this.prevLeft = virtualInputState.left;
+    this.prevRight = virtualInputState.right;
   }
 }
 
