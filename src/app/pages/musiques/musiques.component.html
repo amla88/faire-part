@@ -1,0 +1,176 @@
+<div class="musiques-page musiques-bridgerton">
+  <header class="musiques-header">
+    <p class="musiques-eyebrow">Le bal &amp; la playlist</p>
+    <h1 class="musiques-title">Musiques</h1>
+    <p class="musiques-lede">
+      Jusqu’à {{ maxProposals }} titres par personne, choisis sur Spotify. Les mariés valident ou non chaque proposition.
+      Les métadonnées servent à préparer une playlist plus tard.
+    </p>
+    <div class="musiques-flourish" aria-hidden="true"></div>
+  </header>
+
+  @if (selectedPersonneId() === null) {
+    <mat-card class="bridgerton-card musiques-card">
+      <mat-card-content class="musiques-no-person">
+        <mat-icon class="musiques-no-person-icon" aria-hidden="true">person_search</mat-icon>
+        <p class="musiques-no-person-title">Aucune personne sélectionnée</p>
+        <p class="musiques-no-person-text">
+          Choisissez d’abord pour qui vous proposez un titre dans « Changer de personne ».
+        </p>
+        <a mat-stroked-button color="primary" routerLink="/person" class="musiques-link-btn">
+          <mat-icon>swap_horiz</mat-icon>
+          Choisir une personne
+        </a>
+      </mat-card-content>
+    </mat-card>
+  } @else {
+    <mat-card class="bridgerton-card musiques-card">
+      <mat-card-header class="musiques-card-header">
+        <div class="bridgerton-card-heading">
+          <span class="bridgerton-card-kicker">Pour</span>
+          <span class="bridgerton-card-title">{{ selectedPersonneLabel() }}</span>
+        </div>
+        <p class="musiques-count">
+          {{ rows().length }} / {{ maxProposals }} proposition(s)
+        </p>
+      </mat-card-header>
+
+      <mat-card-content>
+        <form class="musiques-comment" [formGroup]="commentForm">
+          <mat-form-field appearance="outline" class="musiques-field" subscriptSizing="dynamic">
+            <mat-label>Note pour les mariés (optionnelle)</mat-label>
+            <textarea
+              matInput
+              formControlName="note"
+              rows="2"
+              maxlength="500"
+              placeholder="Pourquoi ce morceau vous tient à cœur…"
+            ></textarea>
+            <mat-hint align="end">{{ commentForm.controls.note.value.length }} / 500</mat-hint>
+          </mat-form-field>
+        </form>
+
+        <div class="musiques-search-block">
+          <h2 class="musiques-section-title">Rechercher sur Spotify</h2>
+          <form [formGroup]="searchForm" class="musiques-search-form">
+            <mat-form-field appearance="outline" class="musiques-field musiques-search-field" subscriptSizing="dynamic">
+              <mat-label>Titre, artiste…</mat-label>
+              <input
+                matInput
+                formControlName="q"
+                (input)="onSearchInput()"
+                autocomplete="off"
+                placeholder="Au moins 2 caractères"
+              />
+              <mat-icon matPrefix>search</mat-icon>
+            </mat-form-field>
+          </form>
+
+          @if (searchLoading()) {
+            <div class="musiques-loading-inline">
+              <mat-progress-spinner diameter="28" mode="indeterminate" color="primary"></mat-progress-spinner>
+              <span>Recherche…</span>
+            </div>
+          } @else if (searchHits().length > 0) {
+            <ul class="musiques-hit-list" role="list">
+              @for (t of searchHits(); track t.id) {
+                <li class="musiques-hit">
+                  @if (t.album_image_url) {
+                    <img class="musiques-hit-cover" [src]="t.album_image_url" alt="" width="56" height="56" />
+                  } @else {
+                    <div class="musiques-hit-cover musiques-hit-cover--placeholder" aria-hidden="true">
+                      <mat-icon>album</mat-icon>
+                    </div>
+                  }
+                  <div class="musiques-hit-body">
+                    <p class="musiques-hit-title">{{ t.name }}</p>
+                    <p class="musiques-hit-meta">{{ t.artist_label }} · {{ t.album_name }}</p>
+                    <p class="musiques-hit-dur">{{ formatDuration(t.duration_ms) }}</p>
+                    @if (t.preview_url) {
+                      <audio class="musiques-audio" controls [src]="t.preview_url" preload="metadata">
+                        Pré-écoute (~30&nbsp;s)
+                      </audio>
+                    } @else {
+                      <p class="musiques-no-preview">Pas d’extrait sur Spotify pour ce titre.</p>
+                    }
+                  </div>
+                  <button
+                    mat-flat-button
+                    color="primary"
+                    type="button"
+                    class="musiques-add-btn"
+                    [disabled]="!canAddMore || saving()"
+                    (click)="addTrack(t)"
+                  >
+                    <mat-icon>add</mat-icon>
+                    Ajouter
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+
+        <h2 class="musiques-section-title m-t-24">Vos propositions</h2>
+
+        @if (loading()) {
+          <div class="musiques-loading">
+            <mat-progress-spinner diameter="36" mode="indeterminate" color="primary"></mat-progress-spinner>
+            <span>Chargement…</span>
+          </div>
+        } @else if (rows().length === 0) {
+          <p class="musiques-empty">Aucune proposition pour l’instant — la scène attend votre première entrée.</p>
+        } @else {
+          <ul class="musiques-saved-list" role="list">
+            @for (m of rows(); track m.id) {
+              <li class="musiques-saved">
+                @if (m.album_image_url) {
+                  <img class="musiques-hit-cover" [src]="m.album_image_url" alt="" width="56" height="56" />
+                } @else {
+                  <div class="musiques-hit-cover musiques-hit-cover--placeholder" aria-hidden="true">
+                    <mat-icon>album</mat-icon>
+                  </div>
+                }
+                <div class="musiques-hit-body">
+                  <div class="musiques-saved-head">
+                    <span class="musiques-status" [class]="'musiques-status--' + m.status">{{ statusLabel(m.status) }}</span>
+                    <time class="musiques-date" [attr.datetime]="m.created_at">{{ formatDate(m.created_at) }}</time>
+                  </div>
+                  <p class="musiques-hit-title">{{ m.titre }}</p>
+                  <p class="musiques-hit-meta">{{ m.auteur }} · {{ m.album_name || '—' }}</p>
+                  @if (m.commentaire) {
+                    <p class="musiques-saved-note">« {{ m.commentaire }} »</p>
+                  }
+                  @if (m.preview_url) {
+                    <audio class="musiques-audio" controls [src]="m.preview_url" preload="metadata"></audio>
+                  }
+                  <a
+                    class="musiques-open-spotify"
+                    [href]="m.lien"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Ouvrir dans Spotify
+                    <mat-icon class="musiques-open-ico">open_in_new</mat-icon>
+                  </a>
+                </div>
+                @if (m.status === 'pending') {
+                  <button
+                    mat-icon-button
+                    type="button"
+                    class="musiques-delete"
+                    aria-label="Retirer cette proposition"
+                    (click)="remove(m.id)"
+                    [disabled]="saving()"
+                  >
+                    <mat-icon>delete_outline</mat-icon>
+                  </button>
+                }
+              </li>
+            }
+          </ul>
+        }
+      </mat-card-content>
+    </mat-card>
+  }
+</div>

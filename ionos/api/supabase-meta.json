@@ -1,5 +1,7 @@
 {
   "supabase-url": "",
-  "supabase-anon-key": ""
+  "supabase-anon-key": "",
+  "spotify-client-id": "",
+  "spotify-client-secret": ""
 }
 

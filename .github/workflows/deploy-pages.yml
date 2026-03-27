@@ -44,16 +44,19 @@ jobs:
             fi
           done
 
-      - name: Deploy PHP API (photos)
+      - name: Deploy PHP API (photos + Spotify)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
         run: |
           mkdir -p dist/faire-part/browser/api
           cp -f ionos/api/photos-upload.php dist/faire-part/browser/api/photos-upload.php
           cp -f ionos/api/photos-list.php dist/faire-part/browser/api/photos-list.php
           cp -f ionos/api/photos-delete.php dist/faire-part/browser/api/photos-delete.php
-          sed "s|\"supabase-url\": \"\"|\"supabase-url\": \"${SUPABASE_URL}\"|; s|\"supabase-anon-key\": \"\"|\"supabase-anon-key\": \"${SUPABASE_ANON_KEY}\"|" ionos/api/supabase-meta.json > dist/faire-part/browser/api/supabase-meta.json
+          cp -f ionos/api/spotify-search.php dist/faire-part/browser/api/spotify-search.php
+          sed "s|\"supabase-url\": \"\"|\"supabase-url\": \"${SUPABASE_URL}\"|; s|\"supabase-anon-key\": \"\"|\"supabase-anon-key\": \"${SUPABASE_ANON_KEY}\"|; s|\"spotify-client-id\": \"\"|\"spotify-client-id\": \"${SPOTIFY_CLIENT_ID}\"|; s|\"spotify-client-secret\": \"\"|\"spotify-client-secret\": \"${SPOTIFY_CLIENT_SECRET}\"|" ionos/api/supabase-meta.json > dist/faire-part/browser/api/supabase-meta.json
 
       - name: Deploy to IONOS via LFTP
         env:

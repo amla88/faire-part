@@ -14,6 +14,7 @@ export const navItems: NavItem[] = [
   { displayName: 'Déposer un cliché', iconName: 'photo-up', route: '/photos/upload' },
   { displayName: 'Galerie des souvenirs', iconName: 'library-photo', route: '/photos/album' },
   { displayName: 'Chroniques du salon', iconName: 'quotes', route: '/anecdotes' },
+  { displayName: 'Air du bal', iconName: 'library_music', route: '/musiques' },
   { displayName: 'Quêtes annexes', iconName: 'bulb', route: '/idees' },
 
   { navCap: 'Identité' },
