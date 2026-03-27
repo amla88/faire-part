@@ -1,0 +1,117 @@
+<div class="profile-page profile-bridgerton">
+  <header class="profile-header">
+    <p class="profile-eyebrow">Votre carte d’invité</p>
+    <h1 class="profile-title">Mon profil</h1>
+    <p class="profile-lede">Vos informations personnelles liées à l’invitation sélectionnée.</p>
+    <div class="profile-flourish" aria-hidden="true"></div>
+  </header>
+
+  <mat-card class="bridgerton-card profile-card">
+    <mat-card-content>
+      @if (loading()) {
+        <div class="profile-loading">
+          <mat-progress-spinner diameter="36" mode="indeterminate" color="primary"></mat-progress-spinner>
+          <span>Chargement…</span>
+        </div>
+      } @else if (profile(); as p) {
+        <form [formGroup]="form" class="profile-form" (ngSubmit)="saveProfile()">
+          <div class="profile-grid">
+            <mat-form-field appearance="outline" class="profile-field">
+              <mat-label>Prénom</mat-label>
+              <input matInput formControlName="prenom" readonly />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="profile-field">
+              <mat-label>Nom</mat-label>
+              <input matInput formControlName="nom" readonly />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="profile-field">
+              <mat-label>E-mail</mat-label>
+              <input matInput formControlName="email" placeholder="votre@email.com" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="profile-field">
+              <mat-label>Rue</mat-label>
+              <input matInput formControlName="rue" (input)="refreshMap()" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="profile-field">
+              <mat-label>Numéro</mat-label>
+              <input matInput formControlName="numero" (input)="refreshMap()" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="profile-field">
+              <mat-label>Boîte</mat-label>
+              <input matInput formControlName="boite" (input)="refreshMap()" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="profile-field">
+              <mat-label>Code postal</mat-label>
+              <input matInput formControlName="cp" (input)="refreshMap()" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="profile-field">
+              <mat-label>Ville</mat-label>
+              <input matInput formControlName="ville" (input)="refreshMap()" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="profile-field">
+              <mat-label>Pays</mat-label>
+              <input matInput formControlName="pays" (input)="refreshMap()" />
+            </mat-form-field>
+            <div class="profile-inline-save">
+              <button mat-flat-button color="primary" type="submit" [disabled]="saving() || form.invalid">
+                <mat-icon>save</mat-icon>
+                Enregistrer
+              </button>
+            </div>
+          </div>
+
+          @if (mapEmbedUrl()) {
+            <div class="profile-map-wrap">
+              <p class="profile-map-title">Adresse sur la carte</p>
+              <iframe
+                class="profile-map"
+                [src]="mapEmbedUrl()"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                title="Carte de l’adresse"
+              ></iframe>
+              @if (mapOpenUrl()) {
+                <a class="profile-map-link" [href]="mapOpenUrl()!" target="_blank" rel="noopener noreferrer">
+                  Ouvrir la carte en grand
+                </a>
+              }
+            </div>
+          }
+
+          <p class="profile-active">
+            Profil actif : <strong>{{ selectedLabel() || (p.prenom + ' ' + p.nom) }}</strong>
+          </p>
+
+        </form>
+
+        @if (qrCodeUrl()) {
+          <div class="profile-qr">
+            <p class="profile-map-title">Code QR personnel</p>
+            <qrcode
+              [qrdata]="qrCodeUrl()!"
+              [width]="148"
+              [errorCorrectionLevel]="'M'"
+              elementType="canvas"
+            ></qrcode>
+            <div class="profile-actions profile-actions--left">
+              <button mat-stroked-button color="primary" type="button" (click)="downloadQrCode()">
+                <mat-icon>download</mat-icon>
+                Télécharger le QR
+              </button>
+              <button mat-stroked-button color="primary" type="button" (click)="addLoginLinkToFavorites()">
+                <mat-icon>star</mat-icon>
+                Ajouter en favori
+              </button>
+            </div>
+          </div>
+        }
+      } @else {
+        <p class="profile-empty">Aucune donnée de profil disponible pour le moment.</p>
+      }
+    </mat-card-content>
+  </mat-card>
+</div>
+

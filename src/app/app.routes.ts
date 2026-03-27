@@ -41,6 +41,11 @@ export const routes: Routes = [
           import('./pages/musiques/musiques.component').then((m) => m.MusiquesComponent),
       },
       {
+        path: 'profile',
+        loadComponent: () =>
+          import('./pages/profile/profile.component').then((m) => m.ProfileComponent),
+      },
+      {
         path: 'avatar',
         loadComponent: () => import('./pages/avatar/avatar-editor.component').then((m) => m.AvatarEditorComponent),
         canActivate: [AuthGuard],

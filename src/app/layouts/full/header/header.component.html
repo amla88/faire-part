@@ -30,9 +30,9 @@
   </button>
   <mat-menu #profilemenu="matMenu" class="cardWithShadow topbar-dd">
     <ng-container *ngIf="!isAdminContext">
-      <button mat-menu-item>
-        <mat-icon class="d-flex align-items-center"><i-tabler name="user" class="icon-18 d-flex"></i-tabler></mat-icon>My
-        Profile
+      <button mat-menu-item [routerLink]="['/profile']">
+        <mat-icon class="d-flex align-items-center"><i-tabler name="user" class="icon-18 d-flex"></i-tabler></mat-icon>Mon
+        profil
       </button>
       <button mat-menu-item>
         <mat-icon class="d-flex align-items-center"><i-tabler name="mail" class="icon-18 d-flex"></i-tabler></mat-icon>My
