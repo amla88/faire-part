@@ -60,6 +60,19 @@
     - Liste via API IONOS `POST /api/photos-list.php` (scopée à la personne sélectionnée)
     - Suppression via API IONOS `POST /api/photos-delete.php`
   - Stockage actuel: IONOS (fichiers sous `public/assets-mariage/personne-<id>/...`)
+- Musiques:
+  - Route `/musiques` (menu: **Air du bal**)
+  - Recherche Spotify via API PHP IONOS `POST /api/spotify-search.php`
+  - Ajout possible via lien manuel (YouTube/Deezer/Apple Music/etc.)
+  - Limite: **3 propositions par personne**
+  - Préparation playlist: stockage d'IDs/URI Spotify + métadonnées utiles
+  - Statuts affichés en français côté UI (`En attente`, `Validé`, `Refusé`)
+- Profil invité:
+  - Route `/profile` (depuis le menu avatar en haut à droite)
+  - `nom` / `prénom` en lecture seule
+  - Édition: `email`, `rue`, `numéro`, `boîte`, `code postal`, `ville`, `pays`
+  - Carte intégrée de l'adresse (embed Google Maps)
+  - Bloc QR personnel: aperçu, téléchargement PNG, action "Ajouter en favori"
 
 ## 4) Tech stack / framework (côté app)
 - Frontend:
@@ -89,6 +102,8 @@
   - build prod: `npm run build -- --configuration production`
   - fallback SPA: copie `index.html` vers `404.html`
   - injection secrets Supabase dans `dist/.../browser/index.html` et `404.html` (meta tags)
+  - copie des APIs PHP IONOS (`photos-*.php` + `spotify-search.php`) vers `dist/.../browser/api`
+  - injection secrets Spotify dans `supabase-meta.json` au build (si fournis)
   - déploiement via SFTP/`lftp` vers IONOS (mirror sur dossier `public`)
 
 ## 7) Configuration actuelle (Supabase & injection)
@@ -97,6 +112,7 @@
   - `SUPABASE_ANON_KEY`
   - `QR_CODE_BASE_URL`
   - `BASE_PATH`
+  - (optionnel) `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` côté déploiement CI
 - Injection meta tags:
   - Script: `tools/inject-env.js` (écrit `src/index.html`)
   - Puis le workflow injecte à nouveau via secrets GitHub (sed).
@@ -108,6 +124,11 @@
   - `record_rsvp(p_famille_id, p_payload)` (fallback `upsert_rsvp`)
   - `get_avatar_for_token(p_token, p_personne_id)`
   - `upsert_avatar_for_token(p_token, p_personne_id, p_seed, p_options)`
+  - `list_musiques_for_token(p_token, p_personne_id)`
+  - `insert_musique_for_token(...)`
+  - `delete_musique_for_token(p_token, p_musique_id)`
+  - `get_profile_for_token(p_token, p_personne_id)`
+  - `update_profile_for_token(p_token, p_personne_id, ...)`
 - Quelques accès directs:
   - tableaux `familles`, `personnes` etc via le client Supabase côté admin.
 
