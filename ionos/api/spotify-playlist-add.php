@@ -112,10 +112,15 @@ if (!$refreshToken || !$playlistId) {
   exit;
 }
 
-$userAccess = spotifyUserAccessFromRefresh($clientId, $clientSecret, $refreshToken);
+$tokResult = spotifyUserAccessFromRefresh($clientId, $clientSecret, $refreshToken);
+$userAccess = $tokResult['access_token'];
 if (!$userAccess) {
   http_response_code(502);
-  echo json_encode(['error' => 'Impossible de rafraîchir le jeton Spotify utilisateur']);
+  echo json_encode([
+    'error' => 'Impossible de rafraîchir le jeton Spotify utilisateur',
+    'detail' => $tokResult['spotify_message'],
+    'hint' => 'Le refresh_token doit provenir de la même app Spotify (même Client ID / Secret) que ceux déployés sur le serveur. Si vous avez régénéré le secret Spotify ou utilisé une autre app, refaites le flux OAuth pour obtenir un nouveau refresh_token.',
+  ]);
   exit;
 }
 
@@ -261,7 +266,10 @@ function supabaseJwtValidUser(string $supabaseUrl, string $anonKey, string $jwt)
   return is_array($res) && isset($res['id']);
 }
 
-function spotifyUserAccessFromRefresh(string $clientId, string $clientSecret, string $refreshToken): ?string {
+/**
+ * @return array{access_token: ?string, spotify_message: ?string}
+ */
+function spotifyUserAccessFromRefresh(string $clientId, string $clientSecret, string $refreshToken): array {
   $body = http_build_query([
     'grant_type' => 'refresh_token',
     'refresh_token' => $refreshToken,
@@ -271,10 +279,25 @@ function spotifyUserAccessFromRefresh(string $clientId, string $clientSecret, st
     'Authorization: Basic ' . $auth,
     'Content-Type: application/x-www-form-urlencoded',
   ], $body);
-  if (!is_array($res) || !isset($res['access_token'])) {
-    return null;
+  if (!is_array($res)) {
+    $http = spotifyLastHttpStatus();
+    return [
+      'access_token' => null,
+      'spotify_message' => $http > 0 ? 'Pas de réponse JSON (HTTP ' . $http . ')' : 'Pas de réponse Spotify',
+    ];
   }
-  return (string)$res['access_token'];
+  if (isset($res['access_token']) && is_string($res['access_token'])) {
+    return ['access_token' => $res['access_token'], 'spotify_message' => null];
+  }
+  $parts = [];
+  if (isset($res['error'])) {
+    $parts[] = is_string($res['error']) ? $res['error'] : json_encode($res['error']);
+  }
+  if (isset($res['error_description']) && is_string($res['error_description'])) {
+    $parts[] = $res['error_description'];
+  }
+  $msg = count($parts) > 0 ? implode(' — ', $parts) : ('Réponse inattendue (HTTP ' . spotifyLastHttpStatus() . ')');
+  return ['access_token' => null, 'spotify_message' => $msg];
 }
 
 /**

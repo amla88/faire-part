@@ -330,14 +330,23 @@ export class AdminMusiquesComponent implements OnInit {
           body: JSON.stringify({ uris: batch }),
           cache: 'no-store',
         });
-        let payload: { ok?: boolean; added?: number; error?: string; hint?: string } | null = null;
+        let payload: {
+          ok?: boolean;
+          added?: number;
+          error?: string;
+          detail?: string;
+          hint?: string;
+        } | null = null;
         try {
           payload = await res.json();
         } catch {
           payload = null;
         }
         if (!res.ok) {
-          const msg = payload?.error || `Erreur HTTP ${res.status}`;
+          const parts = [payload?.error, payload?.detail, payload?.hint].filter(
+            (x): x is string => typeof x === 'string' && x.trim() !== ''
+          );
+          const msg = parts.length > 0 ? parts.join(' — ') : `Erreur HTTP ${res.status}`;
           throw new Error(msg);
         }
         totalAdded += payload?.added ?? batch.length;
