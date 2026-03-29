@@ -320,6 +320,39 @@ export function distancePointToSegment(
   return { dist: Math.hypot(px - qx, py - qy), alongCm: t * L };
 }
 
+/** Point dans un polygone fermé (ray casting, non zéro aire). */
+export function pointInPolygon(px: number, py: number, ring: [number, number][]): boolean {
+  if (ring.length < 3) return false;
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0];
+    const yi = ring[i][1];
+    const xj = ring[j][0];
+    const yj = ring[j][1];
+    const dy = yj - yi;
+    const intersect =
+      (yi > py) !== (yj > py) && dy !== 0 && px < ((xj - xi) * (py - yi)) / dy + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+/**
+ * Distance au contour d’un polygone fermé ; 0 si le point est à l’intérieur (sélection au « remplissage »).
+ */
+export function distancePointToClosedPolygon(px: number, py: number, ring: [number, number][]): number {
+  if (ring.length < 2) return Infinity;
+  let min = Infinity;
+  const n = ring.length;
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    const d = distancePointToSegment(px, py, ring[i][0], ring[i][1], ring[j][0], ring[j][1]).dist;
+    min = Math.min(min, d);
+  }
+  if (n >= 3 && pointInPolygon(px, py, ring)) return 0;
+  return min;
+}
+
 function wallStrokeCm(w: { thickness_cm?: number }): number {
   return w.thickness_cm ?? 4;
 }

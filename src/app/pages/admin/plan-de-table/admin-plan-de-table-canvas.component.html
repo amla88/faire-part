@@ -43,6 +43,7 @@
             class="floor-svg"
             [attr.viewBox]="h.floorSvgViewBox()"
             preserveAspectRatio="none"
+            (mousedown)="h.onSvgMouseDown($event)"
             (click)="h.onSvgClick($event)"
             (dblclick)="h.onSvgDblClick($event)"
           >
@@ -113,7 +114,7 @@
           @for (w of h.walls(); track w.id) {
             <line
               class="wall-line"
-              [class.wall-line--hover]="h.hoveredWallId() === w.id"
+              [class.wall-line--hover]="h.isWallCanvasHighlight(w)"
               [attr.x1]="w.x1_cm"
               [attr.y1]="w.y1_cm"
               [attr.x2]="w.x2_cm"
@@ -155,7 +156,7 @@
             @if (h.windowEndpointsForRender(win); as seg) {
               <line
                 class="window-opening"
-                [class.window-opening--hover]="h.hoveredWindowId() === win.id"
+                [class.window-opening--hover]="h.isWindowCanvasHighlight(win)"
                 [attr.x1]="seg.x1"
                 [attr.y1]="seg.y1"
                 [attr.x2]="seg.x2"
@@ -182,7 +183,7 @@
             </g>
           }
           @for (dr of h.doors(); track dr.id) {
-            <g class="door-plan" [class.door-plan--hover]="h.hoveredDoorId() === dr.id" pointer-events="none">
+            <g class="door-plan" [class.door-plan--hover]="h.isDoorCanvasHighlight(dr)" pointer-events="none">
               @for (el of h.doorPlanElementsForPlaced(dr); track $index) {
                 <path
                   [attr.d]="el.d"
@@ -199,7 +200,7 @@
           @for (ff of h.freeforms(); track ff.id) {
             <path
               class="freeform-polygon"
-              [class.freeform-polygon--hover]="h.hoveredFreeformId() === ff.id"
+              [class.freeform-polygon--hover]="h.isFreeformCanvasHighlight(ff)"
               [attr.d]="h.freeformPolygonPathD(ff)"
               [attr.stroke-width]="h.freeformStrokeWidthRender(ff)"
               stroke-linejoin="round"
@@ -244,6 +245,27 @@
               "
               [class.table-assign-drop--bad]="
                 h.mode() === 'assign' && h.assignDropHighlightTableId() === t.id && !h.assignDropHighlightValid()
+              "
+              [class.table-swap-source]="
+                h.mode() === 'assign' &&
+                h.assignBulkTool() !== 'none' &&
+                h.assignBulkSourceTableId() === t.id
+              "
+              [class.table-swap-target--ok]="
+                h.mode() === 'assign' &&
+                h.assignBulkTool() !== 'none' &&
+                h.draggingPersonneId() == null &&
+                h.assignBulkSourceTableId() != null &&
+                h.assignBulkHoverTableId() === t.id &&
+                h.assignBulkHoverValid()
+              "
+              [class.table-swap-target--bad]="
+                h.mode() === 'assign' &&
+                h.assignBulkTool() !== 'none' &&
+                h.draggingPersonneId() == null &&
+                h.assignBulkSourceTableId() != null &&
+                h.assignBulkHoverTableId() === t.id &&
+                !h.assignBulkHoverValid()
               "
               (mousedown)="h.onTableMouseDown($event, t)"
             >

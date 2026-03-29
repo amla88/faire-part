@@ -29,6 +29,11 @@ export const AdminRoutes: Routes = [
       import('./plan-de-table/admin-plan-de-table.component').then((m) => m.AdminPlanDeTableComponent),
   },
   {
+    path: 'musiques',
+    loadComponent: () =>
+      import('./musiques/admin-musiques.component').then((m) => m.AdminMusiquesComponent),
+  },
+  {
     path: 'export-invitations',
     loadComponent: () => import('./export-invitations/export-invitations.component').then((m) => m.ExportInvitationsComponent),
   },

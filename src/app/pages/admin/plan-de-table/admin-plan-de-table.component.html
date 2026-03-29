@@ -26,6 +26,8 @@
       [zoomPercentLabel]="zoomPercentLabel()"
       [coordinateProbeTooltip]="coordinateProbeTooltip()"
       [measureToolTooltip]="measureToolTooltip"
+      [assignSwapToolActive]="assignBulkTool() === 'swap'"
+      [assignMoveAllToolActive]="assignBulkTool() === 'moveAll'"
       (variantChange)="onVariantChange($event)"
       (addVariant)="addVariant()"
       (copyVariant)="copyCurrentVariant()"
@@ -38,6 +40,8 @@
       (toggleSnap)="toggleSnapEnabled()"
       (toggleCoordinateProbe)="toggleCoordinateProbe()"
       (toggleMeasureTool)="toggleMeasureTool()"
+      (toggleAssignSwapTool)="toggleAssignSwapTool()"
+      (toggleAssignMoveAllTool)="toggleAssignMoveAllTool()"
     />
 
     @if (readonlyLayout()) {

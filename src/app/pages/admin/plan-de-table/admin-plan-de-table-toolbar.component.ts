@@ -5,6 +5,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
+import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { SeatingLayoutVariant } from 'src/app/services/seating-plan.service';
 import type { PlanMode } from './admin-plan-de-table.types';
@@ -23,6 +24,7 @@ import type { PlanMode } from './admin-plan-de-table.types';
     MatFormFieldModule,
     MatSelectModule,
     MatButtonToggleModule,
+    MatDividerModule,
     MatTooltipModule,
   ],
   templateUrl: './admin-plan-de-table-toolbar.component.html',
@@ -41,6 +43,8 @@ export class AdminPlanDeTableToolbarComponent {
   readonly zoomPercentLabel = input('100 %');
   readonly coordinateProbeTooltip = input('');
   readonly measureToolTooltip = input('');
+  readonly assignSwapToolActive = input(false);
+  readonly assignMoveAllToolActive = input(false);
 
   readonly variantChange = output<number>();
   readonly addVariant = output<void>();
@@ -54,4 +58,6 @@ export class AdminPlanDeTableToolbarComponent {
   readonly toggleSnap = output<void>();
   readonly toggleCoordinateProbe = output<void>();
   readonly toggleMeasureTool = output<void>();
+  readonly toggleAssignSwapTool = output<void>();
+  readonly toggleAssignMoveAllTool = output<void>();
 }

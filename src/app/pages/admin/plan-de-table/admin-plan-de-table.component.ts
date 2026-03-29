@@ -44,6 +44,8 @@ import {
   capsuleTablePathD,
   chairPositionsForTable,
   clampWindowCenterAlong,
+  distancePointToClosedPolygon,
+  distancePointToSegment,
   doorOpeningInwardNormal,
   doorPlanGraphics,
   doorSwingSignTowardPointer,
@@ -60,7 +62,7 @@ import {
   type SeatingExportSnapshot,
 } from './seating-plan-export.service';
 import { AdminPlanDeTableToolbarComponent } from './admin-plan-de-table-toolbar.component';
-import type { PlanMode } from './admin-plan-de-table.types';
+import type { AssignBulkTool, PlanMode } from './admin-plan-de-table.types';
 import { firstValueFrom } from 'rxjs';
 import {
   TableGuestsDialogComponent,
@@ -346,6 +348,22 @@ export class AdminPlanDeTableComponent {
   private tableDragFrozen = { x_cm: 0, y_cm: 0 };
   private tableAxisLock: 'h' | 'v' | null = null;
 
+  /**
+   * Déplacement d’un élément de construction (accordéon fermé) : clic + glisser.
+   */
+  private roomConstructionDrag:
+    | null
+    | {
+        kind: 'wall' | 'window' | 'door' | 'freeform';
+        id: number;
+        phase: 'pending' | 'dragging';
+        pointerDownCm: { x: number; y: number };
+        wallSeg0?: { x1: number; y1: number; x2: number; y2: number };
+        freeformPts0?: [number, number][];
+        windowSnap0?: SeatingWindow;
+        doorSnap0?: SeatingDoor;
+      } = null;
+
   /** Panoramique canvas (clic droit, milieu, ou Alt + clic gauche). */
   canvasPanning = signal(false);
   private canvasPanLast = { x: 0, y: 0 };
@@ -362,8 +380,8 @@ export class AdminPlanDeTableComponent {
 
   draggingPersonneId = signal<number | null>(null);
 
-  /** Rayon du macaron invité sur le plan (cm) — diamètre 30 cm. */
-  readonly chairMacaronRadiusCm = 15;
+  /** Rayon du macaron invité sur le plan (cm) — diamètre 36 cm. */
+  readonly chairMacaronRadiusCm = 18;
 
   /** Pendant un drag invité : position du fantôme (repère plan cm). */
   personneDragOverlayCm = signal<{ x: number; y: number } | null>(null);
@@ -371,6 +389,14 @@ export class AdminPlanDeTableComponent {
   /** Table sous le curseur pendant le drag (surbrillance ok / interdit). */
   assignDropHighlightTableId = signal<number | null>(null);
   assignDropHighlightValid = signal(false);
+
+  /** Outil mode Invités : `swap` ou `moveAll` (un seul à la fois). */
+  assignBulkTool = signal<AssignBulkTool>('none');
+  /** Première table choisie (source). */
+  assignBulkSourceTableId = signal<number | null>(null);
+  /** Table sous le curseur (2ᵉ cible) : surbrillance autorisé / refusé. */
+  assignBulkHoverTableId = signal<number | null>(null);
+  assignBulkHoverValid = signal(false);
 
   readonlyLayout = signal(false);
 
@@ -393,6 +419,15 @@ export class AdminPlanDeTableComponent {
    * Le tracé des murs n’est actif que lorsque c’est `walls`.
    */
   roomAccordionSection = signal<'dimensions' | 'background' | 'walls' | 'windows' | 'doors' | 'freeforms' | null>(null);
+
+  /**
+   * Sélection persistante sur le canevas (accordéon fermé) : reste en surbrillance après le clic
+   * jusqu’à clic à vide, Échap ou suppression — indépendante du survol du curseur.
+   */
+  canvasConstructionSelection = signal<{
+    kind: 'wall' | 'window' | 'door' | 'freeform';
+    id: number;
+  } | null>(null);
 
   /** Mur dont la ligne est mise en surbrillance sur le plan (survol de la liste). */
   hoveredWallId = signal<number | null>(null);
@@ -789,6 +824,7 @@ export class AdminPlanDeTableComponent {
     this.selectedTableId.set(null);
     this.wallDraft.set(null);
     this.wallDraftEndPreview.set(null);
+    this.canvasConstructionSelection.set(null);
     this.hoveredWallId.set(null);
     this.hoveredWindowId.set(null);
     this.windowPlacementPreview.set(null);
@@ -1124,9 +1160,17 @@ export class AdminPlanDeTableComponent {
     return windowOpeningEndpoints(w, this.walls(), v.room_width_cm, v.room_height_cm);
   }
 
+  doorEndpointsForRender(d: SeatingDoor): { x1: number; y1: number; x2: number; y2: number } | null {
+    const v = this.venue();
+    if (!v) return null;
+    return windowOpeningEndpoints(d, this.walls(), v.room_width_cm, v.room_height_cm);
+  }
+
   windowLineStrokeWidthCm(w: SeatingWindow): number {
     const base = w.thickness_cm;
-    return this.hoveredWindowId() === w.id ? Math.min(500, Math.round(base * 1.35)) : base;
+    const s = this.canvasConstructionSelection();
+    const sel = s?.kind === 'window' && s.id === w.id;
+    return sel || this.hoveredWindowId() === w.id ? Math.min(500, Math.round(base * 1.35)) : base;
   }
 
   windowSummary(w: SeatingWindow): string {
@@ -1551,7 +1595,9 @@ export class AdminPlanDeTableComponent {
 
   freeformStrokeWidthRender(f: SeatingFreeformPolygon): number {
     const base = Math.max(0.5, f.stroke_width_cm);
-    return this.hoveredFreeformId() === f.id ? Math.min(120, base * 1.4) : base;
+    const s = this.canvasConstructionSelection();
+    const sel = s?.kind === 'freeform' && s.id === f.id;
+    return sel || this.hoveredFreeformId() === f.id ? Math.min(120, base * 1.4) : base;
   }
 
   freeformVertexHandleRCm(): number {
@@ -1582,7 +1628,34 @@ export class AdminPlanDeTableComponent {
   /** Largeur de trait (cm) : surbrillance au survol de la liste. */
   wallLineStrokeWidthCm(w: SeatingWallSegment): number {
     const base = this.wallStrokeCm(w);
-    return this.hoveredWallId() === w.id ? Math.min(500, Math.round(base * 1.45)) : base;
+    const s = this.canvasConstructionSelection();
+    const sel = s?.kind === 'wall' && s.id === w.id;
+    return sel || this.hoveredWallId() === w.id ? Math.min(500, Math.round(base * 1.45)) : base;
+  }
+
+  /** Surbrillance plan : survol liste / curseur ou sélection persistante au clic (accordéon fermé). */
+  isWallCanvasHighlight(w: SeatingWallSegment): boolean {
+    const s = this.canvasConstructionSelection();
+    if (s?.kind === 'wall' && s.id === w.id) return true;
+    return this.hoveredWallId() === w.id;
+  }
+
+  isWindowCanvasHighlight(win: SeatingWindow): boolean {
+    const s = this.canvasConstructionSelection();
+    if (s?.kind === 'window' && s.id === win.id) return true;
+    return this.hoveredWindowId() === win.id;
+  }
+
+  isDoorCanvasHighlight(dr: SeatingDoor): boolean {
+    const s = this.canvasConstructionSelection();
+    if (s?.kind === 'door' && s.id === dr.id) return true;
+    return this.hoveredDoorId() === dr.id;
+  }
+
+  isFreeformCanvasHighlight(ff: SeatingFreeformPolygon): boolean {
+    const s = this.canvasConstructionSelection();
+    if (s?.kind === 'freeform' && s.id === ff.id) return true;
+    return this.hoveredFreeformId() === ff.id;
   }
 
   private clampWallThicknessCm(raw: number): number {
@@ -1717,6 +1790,380 @@ export class AdminPlanDeTableComponent {
     return { x: snapCm(x, s), y: snapCm(y, s) };
   }
 
+  private static readonly CONSTRUCTION_PICK_MAX_CM = 22;
+  private static readonly CONSTRUCTION_DRAG_THRESHOLD_CM = 3;
+
+  private pickZRank(k: 'wall' | 'window' | 'door' | 'freeform'): number {
+    return k === 'freeform' ? 4 : k === 'door' ? 3 : k === 'window' ? 2 : 1;
+  }
+
+  /**
+   * Élément de construction sous le point (cm), pour sélection / déplacement (accordéon fermé).
+   */
+  private pickConstructionElementAt(
+    px: number,
+    py: number,
+  ): { kind: 'wall' | 'window' | 'door' | 'freeform'; id: number; dist: number } | null {
+    const v = this.venue();
+    if (!v) return null;
+    const maxD = AdminPlanDeTableComponent.CONSTRUCTION_PICK_MAX_CM;
+    type Cand = { kind: 'wall' | 'window' | 'door' | 'freeform'; id: number; dist: number };
+    let best: Cand | null = null;
+    const consider = (c: Cand | null) => {
+      if (!c) return;
+      if (!best || c.dist < best.dist - 1e-6) best = c;
+      else if (Math.abs(c.dist - best.dist) < 1e-6 && this.pickZRank(c.kind) > this.pickZRank(best.kind)) best = c;
+    };
+
+    for (let i = this.freeforms().length - 1; i >= 0; i--) {
+      const f = this.freeforms()[i];
+      const d = distancePointToClosedPolygon(px, py, f.points_cm);
+      if (d <= maxD) consider({ kind: 'freeform', id: f.id, dist: d });
+    }
+    for (const dr of this.doors()) {
+      const seg = this.doorEndpointsForRender(dr);
+      if (!seg) continue;
+      const d = distancePointToSegment(px, py, seg.x1, seg.y1, seg.x2, seg.y2).dist;
+      if (d <= maxD) consider({ kind: 'door', id: dr.id, dist: d });
+    }
+    for (const win of this.windows()) {
+      const seg = this.windowEndpointsForRender(win);
+      if (!seg) continue;
+      const d = distancePointToSegment(px, py, seg.x1, seg.y1, seg.x2, seg.y2).dist;
+      if (d <= maxD) consider({ kind: 'window', id: win.id, dist: d });
+    }
+    const wallHit = findClosestWallHit(
+      px,
+      py,
+      this.walls(),
+      v.room_width_cm,
+      v.room_height_cm,
+      SEATING_PERIMETER_WALL_CM,
+      maxD,
+    );
+    if (wallHit?.target.kind === 'segment') {
+      consider({ kind: 'wall', id: wallHit.target.wallSegmentId, dist: wallHit.distanceCm });
+    }
+    return best;
+  }
+
+  /** Survol curseur uniquement (ne réinitialise pas la sélection persistante au clic). */
+  private resetConstructionHoverOnly(): void {
+    this.hoveredWallId.set(null);
+    this.hoveredWindowId.set(null);
+    this.hoveredDoorId.set(null);
+    this.hoveredFreeformId.set(null);
+  }
+
+  private clearConstructionHover() {
+    this.canvasConstructionSelection.set(null);
+    this.resetConstructionHoverOnly();
+  }
+
+  private setConstructionHoverFromPick(pick: { kind: 'wall' | 'window' | 'door' | 'freeform'; id: number } | null) {
+    this.resetConstructionHoverOnly();
+    if (!pick) return;
+    if (pick.kind === 'wall') this.hoveredWallId.set(pick.id);
+    else if (pick.kind === 'window') this.hoveredWindowId.set(pick.id);
+    else if (pick.kind === 'door') this.hoveredDoorId.set(pick.id);
+    else this.hoveredFreeformId.set(pick.id);
+  }
+
+  onSvgMouseDown(ev: MouseEvent) {
+    if (ev.button !== 0) return;
+    if (this.readonlyLayout()) return;
+    if (this.measureToolEnabled()) return;
+    if (this.mode() !== 'room') return;
+    if (this.roomAccordionSection() !== null) return;
+    const t = ev.target as Element | null;
+    if (t?.closest?.('.table-group')) return;
+    const cm = this.clientToCm(ev.clientX, ev.clientY);
+    if (!cm) return;
+    const pick = this.pickConstructionElementAt(cm.x, cm.y);
+    if (!pick) {
+      this.clearConstructionHover();
+      return;
+    }
+    this.canvasConstructionSelection.set({ kind: pick.kind, id: pick.id });
+    this.setConstructionHoverFromPick(pick);
+    if (pick.kind === 'wall') {
+      const w = this.walls().find((x) => x.id === pick.id);
+      if (!w) return;
+      this.roomConstructionDrag = {
+        kind: 'wall',
+        id: pick.id,
+        phase: 'pending',
+        pointerDownCm: { x: cm.x, y: cm.y },
+        wallSeg0: { x1: w.x1_cm, y1: w.y1_cm, x2: w.x2_cm, y2: w.y2_cm },
+      };
+    } else if (pick.kind === 'freeform') {
+      const f = this.freeforms().find((x) => x.id === pick.id);
+      if (!f) return;
+      this.roomConstructionDrag = {
+        kind: 'freeform',
+        id: pick.id,
+        phase: 'pending',
+        pointerDownCm: { x: cm.x, y: cm.y },
+        freeformPts0: f.points_cm.map(([a, b]) => [a, b] as [number, number]),
+      };
+    } else if (pick.kind === 'window') {
+      const win = this.windows().find((x) => x.id === pick.id);
+      if (!win) return;
+      this.roomConstructionDrag = {
+        kind: 'window',
+        id: pick.id,
+        phase: 'pending',
+        pointerDownCm: { x: cm.x, y: cm.y },
+        windowSnap0: { ...win },
+      };
+    } else {
+      const dr = this.doors().find((x) => x.id === pick.id);
+      if (!dr) return;
+      this.roomConstructionDrag = {
+        kind: 'door',
+        id: pick.id,
+        phase: 'pending',
+        pointerDownCm: { x: cm.x, y: cm.y },
+        doorSnap0: { ...dr },
+      };
+    }
+    ev.preventDefault();
+  }
+
+  private applyRoomConstructionDrag(cm: { x: number; y: number }) {
+    const d = this.roomConstructionDrag;
+    const v = this.venue();
+    if (!d || !v || d.phase !== 'dragging') return;
+    const dx = cm.x - d.pointerDownCm.x;
+    const dy = cm.y - d.pointerDownCm.y;
+    if (d.kind === 'wall' && d.wallSeg0) {
+      const s0 = d.wallSeg0;
+      let x1 = s0.x1 + dx;
+      let y1 = s0.y1 + dy;
+      let x2 = s0.x2 + dx;
+      let y2 = s0.y2 + dy;
+      const pad = 0;
+      const rw = v.room_width_cm;
+      const rh = v.room_height_cm;
+      x1 = Math.max(-pad, Math.min(rw + pad, x1));
+      y1 = Math.max(-pad, Math.min(rh + pad, y1));
+      x2 = Math.max(-pad, Math.min(rw + pad, x2));
+      y2 = Math.max(-pad, Math.min(rh + pad, y2));
+      this.walls.set(
+        this.walls().map((w) =>
+          w.id === d.id
+            ? {
+                ...w,
+                x1_cm: Math.round(x1),
+                y1_cm: Math.round(y1),
+                x2_cm: Math.round(x2),
+                y2_cm: Math.round(y2),
+              }
+            : w,
+        ),
+      );
+    } else if (d.kind === 'freeform' && d.freeformPts0) {
+      const rw = v.room_width_cm;
+      const rh = v.room_height_cm;
+      const pts = d.freeformPts0.map(([a, b]) => {
+        const nx = Math.round(Math.max(0, Math.min(rw, a + dx)));
+        const ny = Math.round(Math.max(0, Math.min(rh, b + dy)));
+        return [nx, ny] as [number, number];
+      });
+      this.freeforms.set(this.freeforms().map((f) => (f.id === d.id ? { ...f, points_cm: pts } : f)));
+    } else if (d.kind === 'window' && d.windowSnap0) {
+      const win = this.windows().find((x) => x.id === d.id);
+      if (!win) return;
+      const r = this.computeWallOpeningPlacementAtPoint(cm.x, cm.y, win.width_cm);
+      if (!r.ok) return;
+      this.windows.set(
+        this.windows().map((w) =>
+          w.id === d.id
+            ? {
+                ...w,
+                wall_segment_id: r.insert.wall_segment_id,
+                perimeter_edge: r.insert.perimeter_edge,
+                offset_along_cm: r.insert.offset_along_cm,
+                thickness_cm: r.insert.thickness_cm,
+              }
+            : w,
+        ),
+      );
+    } else if (d.kind === 'door' && d.doorSnap0) {
+      const dr = this.doors().find((x) => x.id === d.id);
+      if (!dr) return;
+      const r = this.computeWallOpeningPlacementAtPoint(cm.x, cm.y, dr.width_cm);
+      if (!r.ok) return;
+      const swing =
+        dr.door_kind === 'opening'
+          ? (1 as const)
+          : this.computeDoorSwingSignFromEndpoints(cm.x, cm.y, r.endpoints, r.insert.perimeter_edge, v.room_width_cm, v.room_height_cm);
+      this.doors.set(
+        this.doors().map((x) =>
+          x.id === d.id
+            ? {
+                ...x,
+                wall_segment_id: r.insert.wall_segment_id,
+                perimeter_edge: r.insert.perimeter_edge,
+                offset_along_cm: r.insert.offset_along_cm,
+                thickness_cm: r.insert.thickness_cm,
+                swing_sign: swing,
+              }
+            : x,
+        ),
+      );
+    }
+  }
+
+  private async persistRoomConstructionDrag(drag: NonNullable<typeof this.roomConstructionDrag>): Promise<void> {
+    const v = this.venue();
+    if (!v || drag.phase !== 'dragging') return;
+    if (drag.kind === 'wall' && drag.wallSeg0) {
+      const w = this.walls().find((x) => x.id === drag.id);
+      if (!w) return;
+      const ok = await this.seating.updateWallSegment(drag.id, {
+        x1_cm: w.x1_cm,
+        y1_cm: w.y1_cm,
+        x2_cm: w.x2_cm,
+        y2_cm: w.y2_cm,
+      });
+      if (!ok) {
+        this.snack.open('Mur non enregistré.', '', { duration: 3500 });
+        this.walls.set(await this.seating.getWalls(v.id));
+      }
+    } else if (drag.kind === 'freeform' && drag.freeformPts0) {
+      const f = this.freeforms().find((x) => x.id === drag.id);
+      if (!f) return;
+      const ok = await this.seating.updateFreeformPolygon(drag.id, { points_cm: f.points_cm });
+      if (!ok) {
+        this.snack.open('Forme non enregistrée.', '', { duration: 3500 });
+        this.freeforms.set(await this.seating.getFreeformPolygons(v.id));
+      }
+    } else if (drag.kind === 'window' && drag.windowSnap0) {
+      const winRow = this.windows().find((x) => x.id === drag.id);
+      if (!winRow) return;
+      const ok = await this.seating.updateWindow(drag.id, {
+        wall_segment_id: winRow.wall_segment_id,
+        perimeter_edge: winRow.perimeter_edge,
+        offset_along_cm: winRow.offset_along_cm,
+        thickness_cm: winRow.thickness_cm,
+      });
+      if (!ok) {
+        this.snack.open('Fenêtre non enregistrée.', '', { duration: 3500 });
+        this.windows.set(await this.seating.getWindows(v.id));
+      }
+    } else if (drag.kind === 'door' && drag.doorSnap0) {
+      const dr = this.doors().find((x) => x.id === drag.id);
+      if (!dr) return;
+      const ok = await this.seating.updateDoor(drag.id, {
+        wall_segment_id: dr.wall_segment_id,
+        perimeter_edge: dr.perimeter_edge,
+        offset_along_cm: dr.offset_along_cm,
+        thickness_cm: dr.thickness_cm,
+        swing_sign: dr.swing_sign,
+      });
+      if (!ok) {
+        this.snack.open('Porte non enregistrée.', '', { duration: 3500 });
+        this.doors.set(await this.seating.getDoors(v.id));
+      }
+    }
+  }
+
+  /** Annule un drag en cours (Escape) : restaure la géométrie du début du geste. */
+  private cancelRoomConstructionDrag(): void {
+    const d = this.roomConstructionDrag;
+    if (d == null) return;
+    if (d.kind === 'wall' && d.wallSeg0) {
+      const s0 = d.wallSeg0;
+      this.walls.set(
+        this.walls().map((w) =>
+          w.id === d.id
+            ? {
+                ...w,
+                x1_cm: Math.round(s0.x1),
+                y1_cm: Math.round(s0.y1),
+                x2_cm: Math.round(s0.x2),
+                y2_cm: Math.round(s0.y2),
+              }
+            : w,
+        ),
+      );
+    } else if (d.kind === 'freeform' && d.freeformPts0) {
+      const pts = d.freeformPts0.map(([a, b]) => [Math.round(a), Math.round(b)] as [number, number]);
+      this.freeforms.set(this.freeforms().map((f) => (f.id === d.id ? { ...f, points_cm: pts } : f)));
+    } else if (d.kind === 'window' && d.windowSnap0) {
+      const snap = d.windowSnap0;
+      this.windows.set(this.windows().map((w) => (w.id === d.id ? { ...snap } : w)));
+    } else if (d.kind === 'door' && d.doorSnap0) {
+      const snap = d.doorSnap0;
+      this.doors.set(this.doors().map((x) => (x.id === d.id ? { ...snap } : x)));
+    }
+    this.roomConstructionDrag = null;
+  }
+
+  private async deleteConstructionSelectionFromKeyboard(): Promise<void> {
+    this.roomConstructionDrag = null;
+    const sel = this.canvasConstructionSelection();
+    const wid = sel?.kind === 'wall' ? sel.id : this.hoveredWallId();
+    if (wid != null) {
+      await this.deleteWall(wid);
+      this.clearConstructionHover();
+      return;
+    }
+    const winId = sel?.kind === 'window' ? sel.id : this.hoveredWindowId();
+    if (winId != null) {
+      await this.deleteWindow(winId);
+      this.clearConstructionHover();
+      return;
+    }
+    const did = sel?.kind === 'door' ? sel.id : this.hoveredDoorId();
+    if (did != null) {
+      await this.deleteDoor(did);
+      this.clearConstructionHover();
+      return;
+    }
+    const fid = sel?.kind === 'freeform' ? sel.id : this.hoveredFreeformId();
+    if (fid != null) {
+      await this.deleteFreeform(fid);
+      this.clearConstructionHover();
+    }
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  onWindowKeydown(ev: KeyboardEvent): void {
+    const t = ev.target as HTMLElement | null;
+    if (t?.closest?.('input, textarea, select') || t?.isContentEditable) return;
+    if (t?.closest?.('.mat-mdc-dialog-container')) return;
+    if (this.readonlyLayout()) return;
+    if (this.mode() === 'assign' && ev.key === 'Escape' && this.assignBulkTool() !== 'none') {
+      ev.preventDefault();
+      this.deactivateAssignBulkTool();
+      return;
+    }
+    if (this.measureToolEnabled()) return;
+    if (this.mode() !== 'room') return;
+
+    const hasDrag = this.roomConstructionDrag != null;
+    const hasSel =
+      this.canvasConstructionSelection() != null ||
+      this.hoveredWallId() != null ||
+      this.hoveredWindowId() != null ||
+      this.hoveredDoorId() != null ||
+      this.hoveredFreeformId() != null;
+    if (!hasSel && !hasDrag) return;
+
+    if (ev.key === 'Escape') {
+      ev.preventDefault();
+      this.cancelRoomConstructionDrag();
+      this.clearConstructionHover();
+      return;
+    }
+    if ((ev.key === 'Delete' || ev.key === 'Backspace') && hasSel) {
+      ev.preventDefault();
+      void this.deleteConstructionSelectionFromKeyboard();
+    }
+  }
+
   toggleGridVisibility() {
     this.gridVisible.update((v) => !v);
   }
@@ -1772,6 +2219,18 @@ export class AdminPlanDeTableComponent {
   onViewportProbeMove(ev: MouseEvent) {
     const v = this.venue();
     if (v && this.mode() === 'room') {
+      if (
+        this.roomAccordionSection() === null &&
+        !this.readonlyLayout() &&
+        this.roomConstructionDrag === null &&
+        this.canvasConstructionSelection() === null
+      ) {
+        const cmPick = this.clientToCm(ev.clientX, ev.clientY);
+        if (cmPick) {
+          const pick = this.pickConstructionElementAt(cmPick.x, cmPick.y);
+          this.setConstructionHoverFromPick(pick);
+        }
+      }
       if (this.roomAccordionSection() === 'windows') {
         this.updateWindowPlacementPreview(ev.clientX, ev.clientY);
       }
@@ -1810,6 +2269,71 @@ export class AdminPlanDeTableComponent {
     this.windowPlacementPreview.set(null);
     this.doorPlacementPreview.set(null);
     this.freeformRubberEndCm.set(null);
+    if (this.mode() === 'room' && this.roomAccordionSection() === null && this.canvasConstructionSelection() === null) {
+      this.resetConstructionHoverOnly();
+    }
+    if (this.mode() === 'assign' && this.assignBulkTool() !== 'none' && this.assignBulkSourceTableId() != null) {
+      this.assignBulkHoverTableId.set(null);
+      this.assignBulkHoverValid.set(false);
+    }
+  }
+
+  /** Désactive l’outil invités (échange / déplacement groupé) et efface la sélection / survol. */
+  deactivateAssignBulkTool() {
+    this.assignBulkTool.set('none');
+    this.assignBulkSourceTableId.set(null);
+    this.assignBulkHoverTableId.set(null);
+    this.assignBulkHoverValid.set(false);
+  }
+
+  toggleAssignSwapTool() {
+    if (this.readonlyLayout()) return;
+    if (this.assignBulkTool() === 'swap') {
+      this.deactivateAssignBulkTool();
+    } else {
+      this.assignBulkTool.set('swap');
+      this.assignBulkSourceTableId.set(null);
+      this.assignBulkHoverTableId.set(null);
+      this.assignBulkHoverValid.set(false);
+    }
+  }
+
+  toggleAssignMoveAllTool() {
+    if (this.readonlyLayout()) return;
+    if (this.assignBulkTool() === 'moveAll') {
+      this.deactivateAssignBulkTool();
+    } else {
+      this.assignBulkTool.set('moveAll');
+      this.assignBulkSourceTableId.set(null);
+      this.assignBulkHoverTableId.set(null);
+      this.assignBulkHoverValid.set(false);
+    }
+  }
+
+  /** Échange possible si, après permutation, chaque table ne dépasse pas `max_chairs`. */
+  canSwapGuestsBetweenTables(tableIdA: number, tableIdB: number): boolean {
+    const ta = this.tables().find((x) => x.id === tableIdA);
+    const tb = this.tables().find((x) => x.id === tableIdB);
+    if (!ta || !tb || tableIdA === tableIdB) return false;
+    const nA = (this.assignmentsByTable().get(tableIdA) ?? []).length;
+    const nB = (this.assignmentsByTable().get(tableIdB) ?? []).length;
+    return nB <= ta.max_chairs && nA <= tb.max_chairs;
+  }
+
+  /** Au moins un invité peut quitter `sourceTableId` pour aller sur `destTableId` (place libre sur la cible). */
+  canMoveGuestsToTable(sourceTableId: number, destTableId: number): boolean {
+    const dest = this.tables().find((x) => x.id === destTableId);
+    if (!dest || sourceTableId === destTableId) return false;
+    const nSource = (this.assignmentsByTable().get(sourceTableId) ?? []).length;
+    const nDest = (this.assignmentsByTable().get(destTableId) ?? []).length;
+    return nSource > 0 && nDest < dest.max_chairs;
+  }
+
+  private assignBulkHoverValidForTarget(sourceId: number, targetId: number): boolean {
+    const t = this.assignBulkTool();
+    if (t === 'swap') return this.canSwapGuestsBetweenTables(sourceId, targetId);
+    if (t === 'moveAll') return this.canMoveGuestsToTable(sourceId, targetId);
+    return false;
   }
 
   async onSvgClick(ev: MouseEvent) {
@@ -1838,6 +2362,7 @@ export class AdminPlanDeTableComponent {
 
     if (this.mode() === 'room') {
       const sec = this.roomAccordionSection();
+      if (sec === null) return;
       if (sec === 'doors') {
         const cmDoors = this.clientToCm(ev.clientX, ev.clientY);
         if (!cmDoors) return;
@@ -1889,6 +2414,75 @@ export class AdminPlanDeTableComponent {
       return;
     }
     if (this.mode() === 'assign') {
+      const bulk = this.assignBulkTool();
+      if (bulk !== 'none') {
+        if (performance.now() < this.assignTableDialogSuppressUntilMs) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          this.clearAssignTableClickTimer();
+          return;
+        }
+        this.clearAssignTableClickTimer();
+        const hit = findTableAtPoint(cm.x, cm.y, this.tables());
+        if (hit == null) return;
+        const src = this.assignBulkSourceTableId();
+        if (src == null) {
+          this.assignBulkSourceTableId.set(hit);
+          return;
+        }
+        if (hit === src) return;
+        const vid = this.selectedVariantId();
+        if (vid == null) return;
+        if (bulk === 'swap') {
+          if (!this.canSwapGuestsBetweenTables(src, hit)) {
+            this.snack.open(
+              'Échange impossible : le nombre d’invités dépasse la capacité d’une des deux tables.',
+              '',
+              { duration: 3800 },
+            );
+            return;
+          }
+          const ok = await this.seating.swapGuestsBetweenTables(vid, src, hit);
+          if (ok) {
+            this.assignments.set(await this.seating.getAssignments(vid));
+            this.tables.set(await this.seating.getTables(vid));
+            this.deactivateAssignBulkTool();
+          } else {
+            this.snack.open('Échange non enregistré.', '', { duration: 3000 });
+          }
+          return;
+        }
+        if (bulk === 'moveAll') {
+          if (!this.canMoveGuestsToTable(src, hit)) {
+            this.snack.open(
+              'Déplacement impossible : aucun invité sur la table d’origine, ou la table cible est pleine.',
+              '',
+              { duration: 4000 },
+            );
+            return;
+          }
+          const res = await this.seating.moveGuestsToTableWithinCapacity(vid, src, hit);
+          if (res == null) {
+            this.snack.open('Déplacement non enregistré.', '', { duration: 3000 });
+            return;
+          }
+          this.assignments.set(await this.seating.getAssignments(vid));
+          this.deactivateAssignBulkTool();
+          if (res.moved === 0) {
+            this.snack.open('Aucun invité déplacé.', '', { duration: 2800 });
+          } else if (res.remainedOnSource > 0) {
+            this.snack.open(
+              `${res.moved} invité(s) déplacé(s). ${res.remainedOnSource} restent sur la table d’origine (capacité max de la table cible).`,
+              '',
+              { duration: 5000 },
+            );
+          } else {
+            this.snack.open(`${res.moved} invité(s) déplacé(s) vers l’autre table.`, '', { duration: 3800 });
+          }
+          return;
+        }
+        return;
+      }
       if (performance.now() < this.assignTableDialogSuppressUntilMs) {
         ev.preventDefault();
         ev.stopPropagation();
@@ -1988,6 +2582,8 @@ export class AdminPlanDeTableComponent {
 
   setMode(m: PlanMode) {
     if (this.mode() === 'room' && m !== 'room') {
+      this.roomConstructionDrag = null;
+      this.canvasConstructionSelection.set(null);
       this.wallDraft.set(null);
       this.wallDraftEndPreview.set(null);
       this.roomAccordionSection.set(null);
@@ -2006,6 +2602,7 @@ export class AdminPlanDeTableComponent {
       this.personneDragOverlayCm.set(null);
       this.assignDropHighlightTableId.set(null);
       this.assignDropHighlightValid.set(false);
+      this.deactivateAssignBulkTool();
     }
     if (this.mode() === 'tables' && m !== 'tables') {
       const tid = this.draggingTableId();
@@ -2017,10 +2614,7 @@ export class AdminPlanDeTableComponent {
       this.draggingTableId.set(null);
       this.tableAxisLock = null;
     }
-    if (m === 'assign') {
-      this.gridVisible.set(false);
-      this.snapEnabled.set(false);
-    } else {
+    if (m !== 'assign') {
       this.gridVisible.set(true);
       this.snapEnabled.set(true);
     }
@@ -2077,6 +2671,23 @@ export class AdminPlanDeTableComponent {
       return;
     }
 
+    const rc = this.roomConstructionDrag;
+    if (rc != null && this.mode() === 'room' && !this.readonlyLayout()) {
+      const cm = this.clientToCm(ev.clientX, ev.clientY);
+      if (cm) {
+        const moved =
+          Math.hypot(cm.x - rc.pointerDownCm.x, cm.y - rc.pointerDownCm.y) >=
+          AdminPlanDeTableComponent.CONSTRUCTION_DRAG_THRESHOLD_CM;
+        if (rc.phase === 'pending' && moved) {
+          rc.phase = 'dragging';
+        }
+        if (rc.phase === 'dragging') {
+          this.applyRoomConstructionDrag(cm);
+        }
+      }
+      return;
+    }
+
     const tid = this.draggingTableId();
     if (tid != null) {
       const cm = this.clientToCm(ev.clientX, ev.clientY);
@@ -2121,6 +2732,33 @@ export class AdminPlanDeTableComponent {
     }
 
     if (
+      this.mode() === 'assign' &&
+      this.assignBulkTool() !== 'none' &&
+      this.assignBulkSourceTableId() != null &&
+      this.draggingPersonneId() == null
+    ) {
+      const cm = this.clientToCm(ev.clientX, ev.clientY);
+      if (!cm) {
+        this.assignBulkHoverTableId.set(null);
+        this.assignBulkHoverValid.set(false);
+      } else {
+        const hit = findTableAtPoint(cm.x, cm.y, this.tables());
+        const src = this.assignBulkSourceTableId();
+        if (hit == null || src == null) {
+          this.assignBulkHoverTableId.set(null);
+          this.assignBulkHoverValid.set(false);
+        } else if (hit === src) {
+          this.assignBulkHoverTableId.set(null);
+          this.assignBulkHoverValid.set(false);
+        } else {
+          this.assignBulkHoverTableId.set(hit);
+          this.assignBulkHoverValid.set(this.assignBulkHoverValidForTarget(src, hit));
+        }
+      }
+      return;
+    }
+
+    if (
       this.wallDraft() != null &&
       this.mode() === 'room' &&
       this.roomAccordionSection() === 'walls' &&
@@ -2158,6 +2796,15 @@ export class AdminPlanDeTableComponent {
     if (this.canvasPanning()) {
       this.canvasPanning.set(false);
       this.canvasPanAxisLock = null;
+      return;
+    }
+
+    const rcDrag = this.roomConstructionDrag;
+    if (rcDrag != null) {
+      this.roomConstructionDrag = null;
+      if (rcDrag.phase === 'dragging') {
+        void this.persistRoomConstructionDrag(rcDrag);
+      }
       return;
     }
 
@@ -2278,6 +2925,7 @@ export class AdminPlanDeTableComponent {
     try {
       const raster = await this.seatingExport.rasterizePlanToPngDataUrl(svg, snap, {
         macaronInitialsOnly: true,
+        pdfPageRaster: { targetDpi: 300 },
       });
       if (!raster) {
         this.snack.open('Export PDF échoué', '', { duration: 4000 });

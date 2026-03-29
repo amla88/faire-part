@@ -1,0 +1,82 @@
+.admin-musiques-search {
+  min-width: 220px;
+  flex: 1 1 240px;
+}
+
+.admin-musiques-table {
+  .mat-mdc-cell,
+  .mat-mdc-header-cell {
+    vertical-align: top;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+}
+
+.admin-musiques-th-select,
+.admin-musiques-td-select {
+  width: 48px;
+  padding-right: 0;
+}
+
+.admin-musiques-th-cover {
+  width: 52px;
+}
+
+.admin-musiques-cover {
+  border-radius: 6px;
+  object-fit: cover;
+  display: block;
+
+  &--placeholder {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.06);
+    border-radius: 6px;
+    color: rgba(0, 0, 0, 0.45);
+
+    mat-icon {
+      font-size: 22px;
+      width: 22px;
+      height: 22px;
+    }
+  }
+}
+
+.admin-musiques-external {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+
+  mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.admin-musiques-comment {
+  display: inline-block;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-musiques-status[data-status='pending'] {
+  color: #f57c00;
+  font-weight: 600;
+}
+
+.admin-musiques-status[data-status='approved'] {
+  color: #2e7d32;
+  font-weight: 600;
+}
+
+.admin-musiques-status[data-status='rejected'] {
+  color: #c62828;
+  font-weight: 600;
+}

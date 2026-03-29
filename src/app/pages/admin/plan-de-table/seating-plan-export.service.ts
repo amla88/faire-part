@@ -24,6 +24,16 @@ export interface SeatingExportSnapshot {
 /** Options de rasterisation (ex. macarons initiales seulement pour le PDF). */
 export interface RasterizePlanOptions {
   macaronInitialsOnly?: boolean;
+  /**
+   * Réduit le bitmap pour la 1ʳᵉ page PDF : résolution cible (~dpi) par rapport à la zone dessinée
+   * en A4 paysage (évite les centaines de Mo). Utilise JPEG pour le plan dans le PDF.
+   */
+  pdfPageRaster?: {
+    /** Défaut 300 (impression courante). */
+    targetDpi?: number;
+    /** Qualité JPEG 0–1, défaut 0.88. */
+    jpegQuality?: number;
+  };
 }
 
 /**
@@ -34,8 +44,8 @@ const EXPORT_SVG_STYLES = `
   .outer-wall-ring { fill: #6e6272; }
   .table-shape { fill: rgba(228, 236, 222, 0.88); stroke: #8a7a6e; stroke-width: 1.5px; }
   .table-label { font-size: 20px; font-weight: 600; fill: #3a322f; }
-  .chair-dot { fill: #fff9f6; stroke: #c4a574; stroke-width: 1.8px; }
-  .chair-initials { font-size: 12px; font-weight: 600; fill: #3a322f; }
+  .chair-dot { fill: #fff9f6; stroke: #c4a574; stroke-width: 2px; }
+  .chair-initials { font-size: 14px; font-weight: 600; fill: #3a322f; }
   .wall-line { fill: none; stroke: #8a7e74; }
   .window-opening { fill: none; stroke: #9ab8c4; opacity: 0.96; }
   .door-plan .door-threshold { fill: none; stroke: #7a9aaa; stroke-linecap: butt; }
@@ -45,16 +55,27 @@ const EXPORT_SVG_STYLES = `
   .measure-hud-label { fill: #4a3c3a; font-family: Georgia, 'Times New Roman', serif; }
 `;
 
-/** Résolution raster (px par cm du plan) pour PNG et image dans le PDF. */
+/** Résolution raster (px par cm du plan) pour l’export PNG autonome. */
 const EXPORT_PX_PER_CM = 3;
 
-/** Fond derrière le plan rasterisé (parchemin légèrement rosé). */
-const EXPORT_CANVAS_BG = '#faf6f1';
+/** A4 paysage (mm) — aligné sur `buildPdfDocument` page 1. */
+const PDF_A4_LANDSCAPE_W_MM = 297;
+const PDF_A4_LANDSCAPE_H_MM = 210;
+const PDF_PLAN_MARGIN_MM = 12;
+/** Même retrait que `maxW - 6` / `maxH - 6` dans buildPdfDocument. */
+const PDF_PLAN_INNER_PAD_MM = 6;
+
+const MM_PER_INCH = 25.4;
+const PDF_PLAN_DEFAULT_DPI = 300;
+const PDF_PLAN_DEFAULT_JPEG_QUALITY = 0.88;
+
+/** Fond derrière le plan rasterisé (PDF : blanc). */
+const EXPORT_CANVAS_BG = '#ffffff';
 
 /** Couleurs PDF (RGB 0–255) : régence fleurie, sauge et rose thé. */
 const PDF_THEME = {
-  paper: [252, 248, 242] as [number, number, number],
-  paperDeep: [241, 232, 222] as [number, number, number],
+  /** Fond de page PDF (blanc, sans teinte parchemin). */
+  paper: [255, 255, 255] as [number, number, number],
   ink: [58, 44, 42] as [number, number, number],
   inkSoft: [98, 82, 78] as [number, number, number],
   powderBlue: [108, 132, 148] as [number, number, number],
@@ -73,16 +94,56 @@ const PDF_THEME = {
 @Injectable({ providedIn: 'root' })
 export class SeatingPlanExportService {
   /**
-   * Prépare le SVG (styles inline, sans overlays d’édition) puis le rasterise en PNG (data URL).
+   * Zone max (mm) où le plan est dessiné sur la 1ʳᵉ page PDF A4 paysage (même logique que buildPdfDocument).
+   */
+  private pdfPlanMaxDrawMm(): { drawW: number; drawH: number } {
+    const maxW = PDF_A4_LANDSCAPE_W_MM - 2 * PDF_PLAN_MARGIN_MM;
+    const maxH = PDF_A4_LANDSCAPE_H_MM - 2 * PDF_PLAN_MARGIN_MM;
+    return {
+      drawW: maxW - PDF_PLAN_INNER_PAD_MM,
+      drawH: maxH - PDF_PLAN_INNER_PAD_MM,
+    };
+  }
+
+  /**
+   * Taille en pixels pour ne pas dépasser ~`dpi` sur la zone d’impression PDF (évite sur-échantillonnage).
+   */
+  private capRasterPixelsForPdfPage(widthCm: number, heightCm: number, dpi: number): { wPx: number; hPx: number } {
+    const { drawW, drawH } = this.pdfPlanMaxDrawMm();
+    const maxPxW = Math.max(1, Math.ceil((drawW / MM_PER_INCH) * dpi));
+    const maxPxH = Math.max(1, Math.ceil((drawH / MM_PER_INCH) * dpi));
+    const aspect = widthCm / heightCm;
+    let wPx = maxPxW;
+    let hPx = wPx / aspect;
+    if (hPx > maxPxH) {
+      hPx = maxPxH;
+      wPx = hPx * aspect;
+    }
+    return { wPx: Math.max(1, Math.round(wPx)), hPx: Math.max(1, Math.round(hPx)) };
+  }
+
+  /**
+   * Prépare le SVG (styles inline, sans overlays d’édition) puis le rasterise.
+   * Export PNG : PNG pleine résolution (`EXPORT_PX_PER_CM`). PDF : option `pdfPageRaster` → ~300 dpi sur la page + JPEG.
    */
   async rasterizePlanToPngDataUrl(
     svgEl: SVGSVGElement,
     snapshot: SeatingExportSnapshot,
     options?: RasterizePlanOptions,
-  ): Promise<{ dataUrl: string; wPx: number; hPx: number } | null> {
+  ): Promise<{ dataUrl: string; wPx: number; hPx: number; pdfImageType?: 'PNG' | 'JPEG' } | null> {
     const { widthCm, heightCm } = seatingCanvasOuterSizeCm(snapshot.venue);
-    const w = widthCm * EXPORT_PX_PER_CM;
-    const h = heightCm * EXPORT_PX_PER_CM;
+    const pdfOpt = options?.pdfPageRaster;
+    let w: number;
+    let h: number;
+    if (pdfOpt != null) {
+      const dpi = pdfOpt.targetDpi ?? PDF_PLAN_DEFAULT_DPI;
+      const capped = this.capRasterPixelsForPdfPage(widthCm, heightCm, dpi);
+      w = capped.wPx;
+      h = capped.hPx;
+    } else {
+      w = Math.round(widthCm * EXPORT_PX_PER_CM);
+      h = Math.round(heightCm * EXPORT_PX_PER_CM);
+    }
     const clone = this.prepareSvgCloneForExport(svgEl, snapshot, options);
     clone.setAttribute('width', String(w));
     clone.setAttribute('height', String(h));
@@ -107,6 +168,15 @@ export class SeatingPlanExportService {
       ctx.fillRect(0, 0, w, h);
       ctx.drawImage(img, 0, 0);
       URL.revokeObjectURL(url);
+      if (pdfOpt != null) {
+        const q = pdfOpt.jpegQuality ?? PDF_PLAN_DEFAULT_JPEG_QUALITY;
+        return {
+          dataUrl: canvas.toDataURL('image/jpeg', q),
+          wPx: w,
+          hPx: h,
+          pdfImageType: 'JPEG',
+        };
+      }
       return { dataUrl: canvas.toDataURL('image/png'), wPx: w, hPx: h };
     } catch {
       URL.revokeObjectURL(url);
@@ -118,7 +188,7 @@ export class SeatingPlanExportService {
    * PDF : page 1 = plan en A4 paysage (cadre régence) ; pages suivantes = liste des invités, typo élégante.
    */
   buildPdfDocument(
-    raster: { dataUrl: string; wPx: number; hPx: number },
+    raster: { dataUrl: string; wPx: number; hPx: number; pdfImageType?: 'PNG' | 'JPEG' },
     snapshot: SeatingExportSnapshot,
   ): jsPDF {
     const v = snapshot.venue;
@@ -141,7 +211,8 @@ export class SeatingPlanExportService {
 
     this.pdfFillPage(pdf, pageW, pageH, T.paper);
     this.pdfDrawLandscapeFrame(pdf, pageW, pageH, margin);
-    pdf.addImage(raster.dataUrl, 'PNG', x0, y0, drawW, drawH);
+    const imgType = raster.pdfImageType === 'JPEG' ? 'JPEG' : 'PNG';
+    pdf.addImage(raster.dataUrl, imgType, x0, y0, drawW, drawH);
 
     const tablesSorted = [...snapshot.tables].sort(
       (a, b) =>
@@ -152,13 +223,16 @@ export class SeatingPlanExportService {
     const lineH = 5.4;
     const titleFs = 12.5;
     const bodyFs = 10.5;
-    const bulletInset = 5;
-    const bulletSize = 1.35;
+    const colGap = 8;
 
     pdf.addPage('a4', 'portrait');
     const pw = pdf.internal.pageSize.getWidth();
     const ph = pdf.internal.pageSize.getHeight();
     const textMaxW = pw - 2 * left;
+    const contentW = pw - 2 * left;
+    const colW = (contentW - colGap) / 2;
+    const xColL = left;
+    const xColR = left + colW + colGap;
     let y = this.pdfApplyPortraitPage(pdf, pw, ph, left, textMaxW);
 
     pdf.setFont('times', 'italic');
@@ -208,76 +282,177 @@ export class SeatingPlanExportService {
     pdf.setFont('times', 'normal');
     y += 3;
 
+    const bodyStartY = y;
+    let yL = bodyStartY;
+    let yR = bodyStartY;
+    const syncNewPortraitPage = (): number => {
+      pdf.addPage('a4', 'portrait');
+      const ny = this.pdfApplyPortraitPage(pdf, pw, ph, left, textMaxW);
+      yL = ny;
+      yR = ny;
+      return ny;
+    };
     let tableIndex = 0;
     for (const t of tablesSorted) {
       tableIndex += 1;
-      const tableTitle = t.label?.trim()
-        ? `Table « ${t.label} »`
-        : `Table ${tableIndex} (${t.shape})`;
       const assigns = snapshot.assignmentsByTable.get(t.id) ?? [];
       const byId = snapshot.personneById;
       const guestLabels: string[] = assigns.map((a) => {
         const p = byId.get(a.personne_id);
         return p ? snapshot.displayPersonne(p) : `Personne #${a.personne_id}`;
       });
-      const blockEstimate =
-        12 + (guestLabels.length === 0 ? lineH * 2 : guestLabels.length * lineH * 1.45) + 8;
-      if (y + blockEstimate > ph - bottomSafe) {
-        pdf.addPage('a4', 'portrait');
-        y = this.pdfApplyPortraitPage(pdf, pw, ph, left, textMaxW);
+      const blockH = this.pdfEstimateGuestTableBlockHeight(
+        pdf,
+        colW,
+        tableIndex,
+        t,
+        guestLabels,
+        lineH,
+        titleFs,
+        bodyFs,
+      );
+
+      const limitY = ph - bottomSafe;
+      const fitsL = yL + blockH <= limitY;
+      const fitsR = yR + blockH <= limitY;
+
+      let x: number;
+      let yCol: number;
+      if (fitsL) {
+        x = xColL;
+        yCol = yL;
+      } else if (fitsR) {
+        x = xColR;
+        yCol = yR;
+      } else {
+        const ny = syncNewPortraitPage();
+        yL = yR = ny;
+        x = xColL;
+        yCol = yL;
       }
 
-      pdf.setFont('times', 'bold');
-      pdf.setFontSize(titleFs);
-      pdf.setTextColor(...T.ink);
-      for (const line of pdf.splitTextToSize(tableTitle, textMaxW)) {
-        if (y > ph - bottomSafe) {
-          pdf.addPage('a4', 'portrait');
-          y = this.pdfApplyPortraitPage(pdf, pw, ph, left, textMaxW);
-        }
-        pdf.text(line, left, y);
-        y += lineH + 0.5;
-      }
-      pdf.setDrawColor(...T.goldMuted);
-      pdf.setLineWidth(0.2);
-      const ruleEnd = Math.min(left + 50, pw - left);
-      pdf.line(left, y, ruleEnd, y);
-      this.pdfDrawRosette(pdf, ruleEnd + 2.4, y, 1.2, T.blushPetal, T.goldMuted);
-      y += 5;
-      pdf.setFont('times', 'normal');
-      pdf.setFontSize(bodyFs);
-      if (guestLabels.length === 0) {
-        pdf.setFont('times', 'italic');
-        pdf.setTextColor(...T.inkSoft);
-        if (y > ph - bottomSafe) {
-          pdf.addPage('a4', 'portrait');
-          y = this.pdfApplyPortraitPage(pdf, pw, ph, left, textMaxW);
-        }
-        pdf.text('Aucun invité assigné pour l’instant.', left + bulletInset + 1, y);
-        y += lineH + 2;
-        pdf.setFont('times', 'normal');
-        pdf.setTextColor(...T.ink);
-      } else {
-        const textX = left + bulletInset + bulletSize + 1.5;
-        for (const label of guestLabels) {
-          const wrapped = pdf.splitTextToSize(label, textMaxW - bulletInset - bulletSize - 2);
-          for (let i = 0; i < wrapped.length; i++) {
-            if (y > ph - bottomSafe) {
-              pdf.addPage('a4', 'portrait');
-              y = this.pdfApplyPortraitPage(pdf, pw, ph, left, textMaxW);
-            }
-            if (i === 0) {
-              this.pdfDrawRoseBullet(pdf, left + bulletInset + 1.1, y - 2.65);
-            }
-            pdf.text(wrapped[i], textX, y);
-            y += lineH;
-          }
-        }
-        y += 5;
-      }
+      const yAfter = this.pdfDrawGuestTableBlock(
+        pdf,
+        x,
+        yCol,
+        colW,
+        ph,
+        bottomSafe,
+        syncNewPortraitPage,
+        snapshot,
+        T,
+        tableIndex,
+        t,
+        guestLabels,
+        lineH,
+        titleFs,
+        bodyFs,
+      );
+
+      if (x === xColL) yL = yAfter;
+      else yR = yAfter;
     }
 
     return pdf;
+  }
+
+  /** Hauteur approximative d’un bloc « table + invités » pour placement en colonnes. */
+  private pdfEstimateGuestTableBlockHeight(
+    pdf: jsPDF,
+    colW: number,
+    tableIndex: number,
+    t: SeatingTable,
+    guestLabels: string[],
+    lineH: number,
+    titleFs: number,
+    bodyFs: number,
+  ): number {
+    const tableTitle = t.label?.trim()
+      ? `Table « ${t.label} »`
+      : `Table ${tableIndex} (${t.shape})`;
+    pdf.setFontSize(titleFs);
+    let h = pdf.splitTextToSize(tableTitle, colW).length * (lineH + 0.5);
+    h += 5.5;
+    pdf.setFontSize(bodyFs);
+    if (guestLabels.length === 0) {
+      h += lineH + 2;
+    } else {
+      const textMaxInner = colW - 2;
+      for (const label of guestLabels) {
+        h += pdf.splitTextToSize(label, textMaxInner).length * lineH;
+      }
+      h += 5;
+    }
+    return h + 4;
+  }
+
+  /** Dessine une table et ses invités dans une colonne ; gère les sauts de page (réinitialise les deux colonnes). */
+  private pdfDrawGuestTableBlock(
+    pdf: jsPDF,
+    x: number,
+    y0: number,
+    colW: number,
+    ph: number,
+    bottomSafe: number,
+    syncNewPortraitPage: () => number,
+    snapshot: SeatingExportSnapshot,
+    T: typeof PDF_THEME,
+    tableIndex: number,
+    t: SeatingTable,
+    guestLabels: string[],
+    lineH: number,
+    titleFs: number,
+    bodyFs: number,
+  ): number {
+    let y = y0;
+    const limitY = ph - bottomSafe;
+    const tableTitle = t.label?.trim()
+      ? `Table « ${t.label} »`
+      : `Table ${tableIndex} (${t.shape})`;
+    const textMaxInner = colW - 2;
+
+    const ensureY = (): void => {
+      if (y > limitY) {
+        y = syncNewPortraitPage();
+      }
+    };
+
+    pdf.setFont('times', 'bold');
+    pdf.setFontSize(titleFs);
+    pdf.setTextColor(...T.ink);
+    for (const line of pdf.splitTextToSize(tableTitle, colW)) {
+      ensureY();
+      pdf.text(line, x, y);
+      y += lineH + 0.5;
+    }
+    pdf.setDrawColor(...T.goldMuted);
+    pdf.setLineWidth(0.2);
+    ensureY();
+    pdf.line(x, y, x + Math.min(colW - 1, 48), y);
+    y += 5;
+    pdf.setFont('times', 'normal');
+    pdf.setFontSize(bodyFs);
+
+    if (guestLabels.length === 0) {
+      pdf.setFont('times', 'italic');
+      pdf.setTextColor(...T.inkSoft);
+      ensureY();
+      pdf.text('Aucun invité assigné pour l’instant.', x, y);
+      y += lineH + 2;
+      pdf.setFont('times', 'normal');
+      pdf.setTextColor(...T.ink);
+    } else {
+      for (const label of guestLabels) {
+        const wrapped = pdf.splitTextToSize(label, textMaxInner);
+        for (let i = 0; i < wrapped.length; i++) {
+          ensureY();
+          pdf.text(wrapped[i], x, y);
+          y += lineH;
+        }
+      }
+      y += 5;
+    }
+    return y;
   }
 
   /** Fond pleine page (mm). */
@@ -376,17 +551,6 @@ export class SeatingPlanExportService {
     }
     pdf.setFillColor(...centerRgb);
     pdf.circle(cx, cy, scale * 0.22, 'F');
-  }
-
-  /** Petit bouton rose pour les puces de liste. */
-  private pdfDrawRoseBullet(pdf: jsPDF, cx: number, cy: number): void {
-    const T = PDF_THEME;
-    pdf.setFillColor(...T.blushPetal);
-    pdf.setDrawColor(...T.goldDeep);
-    pdf.setLineWidth(0.11);
-    pdf.circle(cx, cy, 1.2, 'FD');
-    pdf.setFillColor(...T.dustyRose);
-    pdf.circle(cx, cy, 0.42, 'F');
   }
 
   /** Filet brisé, rosette centrale et perles (glycine). */
@@ -526,8 +690,8 @@ export class SeatingPlanExportService {
 
     const ns = 'http://www.w3.org/2000/svg';
     const byId = snapshot.personneById;
-    const rMac = macaronInitialsOnly ? 21 : 18;
-    const fontPx = macaronInitialsOnly ? 12.5 : 7.5;
+    const rMac = macaronInitialsOnly ? 25 : 22;
+    const fontPx = macaronInitialsOnly ? 14.5 : 8.5;
 
     for (const t of snapshot.tables) {
       const assigns = snapshot.assignmentsByTable.get(t.id) ?? [];
@@ -554,7 +718,7 @@ export class SeatingPlanExportService {
         circle.setAttribute('r', String(rMac));
         circle.setAttribute('fill', '#fff9f6');
         circle.setAttribute('stroke', '#c4a574');
-        circle.setAttribute('stroke-width', '1.8');
+        circle.setAttribute('stroke-width', '2');
         g.appendChild(circle);
 
         if (label) {

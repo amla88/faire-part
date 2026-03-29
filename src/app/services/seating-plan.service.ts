@@ -323,6 +323,25 @@ export class SeatingPlanService {
     return true;
   }
 
+  async updateWallSegment(
+    id: number,
+    patch: Partial<Pick<SeatingWallSegment, 'x1_cm' | 'y1_cm' | 'x2_cm' | 'y2_cm' | 'thickness_cm'>>,
+  ): Promise<boolean> {
+    const norm: Record<string, number> = {};
+    if (patch.x1_cm !== undefined) norm['x1_cm'] = Math.round(patch.x1_cm);
+    if (patch.y1_cm !== undefined) norm['y1_cm'] = Math.round(patch.y1_cm);
+    if (patch.x2_cm !== undefined) norm['x2_cm'] = Math.round(patch.x2_cm);
+    if (patch.y2_cm !== undefined) norm['y2_cm'] = Math.round(patch.y2_cm);
+    if (patch.thickness_cm !== undefined) norm['thickness_cm'] = Math.round(patch.thickness_cm);
+    const client = this.supabase.getClient();
+    const { error } = await client.from('seating_wall_segment').update(norm).eq('id', id);
+    if (error) {
+      console.error('[SeatingPlanService] updateWallSegment', error);
+      return false;
+    }
+    return true;
+  }
+
   async getWindows(venueId: number): Promise<SeatingWindow[]> {
     const client = this.supabase.getClient();
     const { data, error } = await client
@@ -359,6 +378,25 @@ export class SeatingPlanService {
     const { error } = await client.from('seating_window').delete().eq('id', id);
     if (error) {
       console.error('[SeatingPlanService] deleteWindow', error);
+      return false;
+    }
+    return true;
+  }
+
+  async updateWindow(
+    id: number,
+    patch: Partial<
+      Pick<SeatingWindow, 'wall_segment_id' | 'perimeter_edge' | 'offset_along_cm' | 'width_cm' | 'thickness_cm'>
+    >,
+  ): Promise<boolean> {
+    const norm: Record<string, unknown> = { ...patch };
+    if (patch.width_cm !== undefined) norm['width_cm'] = Math.round(patch.width_cm);
+    if (patch.thickness_cm !== undefined) norm['thickness_cm'] = Math.round(patch.thickness_cm);
+    if (patch.offset_along_cm !== undefined) norm['offset_along_cm'] = Number(patch.offset_along_cm);
+    const client = this.supabase.getClient();
+    const { error } = await client.from('seating_window').update(norm).eq('id', id);
+    if (error) {
+      console.error('[SeatingPlanService] updateWindow', error);
       return false;
     }
     return true;
@@ -402,6 +440,28 @@ export class SeatingPlanService {
     const { error } = await client.from('seating_door').delete().eq('id', id);
     if (error) {
       console.error('[SeatingPlanService] deleteDoor', error);
+      return false;
+    }
+    return true;
+  }
+
+  async updateDoor(
+    id: number,
+    patch: Partial<
+      Pick<
+        SeatingDoor,
+        'wall_segment_id' | 'perimeter_edge' | 'offset_along_cm' | 'width_cm' | 'thickness_cm' | 'door_kind' | 'swing_sign'
+      >
+    >,
+  ): Promise<boolean> {
+    const norm: Record<string, unknown> = { ...patch };
+    if (patch.width_cm !== undefined) norm['width_cm'] = Math.round(patch.width_cm);
+    if (patch.thickness_cm !== undefined) norm['thickness_cm'] = Math.round(patch.thickness_cm);
+    if (patch.offset_along_cm !== undefined) norm['offset_along_cm'] = Number(patch.offset_along_cm);
+    const client = this.supabase.getClient();
+    const { error } = await client.from('seating_door').update(norm).eq('id', id);
+    if (error) {
+      console.error('[SeatingPlanService] updateDoor', error);
       return false;
     }
     return true;
@@ -468,6 +528,26 @@ export class SeatingPlanService {
     const { error } = await client.from('seating_freeform_polygon').delete().eq('id', id);
     if (error) {
       console.error('[SeatingPlanService] deleteFreeformPolygon', error);
+      return false;
+    }
+    return true;
+  }
+
+  async updateFreeformPolygon(
+    id: number,
+    patch: Partial<Pick<SeatingFreeformPolygon, 'points_cm' | 'stroke_width_cm'>>,
+  ): Promise<boolean> {
+    const norm: Record<string, unknown> = { ...patch };
+    if (patch.points_cm !== undefined) {
+      norm['points_cm'] = patch.points_cm.map(([x, y]) => [Math.round(x), Math.round(y)] as [number, number]);
+    }
+    if (patch.stroke_width_cm !== undefined) {
+      norm['stroke_width_cm'] = Number(patch.stroke_width_cm);
+    }
+    const client = this.supabase.getClient();
+    const { error } = await client.from('seating_freeform_polygon').update(norm).eq('id', id);
+    if (error) {
+      console.error('[SeatingPlanService] updateFreeformPolygon', error);
       return false;
     }
     return true;
@@ -678,6 +758,239 @@ export class SeatingPlanService {
       return false;
     }
     return true;
+  }
+
+  /**
+   * Échange invités, nom (`label`) et couleur entre deux tables (même variante).
+   * Refus si, après échange des invités, une table dépasserait `max_chairs` (dans un sens ou l’autre).
+   */
+  async swapGuestsBetweenTables(variantId: number, tableIdA: number, tableIdB: number): Promise<boolean> {
+    if (tableIdA === tableIdB) return false;
+    const client = this.supabase.getClient();
+    const { data: tRows, error: te } = await client
+      .from('seating_table')
+      .select('id, max_chairs, layout_variant_id, label, color')
+      .in('id', [tableIdA, tableIdB]);
+    if (te || !tRows || tRows.length !== 2) {
+      console.error('[SeatingPlanService] swapGuestsBetweenTables tables', te);
+      return false;
+    }
+    type TRow = {
+      id: number;
+      max_chairs: number;
+      layout_variant_id: number;
+      label: string | null;
+      color?: string | null;
+    };
+    const tA = tRows.find((r) => (r as TRow).id === tableIdA) as TRow | undefined;
+    const tB = tRows.find((r) => (r as TRow).id === tableIdB) as TRow | undefined;
+    if (!tA || !tB || tA.layout_variant_id !== variantId || tB.layout_variant_id !== variantId) return false;
+
+    const labelA = tA.label ?? null;
+    const labelB = tB.label ?? null;
+    const colorA = tA.color != null && String(tA.color).trim() !== '' ? String(tA.color) : null;
+    const colorB = tB.color != null && String(tB.color).trim() !== '' ? String(tB.color) : null;
+
+    const { data: assigns, error: ae } = await client
+      .from('seating_assignment')
+      .select('id, personne_id, table_id, seat_order')
+      .eq('layout_variant_id', variantId)
+      .in('table_id', [tableIdA, tableIdB]);
+    if (ae || !assigns) {
+      console.error('[SeatingPlanService] swapGuestsBetweenTables assignments', ae);
+      return false;
+    }
+    const list = assigns as { id: number; personne_id: number; table_id: number; seat_order: number }[];
+    const aGroup = list.filter((x) => x.table_id === tableIdA).sort((x, y) => x.seat_order - y.seat_order);
+    const bGroup = list.filter((x) => x.table_id === tableIdB).sort((x, y) => x.seat_order - y.seat_order);
+    if (bGroup.length > tA.max_chairs || aGroup.length > tB.max_chairs) return false;
+
+    const ids = [...aGroup, ...bGroup].map((x) => x.id);
+    if (ids.length > 0) {
+      const { error: de } = await client.from('seating_assignment').delete().in('id', ids);
+      if (de) {
+        console.error('[SeatingPlanService] swapGuestsBetweenTables delete', de);
+        return false;
+      }
+    }
+
+    const insertRows: { layout_variant_id: number; table_id: number; personne_id: number; seat_order: number }[] = [];
+    bGroup.forEach((row, i) => {
+      insertRows.push({
+        layout_variant_id: variantId,
+        table_id: tableIdA,
+        personne_id: row.personne_id,
+        seat_order: i,
+      });
+    });
+    aGroup.forEach((row, i) => {
+      insertRows.push({
+        layout_variant_id: variantId,
+        table_id: tableIdB,
+        personne_id: row.personne_id,
+        seat_order: i,
+      });
+    });
+
+    let insertedAssignmentIds: number[] = [];
+    if (insertRows.length > 0) {
+      const { data: inserted, error: ie } = await client.from('seating_assignment').insert(insertRows).select('id');
+      if (ie) {
+        console.error('[SeatingPlanService] swapGuestsBetweenTables insert', ie);
+        const restored = await this.reinsertSeatingAssignmentGroups(variantId, tableIdA, tableIdB, aGroup, bGroup);
+        if (!restored) {
+          console.error('[SeatingPlanService] swapGuestsBetweenTables restore assignments after insert fail');
+        }
+        return false;
+      }
+      insertedAssignmentIds = (inserted ?? []).map((r: { id: number }) => r.id);
+    }
+
+    const metaA = await this.updateTable(tableIdA, { label: labelB, color: colorB });
+    if (!metaA) {
+      console.error('[SeatingPlanService] swapGuestsBetweenTables table A label/color');
+      if (insertedAssignmentIds.length > 0) {
+        await client.from('seating_assignment').delete().in('id', insertedAssignmentIds);
+      }
+      const restored = await this.reinsertSeatingAssignmentGroups(variantId, tableIdA, tableIdB, aGroup, bGroup);
+      if (!restored) {
+        console.error('[SeatingPlanService] swapGuestsBetweenTables restore assignments after meta A fail');
+      }
+      return false;
+    }
+    const metaB = await this.updateTable(tableIdB, { label: labelA, color: colorA });
+    if (!metaB) {
+      console.error('[SeatingPlanService] swapGuestsBetweenTables table B label/color');
+      await this.updateTable(tableIdA, { label: labelA, color: colorA });
+      if (insertedAssignmentIds.length > 0) {
+        await client.from('seating_assignment').delete().in('id', insertedAssignmentIds);
+      }
+      const restored = await this.reinsertSeatingAssignmentGroups(variantId, tableIdA, tableIdB, aGroup, bGroup);
+      if (!restored) {
+        console.error('[SeatingPlanService] swapGuestsBetweenTables restore assignments after meta B fail');
+      }
+      return false;
+    }
+
+    return true;
+  }
+
+  /** Remet les invités comme avant un échange (tables A et B d’origine). */
+  private async reinsertSeatingAssignmentGroups(
+    variantId: number,
+    tableIdA: number,
+    tableIdB: number,
+    aGroup: { personne_id: number }[],
+    bGroup: { personne_id: number }[],
+  ): Promise<boolean> {
+    const client = this.supabase.getClient();
+    const rows: { layout_variant_id: number; table_id: number; personne_id: number; seat_order: number }[] = [];
+    aGroup.forEach((row, i) => {
+      rows.push({
+        layout_variant_id: variantId,
+        table_id: tableIdA,
+        personne_id: row.personne_id,
+        seat_order: i,
+      });
+    });
+    bGroup.forEach((row, i) => {
+      rows.push({
+        layout_variant_id: variantId,
+        table_id: tableIdB,
+        personne_id: row.personne_id,
+        seat_order: i,
+      });
+    });
+    if (rows.length === 0) return true;
+    const { error } = await client.from('seating_assignment').insert(rows);
+    if (error) {
+      console.error('[SeatingPlanService] reinsertSeatingAssignmentGroups', error);
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Déplace depuis `fromTableId` vers `toTableId` autant d’invités que la place libre sur la table
+   * d’accueil le permet (ordre `seat_order` conservé pour le bloc déplacé). Le reste reste sur la table source.
+   */
+  async moveGuestsToTableWithinCapacity(
+    variantId: number,
+    fromTableId: number,
+    toTableId: number,
+  ): Promise<{ moved: number; remainedOnSource: number } | null> {
+    if (fromTableId === toTableId) return null;
+    const client = this.supabase.getClient();
+    const { data: tRows, error: te } = await client
+      .from('seating_table')
+      .select('id, max_chairs, layout_variant_id')
+      .in('id', [fromTableId, toTableId]);
+    if (te || !tRows || tRows.length !== 2) {
+      console.error('[SeatingPlanService] moveGuestsToTableWithinCapacity tables', te);
+      return null;
+    }
+    const tFrom = tRows.find((r) => (r as { id: number }).id === fromTableId) as
+      | { id: number; max_chairs: number; layout_variant_id: number }
+      | undefined;
+    const tTo = tRows.find((r) => (r as { id: number }).id === toTableId) as
+      | { id: number; max_chairs: number; layout_variant_id: number }
+      | undefined;
+    if (!tFrom || !tTo || tFrom.layout_variant_id !== variantId || tTo.layout_variant_id !== variantId) {
+      return null;
+    }
+
+    const { data: assigns, error: ae } = await client
+      .from('seating_assignment')
+      .select('id, personne_id, table_id, seat_order')
+      .eq('layout_variant_id', variantId)
+      .in('table_id', [fromTableId, toTableId]);
+    if (ae || !assigns) {
+      console.error('[SeatingPlanService] moveGuestsToTableWithinCapacity assignments', ae);
+      return null;
+    }
+    const list = assigns as { id: number; personne_id: number; table_id: number; seat_order: number }[];
+    const fromGroup = list.filter((x) => x.table_id === fromTableId).sort((x, y) => x.seat_order - y.seat_order);
+    const toGroup = list.filter((x) => x.table_id === toTableId).sort((x, y) => x.seat_order - y.seat_order);
+    const freeSlots = tTo.max_chairs - toGroup.length;
+    if (freeSlots <= 0 || fromGroup.length === 0) {
+      return { moved: 0, remainedOnSource: fromGroup.length };
+    }
+    const take = Math.min(fromGroup.length, freeSlots);
+    const movers = fromGroup.slice(0, take);
+    const stayers = fromGroup.slice(take);
+    const fromIds = fromGroup.map((x) => x.id);
+    const { error: de } = await client.from('seating_assignment').delete().in('id', fromIds);
+    if (de) {
+      console.error('[SeatingPlanService] moveGuestsToTableWithinCapacity delete', de);
+      return null;
+    }
+
+    const nextSeatB =
+      toGroup.length === 0 ? 0 : Math.max(...toGroup.map((r) => r.seat_order)) + 1;
+    const insertRows: { layout_variant_id: number; table_id: number; personne_id: number; seat_order: number }[] = [];
+    stayers.forEach((row, i) => {
+      insertRows.push({
+        layout_variant_id: variantId,
+        table_id: fromTableId,
+        personne_id: row.personne_id,
+        seat_order: i,
+      });
+    });
+    movers.forEach((row, i) => {
+      insertRows.push({
+        layout_variant_id: variantId,
+        table_id: toTableId,
+        personne_id: row.personne_id,
+        seat_order: nextSeatB + i,
+      });
+    });
+    if (insertRows.length === 0) return { moved: 0, remainedOnSource: 0 };
+    const { error: ie } = await client.from('seating_assignment').insert(insertRows);
+    if (ie) {
+      console.error('[SeatingPlanService] moveGuestsToTableWithinCapacity insert', ie);
+      return null;
+    }
+    return { moved: movers.length, remainedOnSource: stayers.length };
   }
 
   async getPersonnesRepas(): Promise<PersonneRepasRow[]> {

@@ -194,6 +194,24 @@
   fill: rgba(239, 154, 154, 0.38) !important;
 }
 
+.floor-svg .table-group.table-swap-source .table-shape {
+  stroke: #0d47a1 !important;
+  stroke-width: 3.1 !important;
+  fill: rgba(144, 202, 249, 0.42) !important;
+}
+
+.floor-svg .table-group.table-swap-target--ok .table-shape {
+  stroke: #1b5e20 !important;
+  stroke-width: 3.2 !important;
+  fill: rgba(165, 214, 167, 0.42) !important;
+}
+
+.floor-svg .table-group.table-swap-target--bad .table-shape {
+  stroke: #b71c1c !important;
+  stroke-width: 3.2 !important;
+  fill: rgba(239, 154, 154, 0.38) !important;
+}
+
 .table-label {
   font-size: 20px;
   font-weight: 600;
@@ -213,7 +231,7 @@
 .chair-dot {
   fill: #fff;
   stroke: #5d4037;
-  stroke-width: 1.8;
+  stroke-width: 2;
 }
 
 .chair-dot--ghost {
@@ -226,7 +244,7 @@
 }
 
 .chair-initials {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   fill: #3e2723;
   user-select: none;

@@ -28,7 +28,7 @@
           mat-stroked-button
           type="button"
           (click)="exportPdf.emit()"
-          matTooltip="PDF : plan + liste des invités par table"
+          matTooltip="PDF : plan (~300 dpi) + liste des invités par table"
           matTooltipPosition="below"
         >
           <mat-icon>picture_as_pdf</mat-icon>
@@ -158,6 +158,39 @@
             <mat-icon>straighten</mat-icon>
           </button>
         </div>
+        @if (mode() === 'assign') {
+          <mat-divider vertical class="toolbar-assign-separator"></mat-divider>
+          <div class="canvas-tools-buttons canvas-tools-buttons--assign">
+            <button
+              mat-icon-button
+              type="button"
+              class="canvas-tool-btn"
+              [class.canvas-tool-btn--on]="assignSwapToolActive()"
+              [color]="assignSwapToolActive() ? 'primary' : undefined"
+              (click)="toggleAssignSwapTool.emit()"
+              matTooltip="Échanger invités, nom et couleur de deux tables : 1ʳᵉ table, puis 2ᵉ (respect des places max). Échap désactive l’outil ; après un échange réussi, l’outil se désactive aussi."
+              matTooltipShowDelay="350"
+              matTooltipPosition="below"
+              aria-label="Échanger les invités de deux tables"
+            >
+              <mat-icon>swap_horiz</mat-icon>
+            </button>
+            <button
+              mat-icon-button
+              type="button"
+              class="canvas-tool-btn"
+              [class.canvas-tool-btn--on]="assignMoveAllToolActive()"
+              [color]="assignMoveAllToolActive() ? 'primary' : undefined"
+              (click)="toggleAssignMoveAllTool.emit()"
+              matTooltip="Déplacer des invités vers une autre table : 1ʳᵉ table (origine), 2ᵉ (cible). Seuls les invités qui tiennent dans la place libre partent ; le reste reste sur l’origine. Échap désactive l’outil ; après un déplacement, l’outil se désactive aussi."
+              matTooltipShowDelay="350"
+              matTooltipPosition="below"
+              aria-label="Déplacer des invités vers une autre table"
+            >
+              <mat-icon>subdirectory_arrow_right</mat-icon>
+            </button>
+          </div>
+        }
         <div class="toolbar-zoom-export-group" aria-label="Zoom, vue et export">
           <span
             class="zoom-readout"
@@ -177,7 +210,7 @@
             mat-stroked-button
             type="button"
             (click)="exportPdf.emit()"
-            matTooltip="PDF : 1ʳᵉ page A4 paysage (plan), pages suivantes A4 portrait (liste des invités par table)"
+            matTooltip="PDF : 1ʳᵉ page A4 paysage (plan ~300 dpi + JPEG), pages suivantes A4 portrait (liste des invités par table)"
           >
             <mat-icon>picture_as_pdf</mat-icon>
             PDF

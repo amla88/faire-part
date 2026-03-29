@@ -11,4 +11,5 @@ export const navItemsAdmin: NavItem[] = [
   { displayName: 'Liste familles', iconName: 'users', route: '/admin/familles' },
   { displayName: 'Ajouter famille', iconName: 'user-plus', route: '/admin/famille' },
   { displayName: 'Plan de table', iconName: 'picnic-table', route: '/admin/plan-de-table' },
+  { displayName: 'Musiques invités', iconName: 'music', route: '/admin/musiques' },
 ];
