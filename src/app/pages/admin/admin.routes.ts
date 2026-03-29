@@ -24,6 +24,11 @@ export const AdminRoutes: Routes = [
     loadComponent: () => import('./famille/admin-famille-list/admin-famille-list.component').then((m) => m.AdminFamilleListComponent),
   },
   {
+    path: 'plan-de-table',
+    loadComponent: () =>
+      import('./plan-de-table/admin-plan-de-table.component').then((m) => m.AdminPlanDeTableComponent),
+  },
+  {
     path: 'export-invitations',
     loadComponent: () => import('./export-invitations/export-invitations.component').then((m) => m.ExportInvitationsComponent),
   },

@@ -144,3 +144,61 @@ td.hljs-ln-line.hljs-ln-numbers {
     flex-direction: row !important;
   }
 }
+
+/* Admin — plan de table : hauteur fixée au viewport, pas de défilement du shell (molette = zoom canevas) */
+.mainWrapper--fill-viewport.mat-drawer-container,
+mat-sidenav-container.mainWrapper--fill-viewport {
+  height: calc(100dvh - 72px);
+  max-height: calc(100dvh - 72px);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+@media (max-width: 991px) {
+  .mainWrapper--fill-viewport.mat-drawer-container,
+  mat-sidenav-container.mainWrapper--fill-viewport {
+    height: calc(100dvh - 157px);
+    max-height: calc(100dvh - 157px);
+  }
+}
+
+@media (max-width: 767px) {
+  .mainWrapper--fill-viewport.mat-drawer-container,
+  mat-sidenav-container.mainWrapper--fill-viewport {
+    height: calc(100dvh - 108px);
+    max-height: calc(100dvh - 108px);
+  }
+}
+
+.contentWrapper--fill-viewport.mat-drawer-content,
+mat-sidenav-content.contentWrapper--fill-viewport {
+  display: flex !important;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.contentWrapper--fill-viewport app-header {
+  flex-shrink: 0;
+}
+
+.pageWrapper--fill-viewport {
+  flex: 1 1 auto;
+  min-height: 0 !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-width: none !important;
+  width: 100%;
+  padding: 10px 16px 12px;
+  margin: 0 auto !important;
+}
+
+.pageWrapper--fill-viewport app-admin-plan-de-table {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}

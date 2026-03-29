@@ -1,0 +1,983 @@
+@if (loading()) {
+  <div class="loading-wrap">
+    <mat-progress-spinner mode="indeterminate" diameter="48"></mat-progress-spinner>
+  </div>
+} @else if (noSchema()) {
+  <mat-card class="cardWithShadow">
+    <mat-card-content>
+      <mat-card-title>Plan de table</mat-card-title>
+      <p class="text-muted f-s-14">
+        Les tables Supabase <code>seating_*</code> sont absentes. Appliquez la migration
+        <code>20260328200000_seating_plan.sql</code> puis rechargez la page.
+      </p>
+    </mat-card-content>
+  </mat-card>
+} @else if (venue(); as ven) {
+  <div class="plan-layout" [class.mode-room]="mode() === 'room'" [class.mode-tables]="mode() === 'tables'" [class.mode-assign]="mode() === 'assign'">
+    @if (readonlyLayout()) {
+      <div class="read-only-banner">Vue lecture seule (écran étroit). Passez sur un écran large pour éditer.</div>
+    }
+
+    <mat-card class="cardWithShadow toolbar-card">
+      <mat-card-content class="toolbar-inner">
+        <div class="toolbar-row">
+          <mat-form-field appearance="outline" class="variant-field">
+            <mat-label>Variante</mat-label>
+            <mat-select
+              [value]="selectedVariantId()"
+              (selectionChange)="onVariantChange($event.value)"
+              [disabled]="readonlyLayout()"
+            >
+              @for (vr of variants(); track vr.id) {
+                <mat-option [value]="vr.id">{{ vr.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <button mat-stroked-button type="button" (click)="addVariant()" [disabled]="readonlyLayout()">
+            <mat-icon>add</mat-icon>
+            Créer
+          </button>
+          <button
+            mat-stroked-button
+            type="button"
+            (click)="copyCurrentVariant()"
+            [disabled]="readonlyLayout() || selectedVariantId() == null"
+            matTooltip="Duplique la variante sélectionnée (tables et placements invités)"
+            matTooltipPosition="below"
+          >
+            <mat-icon>content_copy</mat-icon>
+            Copier
+          </button>
+          <button
+            mat-stroked-button
+            type="button"
+            color="warn"
+            (click)="deleteCurrentVariant()"
+            [disabled]="readonlyLayout() || variants().length <= 1"
+          >
+            <mat-icon>delete</mat-icon>
+            Supprimer
+          </button>
+          <span class="flex-spacer"></span>
+          <span class="zoom-readout" matTooltip="Molette : zoom · Clic droit glisser, clic molette ou Alt+glisser : déplacer · Maj : déplacement horizontal ou vertical seul">
+            Zoom {{ zoomPercentLabel() }}
+          </span>
+          <button mat-stroked-button type="button" (click)="resetView()" matTooltip="Zoom 100 % et centrage dans la zone">
+            <mat-icon>center_focus_strong</mat-icon>
+            Vue
+          </button>
+          <button mat-stroked-button type="button" (click)="exportPng()" matTooltip="PNG ~3 px/cm : pièce, tables et noms des invités sur le plan">
+            <mat-icon>image</mat-icon>
+            PNG
+          </button>
+          <button
+            mat-stroked-button
+            type="button"
+            (click)="exportPdf()"
+            matTooltip="PDF : 1ʳᵉ page A4 paysage (plan), pages suivantes A4 portrait (liste des invités par table)"
+          >
+            <mat-icon>picture_as_pdf</mat-icon>
+            PDF
+          </button>
+        </div>
+
+        <div class="toolbar-row modes-row">
+          <mat-button-toggle-group
+            [value]="mode()"
+            (change)="setMode($any($event).value)"
+            [disabled]="readonlyLayout()"
+            hideSingleSelectionIndicator
+          >
+            <mat-button-toggle value="room">Construction</mat-button-toggle>
+            <mat-button-toggle value="tables">Tables</mat-button-toggle>
+            <mat-button-toggle value="assign">Invités</mat-button-toggle>
+          </mat-button-toggle-group>
+        </div>
+
+        <div class="toolbar-row tools-options-row">
+          <span class="tools-bar-label">Outils</span>
+          <div class="canvas-tools-buttons">
+            <button
+              mat-icon-button
+              type="button"
+              class="canvas-tool-btn"
+              [class.canvas-tool-btn--on]="gridVisible()"
+              [color]="gridVisible() ? 'primary' : undefined"
+              (click)="toggleGridVisibility()"
+              [matTooltip]="gridVisible() ? 'Masquer le cadrillage adaptatif' : 'Afficher le cadrillage adaptatif'"
+              matTooltipShowDelay="350"
+              matTooltipPosition="below"
+              [attr.aria-label]="gridVisible() ? 'Masquer la grille' : 'Afficher la grille'"
+            >
+              <mat-icon>{{ gridVisible() ? 'grid_on' : 'grid_off' }}</mat-icon>
+            </button>
+            <button
+              mat-icon-button
+              type="button"
+              class="canvas-tool-btn"
+              [class.canvas-tool-btn--on]="snapEnabled()"
+              [color]="snapEnabled() ? 'primary' : undefined"
+              (click)="toggleSnapEnabled()"
+              [disabled]="readonlyLayout()"
+              [matTooltip]="
+                snapEnabled()
+                  ? 'Désactiver le magnétisme'
+                  : 'Magnétisme : aligne murs, tables et repère sur le pas du cadrillage affiché (même taille que les carreaux).'
+              "
+              matTooltipShowDelay="350"
+              matTooltipPosition="below"
+              [attr.aria-label]="snapEnabled() ? 'Désactiver le magnétisme' : 'Activer le magnétisme'"
+            >
+              <mat-icon>control_point</mat-icon>
+            </button>
+            <button
+              mat-icon-button
+              type="button"
+              class="canvas-tool-btn"
+              [class.canvas-tool-btn--on]="coordinateProbeEnabled()"
+              [color]="coordinateProbeEnabled() ? 'primary' : undefined"
+              (click)="toggleCoordinateProbe()"
+              [matTooltip]="coordinateProbeTooltip()"
+              matTooltipShowDelay="350"
+              matTooltipPosition="below"
+              aria-label="Coordonnées sous le curseur"
+            >
+              <mat-icon>my_location</mat-icon>
+            </button>
+            <button
+              mat-icon-button
+              type="button"
+              class="canvas-tool-btn"
+              [class.canvas-tool-btn--on]="measureToolEnabled()"
+              [color]="measureToolEnabled() ? 'primary' : undefined"
+              (click)="toggleMeasureTool()"
+              [matTooltip]="measureToolTooltip"
+              matTooltipShowDelay="350"
+              matTooltipPosition="below"
+              aria-label="Mesure de distance sur le plan"
+            >
+              <mat-icon>straighten</mat-icon>
+            </button>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <div class="main-split">
+      <div class="canvas-panel">
+        <div
+          #viewportRef
+          class="canvas-viewport"
+          [class.viewport-panning]="canvasPanning()"
+          (mousedown)="onViewportPointerDown($event)"
+          (contextmenu)="onViewportContextMenu($event)"
+          (mousemove)="onViewportProbeMove($event)"
+          (mouseleave)="onViewportProbeLeave()"
+        >
+          <div
+            class="map-scale-legend"
+            role="figure"
+            [attr.aria-label]="'Échelle ' + scaleLegend().label + ', cadrillage ' + gridStepDisplayLabel()"
+          >
+            <div class="scale-bar-gmaps">
+              <span class="scale-cap" aria-hidden="true"></span>
+              <span class="scale-line" [style.width.px]="scaleLegend().widthPx"></span>
+              <span class="scale-cap" aria-hidden="true"></span>
+            </div>
+            <div class="scale-distance">{{ scaleLegend().label }}</div>
+            @if (gridVisible()) {
+              <div class="grid-square-legend">Cadrillage : {{ gridStepDisplayLabel() }}</div>
+            } @else {
+              <div class="grid-square-legend is-off">Quadrillage masqué</div>
+            }
+          </div>
+
+          <div
+            class="canvas-world"
+            [style.width.px]="(ven.room_width_cm + 2 * perimeterWallCm) * effectivePxPerCm()"
+            [style.height.px]="(ven.room_height_cm + 2 * perimeterWallCm) * effectivePxPerCm()"
+            [style.transform]="'translate(' + panX() + 'px,' + panY() + 'px)'"
+          >
+            <svg
+              #floorSvg
+              class="floor-svg"
+              [attr.viewBox]="floorSvgViewBox()"
+              preserveAspectRatio="none"
+              (click)="onSvgClick($event)"
+              (dblclick)="onSvgDblClick($event)"
+            >
+            <defs>
+              @if (gridVisible()) {
+                <pattern
+                  id="seatingFiligreeMajor"
+                  [attr.width]="gridStepCm()"
+                  [attr.height]="gridStepCm()"
+                  patternUnits="userSpaceOnUse"
+                >
+                  <path
+                    [attr.d]="gridFiligreeOutlineD()"
+                    fill="none"
+                    stroke="#cdc2ae"
+                    [attr.stroke-width]="gridFiligreeStrokeMain()"
+                    opacity="0.42"
+                  />
+                  <path
+                    [attr.d]="gridFiligreeHooksD()"
+                    stroke="#b5a88e"
+                    [attr.stroke-width]="gridFiligreeStrokeHook()"
+                    fill="none"
+                    opacity="0.5"
+                    stroke-linecap="round"
+                  />
+                  <circle
+                    cx="0"
+                    cy="0"
+                    [attr.r]="gridFiligreeNodeR()"
+                    fill="none"
+                    stroke="#c0b398"
+                    [attr.stroke-width]="gridFiligreeStrokeRing()"
+                    opacity="0.45"
+                  />
+                </pattern>
+              }
+            </defs>
+
+            <path
+              class="outer-wall-ring"
+              [attr.d]="outerWallRingPath()"
+              fill-rule="evenodd"
+              pointer-events="none"
+            />
+            <rect x="0" y="0" [attr.width]="ven.room_width_cm" [attr.height]="ven.room_height_cm" fill="#faf8f5" />
+            @if (gridVisible()) {
+              <rect
+                x="0"
+                y="0"
+                [attr.width]="ven.room_width_cm"
+                [attr.height]="ven.room_height_cm"
+                fill="url(#seatingFiligreeMajor)"
+                pointer-events="none"
+                opacity="0.92"
+              />
+            }
+
+            @if (ven.background_data_url && ven.background_width_cm && ven.background_height_cm) {
+              <image
+                [attr.href]="ven.background_data_url"
+                [attr.x]="ven.background_x_cm"
+                [attr.y]="ven.background_y_cm"
+                [attr.width]="ven.background_width_cm"
+                [attr.height]="ven.background_height_cm"
+                preserveAspectRatio="none"
+                pointer-events="none"
+              />
+            }
+
+            @for (w of walls(); track w.id) {
+              <line
+                class="wall-line"
+                [class.wall-line--hover]="hoveredWallId() === w.id"
+                [attr.x1]="w.x1_cm"
+                [attr.y1]="w.y1_cm"
+                [attr.x2]="w.x2_cm"
+                [attr.y2]="w.y2_cm"
+                [attr.stroke-width]="wallLineStrokeWidthCm(w)"
+                stroke-linecap="round"
+                pointer-events="none"
+              />
+            }
+
+            @if (wallDraft(); as d) {
+              @if (roomAccordionSection() === 'walls') {
+              @if (wallDraftEndPreview(); as pe) {
+                <line
+                  [attr.x1]="d.x"
+                  [attr.y1]="d.y"
+                  [attr.x2]="pe.x"
+                  [attr.y2]="pe.y"
+                  class="wall-preview-filigree"
+                  [attr.stroke-width]="d.thickness_cm"
+                  pointer-events="none"
+                />
+              }
+              <circle [attr.cx]="d.x" [attr.cy]="d.y" r="6" fill="none" stroke="#7b61ff" stroke-width="2" pointer-events="none" />
+              }
+            }
+
+            @if (windowPlacementPreview(); as wp) {
+              <line
+                class="window-placement-preview"
+                [attr.x1]="wp.x1"
+                [attr.y1]="wp.y1"
+                [attr.x2]="wp.x2"
+                [attr.y2]="wp.y2"
+                [attr.stroke-width]="wp.thickness"
+                stroke-linecap="round"
+                pointer-events="none"
+              />
+            }
+
+            @for (win of windows(); track win.id) {
+              @if (windowEndpointsForRender(win); as seg) {
+                <line
+                  class="window-opening"
+                  [class.window-opening--hover]="hoveredWindowId() === win.id"
+                  [attr.x1]="seg.x1"
+                  [attr.y1]="seg.y1"
+                  [attr.x2]="seg.x2"
+                  [attr.y2]="seg.y2"
+                  [attr.stroke-width]="windowLineStrokeWidthCm(win)"
+                  stroke-linecap="round"
+                  pointer-events="none"
+                />
+              }
+            }
+
+            @if (doorPlacementPreview()) {
+              <g class="door-plan door-plan--preview" pointer-events="none">
+                @for (el of doorPlanElementsFromPreview(); track $index) {
+                  <path
+                    [attr.d]="el.d"
+                    [attr.stroke-width]="el.strokeWidth"
+                    [attr.class]="el.cssClass"
+                    fill="none"
+                    stroke-linejoin="round"
+                    stroke-linecap="round"
+                    pointer-events="none"
+                  />
+                }
+              </g>
+            }
+
+            @for (dr of doors(); track dr.id) {
+              <g class="door-plan" [class.door-plan--hover]="hoveredDoorId() === dr.id" pointer-events="none">
+                @for (el of doorPlanElementsForPlaced(dr); track $index) {
+                  <path
+                    [attr.d]="el.d"
+                    [attr.stroke-width]="el.strokeWidth"
+                    [attr.class]="el.cssClass"
+                    fill="none"
+                    stroke-linejoin="round"
+                    stroke-linecap="round"
+                    pointer-events="none"
+                  />
+                }
+              </g>
+            }
+
+            @for (ff of freeforms(); track ff.id) {
+              <path
+                class="freeform-polygon"
+                [class.freeform-polygon--hover]="hoveredFreeformId() === ff.id"
+                [attr.d]="freeformPolygonPathD(ff)"
+                [attr.stroke-width]="freeformStrokeWidthRender(ff)"
+                stroke-linejoin="round"
+                stroke-linecap="round"
+                pointer-events="none"
+              />
+            }
+
+            @if (freeformDraft(); as fDraft) {
+              <g class="freeform-draft" pointer-events="none">
+                <path
+                  class="freeform-draft-polyline"
+                  [attr.d]="freeformDraftOpenPathD()"
+                  fill="none"
+                  stroke-linejoin="round"
+                  stroke-linecap="round"
+                />
+                @if (freeformDraftRubberPathD(); as rubD) {
+                  <path
+                    class="freeform-draft-rubber"
+                    [attr.d]="rubD"
+                    fill="none"
+                    stroke-linecap="round"
+                  />
+                }
+                @for (pt of fDraft.points; track $index) {
+                  <circle
+                    [attr.cx]="pt.x"
+                    [attr.cy]="pt.y"
+                    [attr.r]="freeformVertexHandleRCm()"
+                    class="freeform-draft-vertex"
+                  />
+                }
+              </g>
+            }
+
+            @for (t of tables(); track t.id) {
+              <g
+                [attr.transform]="tableGroupTransform(t)"
+                class="table-group"
+                [class.table-selected]="selectedTableId() === t.id"
+                [class.table-assign-drop--ok]="
+                  mode() === 'assign' && assignDropHighlightTableId() === t.id && assignDropHighlightValid()
+                "
+                [class.table-assign-drop--bad]="
+                  mode() === 'assign' && assignDropHighlightTableId() === t.id && !assignDropHighlightValid()
+                "
+                (mousedown)="onTableMouseDown($event, t)"
+              >
+                @switch (t.shape) {
+                  @case ('round') {
+                    <circle
+                      cx="0"
+                      cy="0"
+                      [attr.r]="half(t).hw"
+                      class="table-shape"
+                      [style.fill]="tableShapeFill(t)"
+                      [style.stroke]="tableShapeStroke(t)"
+                    />
+                  }
+                  @case ('oval') {
+                    <ellipse
+                      cx="0"
+                      cy="0"
+                      [attr.rx]="half(t).hw"
+                      [attr.ry]="half(t).hd"
+                      class="table-shape"
+                      [style.fill]="tableShapeFill(t)"
+                      [style.stroke]="tableShapeStroke(t)"
+                    />
+                  }
+                  @case ('rect') {
+                    <rect
+                      [attr.x]="-half(t).hw"
+                      [attr.y]="-half(t).hd"
+                      [attr.width]="t.width_cm"
+                      [attr.height]="t.depth_cm"
+                      rx="3"
+                      ry="3"
+                      class="table-shape"
+                      [style.fill]="tableShapeFill(t)"
+                      [style.stroke]="tableShapeStroke(t)"
+                    />
+                  }
+                  @case ('capsule') {
+                    <path
+                      [attr.d]="capsuleTablePathFor(t)"
+                      class="table-shape"
+                      [style.fill]="tableShapeFill(t)"
+                      [style.stroke]="tableShapeStroke(t)"
+                    />
+                  }
+                }
+                @if (t.label) {
+                  <text text-anchor="middle" dominant-baseline="middle" class="table-label">{{ t.label }}</text>
+                }
+              </g>
+            }
+
+            @for (t of tables(); track t.id) {
+              @for (m of chairMarkersForTable(t); track m.tableId + '-' + $index) {
+                <g
+                  [attr.transform]="'translate(' + m.x + ',' + m.y + ')'"
+                  [attr.pointer-events]="
+                    m.personneId != null && mode() === 'assign' && !readonlyLayout() ? 'all' : 'none'
+                  "
+                  [class.chair-marker-interactive]="m.personneId != null && mode() === 'assign' && !readonlyLayout()"
+                  (mousedown)="onChairMacaronMouseDown($event, m)"
+                >
+                  <circle [attr.r]="chairMacaronRadiusCm" class="chair-dot" />
+                  @if (m.initials) {
+                    <text text-anchor="middle" dominant-baseline="middle" class="chair-initials" pointer-events="none">
+                      {{ m.initials }}
+                    </text>
+                  }
+                </g>
+              }
+            }
+
+            @if (draggingPersonneId(); as dpid) {
+              @if (personneDragOverlayCm(); as dragCm) {
+                @if (personneById().get(dpid); as dPers) {
+                  <g
+                    [attr.transform]="'translate(' + dragCm.x + ',' + dragCm.y + ')'"
+                    class="personne-drag-ghost"
+                    pointer-events="none"
+                  >
+                    <circle [attr.r]="chairMacaronRadiusCm" class="chair-dot chair-dot--ghost" />
+                    <text text-anchor="middle" dominant-baseline="middle" class="chair-initials" pointer-events="none">
+                      {{ initials(dPers) }}
+                    </text>
+                  </g>
+                }
+              }
+            }
+
+            @if (coordinateProbeEnabled() && probeSnappedCm(); as pr) {
+              <g [attr.transform]="probeScreenGroupTransform(pr)" class="coord-probe" pointer-events="none">
+                <circle cx="0" cy="0" r="5" class="coord-probe-dot" />
+                <text
+                  x="9"
+                  y="-9"
+                  font-size="11"
+                  class="coord-probe-label"
+                  text-anchor="start"
+                  dominant-baseline="auto"
+                >
+                  {{ coordProbeHudLabel() }}
+                </text>
+              </g>
+            }
+
+            @if (measureToolEnabled() && measureOriginCm(); as mo) {
+              <circle [attr.cx]="mo.x" [attr.cy]="mo.y" r="5" class="measure-origin-dot" pointer-events="none" />
+              @if (measureCursorCm(); as mc) {
+                <line
+                  [attr.x1]="mo.x"
+                  [attr.y1]="mo.y"
+                  [attr.x2]="mc.x"
+                  [attr.y2]="mc.y"
+                  class="measure-line"
+                  pointer-events="none"
+                />
+                <g [attr.transform]="probeScreenGroupTransform(mc)" class="measure-hud" pointer-events="none">
+                  <text
+                    x="10"
+                    y="-10"
+                    font-size="12"
+                    class="measure-hud-label"
+                    text-anchor="start"
+                    dominant-baseline="auto"
+                  >
+                    {{ measureHudLabel() }}
+                  </text>
+                </g>
+              }
+            }
+          </svg>
+          </div>
+        </div>
+      </div>
+
+      <aside class="side-panel">
+        @if (mode() === 'room') {
+          <mat-card class="cardWithShadow room-side-card">
+            <mat-card-content>
+              <mat-card-title>Pièce</mat-card-title>
+              <mat-accordion class="room-side-accordion">
+                <mat-expansion-panel
+                  class="room-side-panel"
+                  (opened)="onRoomPanelOpened('dimensions')"
+                  (closed)="onRoomPanelClosed('dimensions')"
+                >
+                  <mat-expansion-panel-header>
+                    <mat-panel-title>Dimensions</mat-panel-title>
+                    <mat-panel-description>Nom et taille utile (cm)</mat-panel-description>
+                  </mat-expansion-panel-header>
+                  <div class="form-stack form-stack--tight">
+                    <mat-form-field appearance="outline">
+                      <mat-label>Nom</mat-label>
+                      <input matInput [(ngModel)]="roomNameDraft" [disabled]="readonlyLayout()" />
+                    </mat-form-field>
+                    <mat-form-field appearance="outline">
+                      <mat-label>Largeur (cm)</mat-label>
+                      <input matInput type="number" [(ngModel)]="roomWidthDraft" [disabled]="readonlyLayout()" />
+                    </mat-form-field>
+                    <mat-form-field appearance="outline">
+                      <mat-label>Profondeur (cm)</mat-label>
+                      <input matInput type="number" [(ngModel)]="roomHeightDraft" [disabled]="readonlyLayout()" />
+                    </mat-form-field>
+                    <button mat-flat-button color="primary" type="button" (click)="saveVenueBasics()" [disabled]="readonlyLayout()">
+                      Enregistrer dimensions
+                    </button>
+                  </div>
+                </mat-expansion-panel>
+
+                <mat-expansion-panel
+                  class="room-side-panel"
+                  (opened)="onRoomPanelOpened('background')"
+                  (closed)="onRoomPanelClosed('background')"
+                >
+                  <mat-expansion-panel-header>
+                    <mat-panel-title>Image de fond</mat-panel-title>
+                    <mat-panel-description>Archifacile, plan scanné…</mat-panel-description>
+                  </mat-expansion-panel-header>
+                  <p class="f-s-13 text-muted panel-hint">
+                    Import PNG ou JPEG. Position et taille en cm (repère plan : origine haut-gauche de la pièce).
+                  </p>
+                  <input type="file" accept="image/*" (change)="onBackgroundFile($event)" [disabled]="readonlyLayout()" />
+                  <div class="form-stack form-stack--tight">
+                    <mat-form-field appearance="outline">
+                      <mat-label>Fond X (cm)</mat-label>
+                      <input matInput type="number" [(ngModel)]="bgXDraft" [disabled]="readonlyLayout()" />
+                    </mat-form-field>
+                    <mat-form-field appearance="outline">
+                      <mat-label>Fond Y (cm)</mat-label>
+                      <input matInput type="number" [(ngModel)]="bgYDraft" [disabled]="readonlyLayout()" />
+                    </mat-form-field>
+                    <mat-form-field appearance="outline">
+                      <mat-label>Fond largeur (cm)</mat-label>
+                      <input matInput type="number" [(ngModel)]="bgWDraft" [disabled]="readonlyLayout()" />
+                    </mat-form-field>
+                    <mat-form-field appearance="outline">
+                      <mat-label>Fond hauteur (cm)</mat-label>
+                      <input matInput type="number" [(ngModel)]="bgHDraft" [disabled]="readonlyLayout()" />
+                    </mat-form-field>
+                    <button mat-stroked-button type="button" (click)="saveBackgroundPlacement()" [disabled]="readonlyLayout()">
+                      Appliquer le calage
+                    </button>
+                    <button mat-stroked-button type="button" color="warn" (click)="clearBackground()" [disabled]="readonlyLayout() || !ven.background_data_url">
+                      Retirer l’image
+                    </button>
+                  </div>
+                </mat-expansion-panel>
+
+                <mat-expansion-panel
+                  class="room-side-panel"
+                  (opened)="onRoomPanelOpened('walls')"
+                  (closed)="onRoomPanelClosed('walls')"
+                >
+                  <mat-expansion-panel-header>
+                    <mat-panel-title>Placement des murs</mat-panel-title>
+                    <mat-panel-description>Tracer sur le plan</mat-panel-description>
+                  </mat-expansion-panel-header>
+                  <p class="f-s-13 text-muted panel-hint">
+                    Une seule section à la fois : tant que celle-ci est ouverte, vous pouvez tracer des murs sur le plan. Réglez l’épaisseur, puis 1ᵉʳ clic, filigrane jusqu’au 2ᵉ clic. Magnétisme = cadrillage si activé. Survolez un mur dans la liste pour le repérer sur le plan.
+                  </p>
+                  <mat-form-field appearance="outline" class="wall-thickness-field">
+                    <mat-label>Épaisseur du prochain mur (cm)</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      min="1"
+                      max="500"
+                      step="1"
+                      [(ngModel)]="wallNewThicknessCm"
+                      [disabled]="readonlyLayout() || wallDraft() !== null"
+                    />
+                  </mat-form-field>
+                  @if (wallDraft(); as d) {
+                    <div class="wall-draft-banner">
+                      <span class="f-s-13"
+                        >1ᵉʳ point <strong>{{ d.x }}, {{ d.y }}</strong> cm — épaisseur <strong>{{ d.thickness_cm }}</strong> cm — placez le 2ᵉ point (filigrane sous le curseur).</span
+                      >
+                      <button mat-stroked-button type="button" (click)="cancelWallDraft()" [disabled]="readonlyLayout()">Annuler le tracé</button>
+                    </div>
+                  }
+                  <h4 class="wall-list-title">Segments existants</h4>
+                  <ul class="wall-list">
+                    @for (w of walls(); track w.id) {
+                      <li
+                        class="wall-list-row"
+                        [class.wall-list-row--hover]="hoveredWallId() === w.id"
+                        (mouseenter)="setHoveredWall(w.id)"
+                        (mouseleave)="clearHoveredWall()"
+                      >
+                        <span class="wall-list-coords"
+                          >({{ w.x1_cm }}, {{ w.y1_cm }}) → ({{ w.x2_cm }}, {{ w.y2_cm }}) — {{ wallStrokeCm(w) }} cm</span
+                        >
+                        <button mat-icon-button type="button" (click)="deleteWall(w.id)" [disabled]="readonlyLayout()" matTooltip="Supprimer ce mur">
+                          <mat-icon>close</mat-icon>
+                        </button>
+                      </li>
+                    } @empty {
+                      <li class="text-muted f-s-13">Aucun mur — tracez sur le canevas.</li>
+                    }
+                  </ul>
+                </mat-expansion-panel>
+
+                <mat-expansion-panel
+                  class="room-side-panel"
+                  (opened)="onRoomPanelOpened('windows')"
+                  (closed)="onRoomPanelClosed('windows')"
+                >
+                  <mat-expansion-panel-header>
+                    <mat-panel-title>Placement des fenêtres</mat-panel-title>
+                    <mat-panel-description>Sur les murs uniquement</mat-panel-description>
+                  </mat-expansion-panel-header>
+                  <p class="f-s-13 text-muted panel-hint">
+                    Choisissez la <strong>largeur</strong>, puis survolez le plan : un <strong>trait en pointillés</strong> indique où la fenêtre serait posée sur le mur le plus proche. <strong>Cliquez</strong> pour l’enregistrer. L’<strong>épaisseur</strong> suit le mur ; l’ouverture ne dépasse pas le mur.
+                  </p>
+                  <mat-form-field appearance="outline" class="wall-thickness-field">
+                    <mat-label>Largeur de la fenêtre (cm)</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      min="5"
+                      max="5000"
+                      step="1"
+                      [(ngModel)]="newWindowWidthCm"
+                      [disabled]="readonlyLayout()"
+                    />
+                  </mat-form-field>
+                  <h4 class="wall-list-title">Fenêtres placées</h4>
+                  <ul class="wall-list">
+                    @for (win of windows(); track win.id) {
+                      <li
+                        class="wall-list-row"
+                        [class.wall-list-row--hover]="hoveredWindowId() === win.id"
+                        (mouseenter)="setHoveredWindow(win.id)"
+                        (mouseleave)="clearHoveredWindow()"
+                      >
+                        <span class="wall-list-coords">{{ windowSummary(win) }}</span>
+                        <button mat-icon-button type="button" (click)="deleteWindow(win.id)" [disabled]="readonlyLayout()" matTooltip="Supprimer cette fenêtre">
+                          <mat-icon>close</mat-icon>
+                        </button>
+                      </li>
+                    } @empty {
+                      <li class="text-muted f-s-13">Aucune fenêtre — cliquez sur un mur avec cette section ouverte.</li>
+                    }
+                  </ul>
+                </mat-expansion-panel>
+
+                <mat-expansion-panel
+                  class="room-side-panel"
+                  (opened)="onRoomPanelOpened('doors')"
+                  (closed)="onRoomPanelClosed('doors')"
+                >
+                  <mat-expansion-panel-header>
+                    <mat-panel-title>Portes et ouvertures</mat-panel-title>
+                    <mat-panel-description>Symboles type plan d’architecte</mat-panel-description>
+                  </mat-expansion-panel-header>
+                  <p class="f-s-13 text-muted panel-hint">
+                    Choisissez le <strong>type</strong> et la <strong>largeur d’embrasure</strong> (cm). Survolez un mur pour l’aperçu (filigrane) : le côté d’ouverture suit la souris.
+                    <strong>Un clic</strong> sur le mur enregistre la porte avec le sens affiché au moment du clic.
+                  </p>
+                  <mat-form-field appearance="outline" class="wall-thickness-field">
+                    <mat-label>Type</mat-label>
+                    <mat-select [(ngModel)]="newDoorKind" [disabled]="readonlyLayout()">
+                      <mat-option value="single">Porte simple (un battant)</mat-option>
+                      <mat-option value="double">Porte double (deux battants)</mat-option>
+                      <mat-option value="opening">Ouverture (sans porte)</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="wall-thickness-field">
+                    <mat-label>Largeur d’embrasure (cm)</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      min="30"
+                      max="5000"
+                      step="1"
+                      [(ngModel)]="newDoorWidthCm"
+                      [disabled]="readonlyLayout()"
+                    />
+                  </mat-form-field>
+                  <h4 class="wall-list-title">Éléments placés</h4>
+                  <ul class="wall-list">
+                    @for (dr of doors(); track dr.id) {
+                      <li
+                        class="wall-list-row"
+                        [class.wall-list-row--hover]="hoveredDoorId() === dr.id"
+                        (mouseenter)="setHoveredDoor(dr.id)"
+                        (mouseleave)="clearHoveredDoor()"
+                      >
+                        <span class="wall-list-coords">{{ doorSummary(dr) }}</span>
+                        <button mat-icon-button type="button" (click)="deleteDoor(dr.id)" [disabled]="readonlyLayout()" matTooltip="Supprimer">
+                          <mat-icon>close</mat-icon>
+                        </button>
+                      </li>
+                    } @empty {
+                      <li class="text-muted f-s-13">Aucune porte — ouvrez cette section et cliquez sur un mur.</li>
+                    }
+                  </ul>
+                </mat-expansion-panel>
+
+                <mat-expansion-panel
+                  class="room-side-panel"
+                  (opened)="onRoomPanelOpened('freeforms')"
+                  (closed)="onRoomPanelClosed('freeforms')"
+                >
+                  <mat-expansion-panel-header>
+                    <mat-panel-title>Formes libres</mat-panel-title>
+                    <mat-panel-description>Polygones sur le plan</mat-panel-description>
+                  </mat-expansion-panel-header>
+                  <p class="f-s-13 text-muted panel-hint">
+                    <strong>Clic gauche</strong> : ajouter un sommet (cadrillage / aimantation comme les murs).
+                    <strong>Clic droit</strong> ou <strong>clic sur le premier point</strong> (cercle) pour fermer — au moins 3 sommets.
+                  </p>
+                  <mat-form-field appearance="outline" class="wall-thickness-field">
+                    <mat-label>Épaisseur du trait (cm)</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      min="0.5"
+                      max="80"
+                      step="0.5"
+                      [(ngModel)]="newFreeformStrokeWidthCm"
+                      [disabled]="readonlyLayout()"
+                    />
+                  </mat-form-field>
+                  <h4 class="wall-list-title">Formes placées</h4>
+                  <ul class="wall-list">
+                    @for (ff of freeforms(); track ff.id) {
+                      <li
+                        class="wall-list-row"
+                        [class.wall-list-row--hover]="hoveredFreeformId() === ff.id"
+                        (mouseenter)="setHoveredFreeform(ff.id)"
+                        (mouseleave)="clearHoveredFreeform()"
+                      >
+                        <span class="wall-list-coords">{{ freeformSummary(ff) }}</span>
+                        <button mat-icon-button type="button" (click)="deleteFreeform(ff.id)" [disabled]="readonlyLayout()" matTooltip="Supprimer">
+                          <mat-icon>close</mat-icon>
+                        </button>
+                      </li>
+                    } @empty {
+                      <li class="text-muted f-s-13">Aucune forme — ouvrez cette section et cliquez dans la pièce.</li>
+                    }
+                  </ul>
+                </mat-expansion-panel>
+              </mat-accordion>
+            </mat-card-content>
+          </mat-card>
+        }
+
+        @if (mode() === 'tables') {
+          <mat-card class="cardWithShadow">
+            <mat-card-content>
+              <mat-card-title>Tables</mat-card-title>
+              <div class="form-stack">
+                <mat-form-field appearance="outline">
+                  <mat-label>Forme</mat-label>
+                  <mat-select [(ngModel)]="newTableShape" [disabled]="readonlyLayout()">
+                    <mat-option value="round">Ronde</mat-option>
+                    <mat-option value="rect">Rectangulaire</mat-option>
+                    <mat-option value="oval">Ovale</mat-option>
+                    <mat-option value="capsule">Capsule (demi-cercles aux extrémités)</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                <button mat-flat-button color="primary" type="button" (click)="addTable()" [disabled]="readonlyLayout()">
+                  <mat-icon>add</mat-icon>
+                  Ajouter une table au centre
+                </button>
+              </div>
+
+              @if (selectedTable(); as st) {
+                <h4 class="side-subtitle">Table sélectionnée</h4>
+                <div class="form-stack">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Libellé</mat-label>
+                    <input matInput [(ngModel)]="editTableLabel" [disabled]="readonlyLayout()" />
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Largeur / diamètre (cm)</mat-label>
+                    <input matInput type="number" [(ngModel)]="editTableWidth" [disabled]="readonlyLayout()" />
+                  </mat-form-field>
+                  @if (st.shape !== 'round') {
+                    <mat-form-field appearance="outline">
+                      <mat-label>
+                        @switch (st.shape) {
+                          @case ('capsule') {
+                            Longueur centrale (cm)
+                          }
+                          @default {
+                            Profondeur (cm)
+                          }
+                        }
+                      </mat-label>
+                      <input matInput type="number" [(ngModel)]="editTableDepth" [disabled]="readonlyLayout()" />
+                      @if (st.shape === 'capsule') {
+                        <mat-hint>Entre les deux demi-cercles (diamètre = largeur)</mat-hint>
+                      }
+                    </mat-form-field>
+                  }
+                  <mat-form-field appearance="outline">
+                    <mat-label>Places max</mat-label>
+                    <input matInput type="number" [(ngModel)]="editTableMaxChairs" [disabled]="readonlyLayout()" />
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Rotation (°)</mat-label>
+                    <input matInput type="number" [(ngModel)]="editTableRotation" [disabled]="readonlyLayout()" />
+                  </mat-form-field>
+                  <button mat-stroked-button type="button" (click)="applyTableEdits()" [disabled]="readonlyLayout()">Appliquer</button>
+                  <button mat-stroked-button type="button" color="warn" (click)="deleteSelectedTable()" [disabled]="readonlyLayout()">
+                    Supprimer la table
+                  </button>
+                </div>
+              } @else {
+                <p class="text-muted f-s-13 m-t-12">Cliquez une table sur le plan pour l’éditer.</p>
+              }
+            </mat-card-content>
+          </mat-card>
+        }
+
+        @if (mode() === 'assign') {
+          <mat-card class="cardWithShadow">
+            <mat-card-content>
+              <mat-card-title>Invités au repas</mat-card-title>
+              <p class="f-s-13 text-muted">
+                Variante « {{ selectedVariant()?.name ?? '…' }} » : seuls les invités non encore placés sur cette variante
+                apparaissent ci-dessous. Glissez un nom depuis la liste ou un macaron déjà sur une table vers une autre table
+                (le macaron suit le curseur). Clic sur une table : fenêtre (nom, couleur, liste des invités). Double-clic :
+                afficher les placés dans ce panneau.
+              </p>
+              <mat-form-field appearance="outline" class="assign-search-field" subscriptSizing="dynamic">
+                <mat-label>Rechercher prénom, nom ou famille</mat-label>
+                <input
+                  matInput
+                  type="search"
+                  autocomplete="off"
+                  [ngModel]="assignListSearch()"
+                  (ngModelChange)="assignListSearch.set($event)"
+                />
+                @if (assignListSearch()) {
+                  <button
+                    matSuffix
+                    mat-icon-button
+                    type="button"
+                    aria-label="Effacer la recherche"
+                    (click)="assignListSearch.set('')"
+                  >
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+              </mat-form-field>
+              <h4 class="side-subtitle">
+                Non placés sur cette variante : {{ unassignedPersonnes().length }}
+                @if (assignListSearch().trim()) {
+                  <span class="text-muted"> — affichés : {{ unassignedFilteredCount() }}</span>
+                }
+              </h4>
+              <div class="assign-unplaced-scroll">
+                @for (block of unassignedFamilleBlocks(); track block.familleId) {
+                  <section class="famille-block">
+                    <h5 class="famille-block-title">{{ block.title }}</h5>
+                    <ul class="people-list people-list--nested">
+                      @for (p of block.personnes; track p.id) {
+                        <li
+                          class="person-row"
+                          (mousedown)="startDragPersonne(p.id, $event)"
+                          [class.dragging]="draggingPersonneId() === p.id"
+                        >
+                          {{ displayPersonne(p) }}
+                        </li>
+                      }
+                    </ul>
+                  </section>
+                } @empty {
+                  @if (unassignedPersonnes().length === 0) {
+                    <p class="text-muted f-s-13 assign-unplaced-empty">Tout le monde est placé sur cette variante.</p>
+                  } @else {
+                    <p class="text-muted f-s-13 assign-unplaced-empty">Aucun résultat pour « {{ assignListSearch().trim() }} ».</p>
+                  }
+                }
+              </div>
+
+              @if (selectedTable(); as st) {
+                <h4 class="side-subtitle">À « {{ st.label || 'Table ' + st.id }} »</h4>
+                <ul class="people-list">
+                  @for (a of assignmentsByTable().get(st.id) ?? []; track a.id) {
+                    <li class="person-row placed">
+                      @if (personneById().get(a.personne_id); as pers) {
+                        {{ displayPersonne(pers) }}
+                      }
+                      @if (!readonlyLayout()) {
+                        <button mat-icon-button type="button" (click)="unassign(a.personne_id)" matTooltip="Retirer">
+                          <mat-icon>person_off</mat-icon>
+                        </button>
+                      }
+                    </li>
+                  } @empty {
+                    <li class="text-muted f-s-13">Personne pour l’instant</li>
+                  }
+                </ul>
+              }
+            </mat-card-content>
+          </mat-card>
+        }
+      </aside>
+    </div>
+  </div>
+}

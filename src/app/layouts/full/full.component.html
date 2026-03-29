@@ -1,6 +1,12 @@
 
 <app-topstrip></app-topstrip>
-<mat-sidenav-container class="mainWrapper blue_theme light-theme" autosize autoFocus dir="ltr">
+<mat-sidenav-container
+  class="mainWrapper blue_theme light-theme"
+  [class.mainWrapper--fill-viewport]="layoutFillViewport"
+  autosize
+  autoFocus
+  dir="ltr"
+>
   <!-- ============================================================== -->
   <!-- Vertical Sidebar -->
   <!-- ============================================================== -->
@@ -22,14 +28,14 @@
   <!-- ============================================================== -->
   <!-- Main Content -->
   <!-- ============================================================== -->
-  <mat-sidenav-content class="contentWrapper" #content>
+  <mat-sidenav-content class="contentWrapper" [class.contentWrapper--fill-viewport]="layoutFillViewport" #content>
     <!-- ============================================================== -->
     <!-- VerticalHeader -->
     <!-- ============================================================== -->
     
     <app-header [showToggle]="!isOver" (toggleMobileNav)="sidenav.toggle()"></app-header>
     
-    <main class="pageWrapper maxWidth">
+    <main class="pageWrapper maxWidth" [class.pageWrapper--fill-viewport]="layoutFillViewport">
       <!-- ============================================================== -->
       <!-- Outlet -->
       <!-- ============================================================== -->
