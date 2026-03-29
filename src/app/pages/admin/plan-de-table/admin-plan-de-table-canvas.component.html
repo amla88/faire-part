@@ -1,0 +1,379 @@
+@if (host(); as h) {
+  @if (h.venue(); as ven) {
+    <div
+      class="canvas-panel"
+      [class.mode-room]="h.mode() === 'room'"
+      [class.mode-tables]="h.mode() === 'tables'"
+      [class.mode-assign]="h.mode() === 'assign'"
+    >
+      <div
+        #viewportRef
+        class="canvas-viewport"
+        [class.viewport-panning]="h.canvasPanning()"
+        (mousedown)="h.onViewportPointerDown($event)"
+        (contextmenu)="h.onViewportContextMenu($event)"
+        (mousemove)="h.onViewportProbeMove($event)"
+        (mouseleave)="h.onViewportProbeLeave()"
+      >
+        <div
+          class="map-scale-legend"
+          role="figure"
+          [attr.aria-label]="'Échelle ' + h.scaleLegend().label + ', cadrillage ' + h.gridStepDisplayLabel()"
+        >
+          <div class="scale-bar-gmaps">
+            <span class="scale-cap" aria-hidden="true"></span>
+            <span class="scale-line" [style.width.px]="h.scaleLegend().widthPx"></span>
+            <span class="scale-cap" aria-hidden="true"></span>
+          </div>
+          <div class="scale-distance">{{ h.scaleLegend().label }}</div>
+          @if (h.gridVisible()) {
+            <div class="grid-square-legend">Cadrillage : {{ h.gridStepDisplayLabel() }}</div>
+          } @else {
+            <div class="grid-square-legend is-off">Quadrillage masqué</div>
+          }
+        </div>
+        <div
+          class="canvas-world"
+          [style.width.px]="(ven.room_width_cm + 2 * h.perimeterWallCm) * h.effectivePxPerCm()"
+          [style.height.px]="(ven.room_height_cm + 2 * h.perimeterWallCm) * h.effectivePxPerCm()"
+          [style.transform]="'translate(' + h.panX() + 'px,' + h.panY() + 'px)'"
+        >
+          <svg
+            #floorSvg
+            class="floor-svg"
+            [attr.viewBox]="h.floorSvgViewBox()"
+            preserveAspectRatio="none"
+            (click)="h.onSvgClick($event)"
+            (dblclick)="h.onSvgDblClick($event)"
+          >
+          <defs>
+            @if (h.gridVisible()) {
+              <pattern
+                id="seatingFiligreeMajor"
+                [attr.width]="h.gridStepCm()"
+                [attr.height]="h.gridStepCm()"
+                patternUnits="userSpaceOnUse"
+              >
+                <path
+                  [attr.d]="h.gridFiligreeOutlineD()"
+                  fill="none"
+                  stroke="#cdc2ae"
+                  [attr.stroke-width]="h.gridFiligreeStrokeMain()"
+                  opacity="0.42"
+                />
+                <path
+                  [attr.d]="h.gridFiligreeHooksD()"
+                  stroke="#b5a88e"
+                  [attr.stroke-width]="h.gridFiligreeStrokeHook()"
+                  fill="none"
+                  opacity="0.5"
+                  stroke-linecap="round"
+                />
+                <circle
+                  cx="0"
+                  cy="0"
+                  [attr.r]="h.gridFiligreeNodeR()"
+                  fill="none"
+                  stroke="#c0b398"
+                  [attr.stroke-width]="h.gridFiligreeStrokeRing()"
+                  opacity="0.45"
+                />
+              </pattern>
+            }
+          </defs>
+          <path
+            class="outer-wall-ring"
+            [attr.d]="h.outerWallRingPath()"
+            fill-rule="evenodd"
+            pointer-events="none"
+          />
+          <rect x="0" y="0" [attr.width]="ven.room_width_cm" [attr.height]="ven.room_height_cm" fill="#faf8f5" />
+          @if (h.gridVisible()) {
+            <rect
+              x="0"
+              y="0"
+              [attr.width]="ven.room_width_cm"
+              [attr.height]="ven.room_height_cm"
+              fill="url(#seatingFiligreeMajor)"
+              pointer-events="none"
+              opacity="0.92"
+            />
+          }
+          @if (ven.background_data_url && ven.background_width_cm && ven.background_height_cm) {
+            <image
+              [attr.href]="ven.background_data_url"
+              [attr.x]="ven.background_x_cm"
+              [attr.y]="ven.background_y_cm"
+              [attr.width]="ven.background_width_cm"
+              [attr.height]="ven.background_height_cm"
+              preserveAspectRatio="none"
+              pointer-events="none"
+            />
+          }
+          @for (w of h.walls(); track w.id) {
+            <line
+              class="wall-line"
+              [class.wall-line--hover]="h.hoveredWallId() === w.id"
+              [attr.x1]="w.x1_cm"
+              [attr.y1]="w.y1_cm"
+              [attr.x2]="w.x2_cm"
+              [attr.y2]="w.y2_cm"
+              [attr.stroke-width]="h.wallLineStrokeWidthCm(w)"
+              stroke-linecap="round"
+              pointer-events="none"
+            />
+          }
+          @if (h.wallDraft(); as d) {
+            @if (h.roomAccordionSection() === 'walls') {
+            @if (h.wallDraftEndPreview(); as pe) {
+              <line
+                [attr.x1]="d.x"
+                [attr.y1]="d.y"
+                [attr.x2]="pe.x"
+                [attr.y2]="pe.y"
+                class="wall-preview-filigree"
+                [attr.stroke-width]="d.thickness_cm"
+                pointer-events="none"
+              />
+            }
+            <circle [attr.cx]="d.x" [attr.cy]="d.y" r="6" fill="none" stroke="#7b61ff" stroke-width="2" pointer-events="none" />
+            }
+          }
+          @if (h.windowPlacementPreview(); as wp) {
+            <line
+              class="window-placement-preview"
+              [attr.x1]="wp.x1"
+              [attr.y1]="wp.y1"
+              [attr.x2]="wp.x2"
+              [attr.y2]="wp.y2"
+              [attr.stroke-width]="wp.thickness"
+              stroke-linecap="round"
+              pointer-events="none"
+            />
+          }
+          @for (win of h.windows(); track win.id) {
+            @if (h.windowEndpointsForRender(win); as seg) {
+              <line
+                class="window-opening"
+                [class.window-opening--hover]="h.hoveredWindowId() === win.id"
+                [attr.x1]="seg.x1"
+                [attr.y1]="seg.y1"
+                [attr.x2]="seg.x2"
+                [attr.y2]="seg.y2"
+                [attr.stroke-width]="h.windowLineStrokeWidthCm(win)"
+                stroke-linecap="round"
+                pointer-events="none"
+              />
+            }
+          }
+          @if (h.doorPlacementPreview()) {
+            <g class="door-plan door-plan--preview" pointer-events="none">
+              @for (el of h.doorPlanElementsFromPreview(); track $index) {
+                <path
+                  [attr.d]="el.d"
+                  [attr.stroke-width]="el.strokeWidth"
+                  [attr.class]="el.cssClass"
+                  fill="none"
+                  stroke-linejoin="round"
+                  stroke-linecap="round"
+                  pointer-events="none"
+                />
+              }
+            </g>
+          }
+          @for (dr of h.doors(); track dr.id) {
+            <g class="door-plan" [class.door-plan--hover]="h.hoveredDoorId() === dr.id" pointer-events="none">
+              @for (el of h.doorPlanElementsForPlaced(dr); track $index) {
+                <path
+                  [attr.d]="el.d"
+                  [attr.stroke-width]="el.strokeWidth"
+                  [attr.class]="el.cssClass"
+                  fill="none"
+                  stroke-linejoin="round"
+                  stroke-linecap="round"
+                  pointer-events="none"
+                />
+              }
+            </g>
+          }
+          @for (ff of h.freeforms(); track ff.id) {
+            <path
+              class="freeform-polygon"
+              [class.freeform-polygon--hover]="h.hoveredFreeformId() === ff.id"
+              [attr.d]="h.freeformPolygonPathD(ff)"
+              [attr.stroke-width]="h.freeformStrokeWidthRender(ff)"
+              stroke-linejoin="round"
+              stroke-linecap="round"
+              pointer-events="none"
+            />
+          }
+          @if (h.freeformDraft(); as fDraft) {
+            <g class="freeform-draft" pointer-events="none">
+              <path
+                class="freeform-draft-polyline"
+                [attr.d]="h.freeformDraftOpenPathD()"
+                fill="none"
+                stroke-linejoin="round"
+                stroke-linecap="round"
+              />
+              @if (h.freeformDraftRubberPathD(); as rubD) {
+                <path
+                  class="freeform-draft-rubber"
+                  [attr.d]="rubD"
+                  fill="none"
+                  stroke-linecap="round"
+                />
+              }
+              @for (pt of fDraft.points; track $index) {
+                <circle
+                  [attr.cx]="pt.x"
+                  [attr.cy]="pt.y"
+                  [attr.r]="h.freeformVertexHandleRCm()"
+                  class="freeform-draft-vertex"
+                />
+              }
+            </g>
+          }
+          @for (t of h.tables(); track t.id) {
+            <g
+              [attr.transform]="h.tableGroupTransform(t)"
+              class="table-group"
+              [class.table-selected]="h.selectedTableId() === t.id"
+              [class.table-assign-drop--ok]="
+                h.mode() === 'assign' && h.assignDropHighlightTableId() === t.id && h.assignDropHighlightValid()
+              "
+              [class.table-assign-drop--bad]="
+                h.mode() === 'assign' && h.assignDropHighlightTableId() === t.id && !h.assignDropHighlightValid()
+              "
+              (mousedown)="h.onTableMouseDown($event, t)"
+            >
+              @switch (t.shape) {
+                @case ('round') {
+                  <circle
+                    cx="0"
+                    cy="0"
+                    [attr.r]="h.half(t).hw"
+                    class="table-shape"
+                    [style.fill]="h.tableShapeFill(t)"
+                    [style.stroke]="h.tableShapeStroke(t)"
+                  />
+                }
+                @case ('oval') {
+                  <ellipse
+                    cx="0"
+                    cy="0"
+                    [attr.rx]="h.half(t).hw"
+                    [attr.ry]="h.half(t).hd"
+                    class="table-shape"
+                    [style.fill]="h.tableShapeFill(t)"
+                    [style.stroke]="h.tableShapeStroke(t)"
+                  />
+                }
+                @case ('rect') {
+                  <rect
+                    [attr.x]="-h.half(t).hw"
+                    [attr.y]="-h.half(t).hd"
+                    [attr.width]="t.width_cm"
+                    [attr.height]="t.depth_cm"
+                    rx="3"
+                    ry="3"
+                    class="table-shape"
+                    [style.fill]="h.tableShapeFill(t)"
+                    [style.stroke]="h.tableShapeStroke(t)"
+                  />
+                }
+                @case ('capsule') {
+                  <path
+                    [attr.d]="h.capsuleTablePathFor(t)"
+                    class="table-shape"
+                    [style.fill]="h.tableShapeFill(t)"
+                    [style.stroke]="h.tableShapeStroke(t)"
+                  />
+                }
+              }
+              @if (t.label) {
+                <text text-anchor="middle" dominant-baseline="middle" class="table-label">{{ t.label }}</text>
+              }
+            </g>
+          }
+          @for (t of h.tables(); track t.id) {
+            @for (m of h.chairMarkersForTable(t); track m.tableId + '-' + $index) {
+              <g
+                [attr.transform]="'translate(' + m.x + ',' + m.y + ')'"
+                [attr.pointer-events]="
+                  m.personneId != null && h.mode() === 'assign' && !h.readonlyLayout() ? 'all' : 'none'
+                "
+                [class.chair-marker-interactive]="m.personneId != null && h.mode() === 'assign' && !h.readonlyLayout()"
+                (mousedown)="h.onChairMacaronMouseDown($event, m)"
+              >
+                <circle [attr.r]="h.chairMacaronRadiusCm" class="chair-dot" />
+                @if (m.initials) {
+                  <text text-anchor="middle" dominant-baseline="middle" class="chair-initials" pointer-events="none">
+                    {{ m.initials }}
+                  </text>
+                }
+              </g>
+            }
+          }
+          @if (h.draggingPersonneId(); as dpid) {
+            @if (h.personneDragOverlayCm(); as dragCm) {
+              @if (h.personneById().get(dpid); as dPers) {
+                <g
+                  [attr.transform]="'translate(' + dragCm.x + ',' + dragCm.y + ')'"
+                  class="personne-drag-ghost"
+                  pointer-events="none"
+                >
+                  <circle [attr.r]="h.chairMacaronRadiusCm" class="chair-dot chair-dot--ghost" />
+                  <text text-anchor="middle" dominant-baseline="middle" class="chair-initials" pointer-events="none">
+                    {{ h.initials(dPers) }}
+                  </text>
+                </g>
+              }
+            }
+          }
+          @if (h.coordinateProbeEnabled() && h.probeSnappedCm(); as pr) {
+            <g [attr.transform]="h.probeScreenGroupTransform(pr)" class="coord-probe" pointer-events="none">
+              <circle cx="0" cy="0" r="5" class="coord-probe-dot" />
+              <text
+                x="9"
+                y="-9"
+                font-size="11"
+                class="coord-probe-label"
+                text-anchor="start"
+                dominant-baseline="auto"
+              >
+                {{ h.coordProbeHudLabel() }}
+              </text>
+            </g>
+          }
+          @if (h.measureToolEnabled() && h.measureOriginCm(); as mo) {
+            <circle [attr.cx]="mo.x" [attr.cy]="mo.y" r="5" class="measure-origin-dot" pointer-events="none" />
+            @if (h.measureCursorCm(); as mc) {
+              <line
+                [attr.x1]="mo.x"
+                [attr.y1]="mo.y"
+                [attr.x2]="mc.x"
+                [attr.y2]="mc.y"
+                class="measure-line"
+                pointer-events="none"
+              />
+              <g [attr.transform]="h.probeScreenGroupTransform(mc)" class="measure-hud" pointer-events="none">
+                <text
+                  x="10"
+                  y="-10"
+                  font-size="12"
+                  class="measure-hud-label"
+                  text-anchor="start"
+                  dominant-baseline="auto"
+                >
+                  {{ h.measureHudLabel() }}
+                </text>
+              </g>
+            }
+          }
+        </svg>
+        </div>
+      </div>
+    </div>
+  }
+}

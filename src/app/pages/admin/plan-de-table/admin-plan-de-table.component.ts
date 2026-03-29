@@ -2,7 +2,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
-  ElementRef,
   HostListener,
   computed,
   effect,
@@ -26,7 +25,6 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { jsPDF } from 'jspdf';
 import {
   PersonneRepasRow,
   SeatingAssignment,
@@ -51,11 +49,18 @@ import {
   doorSwingSignTowardPointer,
   findClosestWallHit,
   findTableAtPoint,
+  seatingCanvasOuterSizeCm,
   snapCm,
   windowOpeningEndpoints,
   type DoorPlanElement,
   SEATING_PERIMETER_WALL_CM,
 } from './seating-geometry';
+import {
+  SeatingPlanExportService,
+  type SeatingExportSnapshot,
+} from './seating-plan-export.service';
+import { AdminPlanDeTableToolbarComponent } from './admin-plan-de-table-toolbar.component';
+import type { PlanMode } from './admin-plan-de-table.types';
 import { firstValueFrom } from 'rxjs';
 import {
   TableGuestsDialogComponent,
@@ -63,8 +68,13 @@ import {
   type TableGuestMember,
 } from './table-guests-dialog.component';
 import { VariantNameDialogComponent } from './variant-name-dialog.component';
+import { AdminPlanDeTableCanvasComponent } from './admin-plan-de-table-canvas.component';
+import { AdminPlanDeTableSidePanelComponent } from './admin-plan-de-table-side-panel.component';
 
-type PlanMode = 'room' | 'tables' | 'assign';
+/**
+ * Page admin plan de table : salle unique, variantes de disposition, tables et placements invités.
+ * Orchestration du SVG + panneau latéral ; barre d’outils (`AdminPlanDeTableToolbarComponent`) et export (`SeatingPlanExportService`) sont externalisés.
+ */
 
 /** Bloc « non placés » : une famille + ses personnes encore sans table sur la variante active. */
 interface UnassignedFamilleBlock {
@@ -75,25 +85,6 @@ interface UnassignedFamilleBlock {
 
 /** Plafond zoom molette : assez haut pour pouvoir afficher un cadrillage à 1 cm sur de grandes salles. */
 const SEATING_MAX_ZOOM_FACTOR = 1536;
-
-/**
- * Le clone SVG est rendu via blob → Image : les styles encapsulés du composant ne s’appliquent pas.
- * On réinjecte l’essentiel pour murs, sol, tables, ouvertures et macarons.
- */
-const SEATING_EXPORT_SVG_STYLES = `
-  .outer-wall-ring { fill: #4a3f35; }
-  .table-shape { fill: rgba(212, 196, 168, 0.55); stroke: #6b5344; stroke-width: 1.5px; }
-  .table-label { font-size: 20px; font-weight: 600; fill: #3e2723; }
-  .chair-dot { fill: #fff; stroke: #5d4037; stroke-width: 1.8px; }
-  .chair-initials { font-size: 12px; font-weight: 600; fill: #3e2723; }
-  .wall-line { fill: none; stroke: #5c4a3a; }
-  .window-opening { fill: none; stroke: #8ad4f0; opacity: 0.98; }
-  .door-plan .door-threshold { fill: none; stroke: #64b5f6; stroke-linecap: butt; }
-  .door-plan .door-swing-arc, .door-plan .door-leaf { fill: none; stroke: #1976d2; stroke-linecap: round; stroke-linejoin: round; }
-  .door-plan .door-jamb { fill: none; stroke: #1976d2; stroke-linecap: round; stroke-linejoin: round; }
-  .freeform-polygon { stroke: #5c4a3a; fill: rgba(92, 74, 58, 0.1); stroke-linejoin: round; stroke-linecap: round; }
-  .measure-hud-label { fill: #333; font-family: system-ui, sans-serif; }
-`;
 
 @Component({
   selector: 'app-admin-plan-de-table',
@@ -113,16 +104,23 @@ const SEATING_EXPORT_SVG_STYLES = `
     MatTooltipModule,
     MatExpansionModule,
     MatDialogModule,
+    AdminPlanDeTableToolbarComponent,
+    AdminPlanDeTableCanvasComponent,
+    AdminPlanDeTableSidePanelComponent,
   ],
   templateUrl: './admin-plan-de-table.component.html',
   styleUrls: ['./admin-plan-de-table.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminPlanDeTableComponent {
+  /** Référence pour les sous-composants canvas / panneau latéral. */
+  readonly planHost = this;
+
   /** Exposé au template : marge mur extérieur (cm). */
   readonly perimeterWallCm = SEATING_PERIMETER_WALL_CM;
 
   private seating = inject(SeatingPlanService);
+  private seatingExport = inject(SeatingPlanExportService);
   private snack = inject(MatSnackBar);
   private dialog = inject(MatDialog);
   private breakpoint = inject(BreakpointObserver);
@@ -131,9 +129,16 @@ export class AdminPlanDeTableComponent {
   /** Évite d’ouvrir la popup invités sur le 1ᵉʳ clic d’un double-clic (sélection panneau). */
   private assignTableClickTimer: ReturnType<typeof setTimeout> | null = null;
 
-  floorSvg = viewChild<ElementRef<SVGSVGElement>>('floorSvg');
-  viewportRef = viewChild<ElementRef<HTMLElement>>('viewportRef');
+  /**
+   * Après un glisser-déposer invité (liste ou macaron), le navigateur émet encore un `click` sur le SVG
+   * (souvent la table sous le curseur) : on ignore l’ouverture de la fenêtre « invités de la table »
+   * pendant une courte fenêtre.
+   */
+  private assignTableDialogSuppressUntilMs = 0;
 
+  planCanvas = viewChild(AdminPlanDeTableCanvasComponent);
+
+  // --- Données métier (salle, variantes, plan courant, invités) ---
   loading = signal(true);
   noSchema = signal(false);
   venue = signal<SeatingVenue | null>(null);
@@ -146,6 +151,7 @@ export class AdminPlanDeTableComponent {
   assignments = signal<SeatingAssignment[]>([]);
   personnes = signal<PersonneRepasRow[]>([]);
 
+  // --- Vue canvas (mode édition, grille, zoom, pan) ---
   mode = signal<PlanMode>('assign');
   /** Masquée en mode Invités ; réaffichée en Pièce / Tables. */
   gridVisible = signal(false);
@@ -523,6 +529,14 @@ export class AdminPlanDeTableComponent {
     return this.variants().find((v) => v.id === id) ?? null;
   });
 
+  /** Tables triées pour la liste mobile (même ordre que l’export PDF). */
+  tablesSortedForMobileList = computed(() =>
+    [...this.tables()].sort(
+      (a, b) =>
+        (a.label ?? '').localeCompare(b.label ?? '', 'fr', { sensitivity: 'base' }) || a.id - b.id,
+    ),
+  );
+
   selectedTable = computed(() => {
     const id = this.selectedTableId();
     if (id == null) return null;
@@ -595,10 +609,10 @@ export class AdminPlanDeTableComponent {
 
   /**
    * Attache molette (non passive) + ResizeObserver sur le viewport quand le DOM est prêt.
-   * Réessaie si #viewportRef change ou si viewChild n’est pas encore résolu après le chargement.
+   * Réessaie si le viewport du sous-composant canvas change ou si le viewChild n’est pas encore résolu.
    */
   private attachViewportObserver(retry = 0) {
-    const el = this.viewportRef()?.nativeElement;
+    const el = this.planCanvas()?.getViewportElement();
     if (!el) {
       if (retry < 12 && !this.loading() && this.venue() != null) {
         requestAnimationFrame(() => this.attachViewportObserver(retry + 1));
@@ -628,16 +642,16 @@ export class AdminPlanDeTableComponent {
   }
 
   private canvasTotalWidthCm(v: SeatingVenue): number {
-    return v.room_width_cm + 2 * SEATING_PERIMETER_WALL_CM;
+    return seatingCanvasOuterSizeCm(v).widthCm;
   }
 
   private canvasTotalHeightCm(v: SeatingVenue): number {
-    return v.room_height_cm + 2 * SEATING_PERIMETER_WALL_CM;
+    return seatingCanvasOuterSizeCm(v).heightCm;
   }
 
   private onViewportResize() {
     const v = this.venue();
-    const el = this.viewportRef()?.nativeElement;
+    const el = this.planCanvas()?.getViewportElement();
     if (!v || !el) return;
     const vw = el.clientWidth;
     const vh = el.clientHeight;
@@ -673,7 +687,7 @@ export class AdminPlanDeTableComponent {
 
   private centerPan() {
     const v = this.venue();
-    const el = this.viewportRef()?.nativeElement;
+    const el = this.planCanvas()?.getViewportElement();
     if (!v || !el) return;
     const vw = el.clientWidth;
     const vh = el.clientHeight;
@@ -690,7 +704,7 @@ export class AdminPlanDeTableComponent {
 
   onViewportWheel(ev: WheelEvent) {
     const v = this.venue();
-    const host = this.viewportRef()?.nativeElement;
+    const host = this.planCanvas()?.getViewportElement();
     if (!v || !host) return;
     const rect = host.getBoundingClientRect();
     const mx = ev.clientX - rect.left;
@@ -1674,12 +1688,19 @@ export class AdminPlanDeTableComponent {
     return line || `Personne #${p.id}`;
   }
 
+  /** Titre de table pour la liste mobile (index 1-based dans l’ordre trié). */
+  mobileTableListTitle(t: SeatingTable, indexInSortedList: number): string {
+    return t.label?.trim()
+      ? `Table « ${t.label} »`
+      : `Table ${indexInSortedList + 1} (${t.shape})`;
+  }
+
   initials(p: PersonneRepasRow): string {
     return ((p.prenom?.[0] ?? '') + (p.nom?.[0] ?? '')).toUpperCase();
   }
 
   clientToCm(clientX: number, clientY: number): { x: number; y: number } | null {
-    const el = this.floorSvg()?.nativeElement;
+    const el = this.planCanvas()?.getSvgElement();
     if (!el) return null;
     const pt = el.createSVGPoint();
     pt.x = clientX;
@@ -1868,6 +1889,12 @@ export class AdminPlanDeTableComponent {
       return;
     }
     if (this.mode() === 'assign') {
+      if (performance.now() < this.assignTableDialogSuppressUntilMs) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        this.clearAssignTableClickTimer();
+        return;
+      }
       const hit = findTableAtPoint(cm.x, cm.y, this.tables());
       if (hit == null) return;
       this.clearAssignTableClickTimer();
@@ -1897,6 +1924,10 @@ export class AdminPlanDeTableComponent {
       clearTimeout(this.assignTableClickTimer);
       this.assignTableClickTimer = null;
     }
+  }
+
+  private suppressAssignTableDialogBrieflyAfterPersonDrag(): void {
+    this.assignTableDialogSuppressUntilMs = performance.now() + 550;
   }
 
   private openTableGuestsDialog(tableId: number) {
@@ -2143,6 +2174,8 @@ export class AdminPlanDeTableComponent {
 
     const pid = this.draggingPersonneId();
     if (pid != null && !this.readonlyLayout() && this.mode() === 'assign') {
+      this.clearAssignTableClickTimer();
+      this.suppressAssignTableDialogBrieflyAfterPersonDrag();
       const cm = this.clientToCm(ev.clientX, ev.clientY);
       this.draggingPersonneId.set(null);
       this.personneDragOverlayCm.set(null);
@@ -2218,10 +2251,14 @@ export class AdminPlanDeTableComponent {
     if (ok) this.assignments.set(await this.seating.getAssignments(vid));
   }
 
+  // --- Export PNG / PDF (logique détaillée : SeatingPlanExportService) ---
+
   async exportPng() {
     const v = this.venue();
-    if (!v) return;
-    const raster = await this.rasterizePlanForExport();
+    const svg = this.planCanvas()?.getSvgElement();
+    const snap = this.buildExportSnapshot();
+    if (!v || !svg || !snap) return;
+    const raster = await this.seatingExport.rasterizePlanToPngDataUrl(svg, snap);
     if (!raster) {
       this.snack.open('Export PNG échoué (image de fond ou navigateur)', '', { duration: 4000 });
       return;
@@ -2235,131 +2272,18 @@ export class AdminPlanDeTableComponent {
 
   async exportPdf() {
     const v = this.venue();
-    if (!v) return;
-    const raster = await this.rasterizePlanForExport();
-    if (!raster) {
-      this.snack.open('Export PDF échoué', '', { duration: 4000 });
-      return;
-    }
+    const svg = this.planCanvas()?.getSvgElement();
+    const snap = this.buildExportSnapshot();
+    if (!v || !svg || !snap) return;
     try {
-      const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
-      const margin = 10;
-      const maxW = pageW - 2 * margin;
-      const maxH = pageH - 2 * margin;
-      const aspect = raster.wPx / raster.hPx;
-      let drawW = maxW;
-      let drawH = drawW / aspect;
-      if (drawH > maxH) {
-        drawH = maxH;
-        drawW = drawH * aspect;
+      const raster = await this.seatingExport.rasterizePlanToPngDataUrl(svg, snap, {
+        macaronInitialsOnly: true,
+      });
+      if (!raster) {
+        this.snack.open('Export PDF échoué', '', { duration: 4000 });
+        return;
       }
-      const x0 = margin + (maxW - drawW) / 2;
-      const y0 = margin + (maxH - drawH) / 2;
-      pdf.addImage(raster.dataUrl, 'PNG', x0, y0, drawW, drawH);
-
-      const variantName = this.selectedVariant()?.name ?? '—';
-      const tablesSorted = [...this.tables()].sort(
-        (a, b) =>
-          (a.label ?? '').localeCompare(b.label ?? '', 'fr', { sensitivity: 'base' }) || a.id - b.id,
-      );
-      const left = 15;
-      const bottomSafe = 18;
-      const lineH = 5.5;
-      const titleFs = 13;
-      const bodyFs = 10.5;
-
-      pdf.addPage('a4', 'portrait');
-      let y = 18;
-      const pw = pdf.internal.pageSize.getWidth();
-      const ph = pdf.internal.pageSize.getHeight();
-      const textMaxW = pw - 2 * left;
-
-      pdf.setFontSize(16);
-      pdf.setFont('helvetica', 'bold');
-      for (const line of pdf.splitTextToSize(`Plan de table — ${v.name}`, textMaxW)) {
-        if (y > ph - bottomSafe) {
-          pdf.addPage('a4', 'portrait');
-          y = 18;
-        }
-        pdf.text(line, left, y);
-        y += 7;
-      }
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(11);
-      for (const line of pdf.splitTextToSize(`Variante : ${variantName}`, textMaxW)) {
-        if (y > ph - bottomSafe) {
-          pdf.addPage('a4', 'portrait');
-          y = 18;
-        }
-        pdf.text(line, left, y);
-        y += 6;
-      }
-      y += 4;
-      pdf.setFontSize(12);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Invités par table', left, y);
-      y += 9;
-      pdf.setFont('helvetica', 'normal');
-
-      let tableIndex = 0;
-      for (const t of tablesSorted) {
-        tableIndex += 1;
-        const tableTitle = t.label?.trim()
-          ? `Table « ${t.label} »`
-          : `Table ${tableIndex} (${t.shape})`;
-        const assigns = this.assignmentsByTable().get(t.id) ?? [];
-        const byId = this.personneById();
-        const nameLines: string[] = assigns.map((a) => {
-          const p = byId.get(a.personne_id);
-          const label = p ? this.displayPersonne(p) : `Personne #${a.personne_id}`;
-          return `• ${label}`;
-        });
-        const blockEstimate =
-          10 + (nameLines.length === 0 ? lineH * 2 : nameLines.length * lineH * 1.4) + 6;
-        if (y + blockEstimate > ph - bottomSafe) {
-          pdf.addPage('a4', 'portrait');
-          y = 18;
-        }
-
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(titleFs);
-        for (const line of pdf.splitTextToSize(tableTitle, textMaxW)) {
-          if (y > ph - bottomSafe) {
-            pdf.addPage('a4', 'portrait');
-            y = 18;
-          }
-          pdf.text(line, left, y);
-          y += lineH + 1;
-        }
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(bodyFs);
-        if (nameLines.length === 0) {
-          pdf.setFont('helvetica', 'italic');
-          if (y > ph - bottomSafe) {
-            pdf.addPage('a4', 'portrait');
-            y = 18;
-          }
-          pdf.text('Aucun invité assigné.', left + 2, y);
-          y += lineH + 2;
-          pdf.setFont('helvetica', 'normal');
-        } else {
-          for (const raw of nameLines) {
-            const wrapped = pdf.splitTextToSize(raw, textMaxW - 4);
-            for (const wline of wrapped) {
-              if (y > ph - bottomSafe) {
-                pdf.addPage('a4', 'portrait');
-                y = 18;
-              }
-              pdf.text(wline, left + 2, y);
-              y += lineH;
-            }
-          }
-          y += 4;
-        }
-      }
-
+      const pdf = this.seatingExport.buildPdfDocument(raster, snap);
       pdf.save(`plan-de-table-${v.name.replace(/\s+/g, '-')}.pdf`);
       this.snack.open('PDF exporté', '', { duration: 2000 });
     } catch {
@@ -2367,171 +2291,17 @@ export class AdminPlanDeTableComponent {
     }
   }
 
-  /** Rasterise le plan (styles + noms invités sur les macarons) pour PNG et 1ʳᵉ page PDF. */
-  private async rasterizePlanForExport(): Promise<{ dataUrl: string; wPx: number; hPx: number } | null> {
-    const svgEl = this.floorSvg()?.nativeElement;
+  /** Instantané cohérent pour l’export (évite décalage si l’état change pendant l’async). */
+  private buildExportSnapshot(): SeatingExportSnapshot | null {
     const v = this.venue();
-    if (!svgEl || !v) return null;
-    const mult = 3;
-    const w = this.canvasTotalWidthCm(v) * mult;
-    const h = this.canvasTotalHeightCm(v) * mult;
-    const clone = this.prepareSvgCloneForExport(svgEl);
-    clone.setAttribute('width', String(w));
-    clone.setAttribute('height', String(h));
-    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-    const svgStr = new XMLSerializer().serializeToString(clone);
-    const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    try {
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = () => reject(new Error('image load'));
-        img.src = url;
-      });
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return null;
-      ctx.fillStyle = '#faf8f5';
-      ctx.fillRect(0, 0, w, h);
-      ctx.drawImage(img, 0, 0);
-      URL.revokeObjectURL(url);
-      return { dataUrl: canvas.toDataURL('image/png'), wPx: w, hPx: h };
-    } catch {
-      URL.revokeObjectURL(url);
-      return null;
-    }
-  }
-
-  private prepareSvgCloneForExport(svgEl: SVGSVGElement): SVGSVGElement {
-    const clone = svgEl.cloneNode(true) as SVGSVGElement;
-    this.removeSvgExportOverlays(clone);
-    this.stripExportInteractionClassesFromSvg(clone);
-    this.injectExportStylesIntoSvg(clone);
-    this.replaceExportChairMarkersWithGuestNames(clone);
-    return clone;
-  }
-
-  private injectExportStylesIntoSvg(svg: SVGSVGElement): void {
-    const ns = 'http://www.w3.org/2000/svg';
-    let defs = svg.querySelector('defs');
-    if (!defs) {
-      defs = document.createElementNS(ns, 'defs');
-      svg.insertBefore(defs, svg.firstChild);
-    }
-    const styleEl = document.createElementNS(ns, 'style');
-    styleEl.setAttribute('type', 'text/css');
-    styleEl.textContent = SEATING_EXPORT_SVG_STYLES;
-    defs.appendChild(styleEl);
-  }
-
-  private removeSvgExportOverlays(svg: SVGSVGElement): void {
-    const rm = (sel: string) => {
-      svg.querySelectorAll(sel).forEach((el) => el.remove());
+    if (!v) return null;
+    return {
+      venue: v,
+      tables: this.tables(),
+      assignmentsByTable: this.assignmentsByTable(),
+      personneById: this.personneById(),
+      displayPersonne: (p) => this.displayPersonne(p),
+      variantName: this.selectedVariant()?.name ?? '—',
     };
-    rm('.coord-probe');
-    rm('.personne-drag-ghost');
-    rm('.freeform-draft');
-    rm('.window-placement-preview');
-    rm('.door-plan--preview');
-    rm('.wall-preview-filigree');
-    rm('.measure-line');
-    rm('.measure-origin-dot');
-    rm('.measure-hud');
-    svg.querySelectorAll('circle[stroke="#7b61ff"]').forEach((el) => el.remove());
-  }
-
-  /** Retire surbrillance sélection / drop / survol pour un rendu neutre. */
-  private stripExportInteractionClassesFromSvg(svg: SVGSVGElement): void {
-    const drop = new Set([
-      'table-selected',
-      'table-assign-drop--ok',
-      'table-assign-drop--bad',
-      'wall-line--hover',
-      'window-opening--hover',
-      'door-plan--hover',
-      'freeform-polygon--hover',
-    ]);
-    for (const el of Array.from(svg.querySelectorAll('[class]'))) {
-      const parts = (el.getAttribute('class') ?? '')
-        .split(/\s+/)
-        .filter((c: string) => c && !drop.has(c));
-      if (parts.length) el.setAttribute('class', parts.join(' '));
-      else el.removeAttribute('class');
-    }
-  }
-
-  private truncateExportGuestLabel(text: string, maxLen: number): string {
-    const t = text.trim();
-    if (t.length <= maxLen) return t;
-    return `${t.slice(0, Math.max(1, maxLen - 1))}…`;
-  }
-
-  /**
-   * Retire les macarons du clone et les redessine avec le nom affiché (lisible à l’export).
-   */
-  private replaceExportChairMarkersWithGuestNames(svg: SVGSVGElement): void {
-    const dots = Array.from(svg.querySelectorAll('circle.chair-dot')).filter(
-      (c: Element) => !c.classList.contains('chair-dot--ghost'),
-    );
-    const groups = new Set<Element>();
-    for (const c of dots) {
-      const g = c.parentElement;
-      if (g && g.tagName.toLowerCase() === 'g') groups.add(g);
-    }
-    groups.forEach((g) => g.remove());
-
-    const ns = 'http://www.w3.org/2000/svg';
-    const byId = this.personneById();
-    const rMac = 18;
-    const fontPx = 7.5;
-
-    for (const t of this.tables()) {
-      const assigns = this.assignmentsByTable().get(t.id) ?? [];
-      const n = assigns.length;
-      const positions = chairPositionsForTable(
-        t.shape,
-        t.center_x_cm,
-        t.center_y_cm,
-        t.width_cm,
-        t.depth_cm,
-        t.rotation_deg,
-        n,
-      );
-      for (let i = 0; i < positions.length; i++) {
-        const p = positions[i];
-        const a = assigns[i];
-        const pers = a ? byId.get(a.personne_id) : undefined;
-        const rawName = pers ? this.displayPersonne(pers) : '';
-        const label = rawName ? this.truncateExportGuestLabel(rawName, 18) : '';
-
-        const g = document.createElementNS(ns, 'g');
-        g.setAttribute('transform', `translate(${p.x},${p.y})`);
-
-        const circle = document.createElementNS(ns, 'circle');
-        circle.setAttribute('r', String(rMac));
-        circle.setAttribute('fill', '#fff');
-        circle.setAttribute('stroke', '#5d4037');
-        circle.setAttribute('stroke-width', '1.8');
-        g.appendChild(circle);
-
-        if (label) {
-          const text = document.createElementNS(ns, 'text');
-          text.setAttribute('text-anchor', 'middle');
-          text.setAttribute('dominant-baseline', 'middle');
-          text.setAttribute('fill', '#3e2723');
-          text.setAttribute('font-size', String(fontPx));
-          text.setAttribute('font-weight', '600');
-          text.setAttribute('font-family', 'system-ui, Segoe UI, Roboto, sans-serif');
-          text.textContent = label;
-          g.appendChild(text);
-        }
-
-        svg.appendChild(g);
-      }
-    }
   }
 }

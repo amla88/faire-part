@@ -1,0 +1,399 @@
+@if (host(); as h) {
+  @if (h.venue(); as ven) {
+    <aside class="side-panel">
+      @if (h.mode() === 'room') {
+        <mat-card class="cardWithShadow room-side-card">
+          <mat-card-content>
+            <mat-card-title>Pièce</mat-card-title>
+            <mat-accordion class="room-side-accordion">
+              <mat-expansion-panel
+                class="room-side-panel"
+                (opened)="h.onRoomPanelOpened('dimensions')"
+                (closed)="h.onRoomPanelClosed('dimensions')"
+              >
+                <mat-expansion-panel-header>
+                  <mat-panel-title>Dimensions</mat-panel-title>
+                </mat-expansion-panel-header>
+                <div class="form-stack form-stack--tight">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Nom</mat-label>
+                    <input matInput [(ngModel)]="h.roomNameDraft" [disabled]="h.readonlyLayout()" />
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Largeur (cm)</mat-label>
+                    <input matInput type="number" [(ngModel)]="h.roomWidthDraft" [disabled]="h.readonlyLayout()" />
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Profondeur (cm)</mat-label>
+                    <input matInput type="number" [(ngModel)]="h.roomHeightDraft" [disabled]="h.readonlyLayout()" />
+                  </mat-form-field>
+                  <button mat-flat-button color="primary" type="button" (click)="h.saveVenueBasics()" [disabled]="h.readonlyLayout()">
+                    Enregistrer dimensions
+                  </button>
+                </div>
+              </mat-expansion-panel>
+              <mat-expansion-panel
+                class="room-side-panel"
+                (opened)="h.onRoomPanelOpened('background')"
+                (closed)="h.onRoomPanelClosed('background')"
+              >
+                <mat-expansion-panel-header>
+                  <mat-panel-title>Image de fond</mat-panel-title>
+                </mat-expansion-panel-header>
+                <p class="f-s-13 text-muted panel-hint">
+                  Import PNG ou JPEG. Position et taille en cm (repère plan : origine haut-gauche de la pièce).
+                </p>
+                <input type="file" accept="image/*" (change)="h.onBackgroundFile($event)" [disabled]="h.readonlyLayout()" />
+                <div class="form-stack form-stack--tight">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Fond X (cm)</mat-label>
+                    <input matInput type="number" [(ngModel)]="h.bgXDraft" [disabled]="h.readonlyLayout()" />
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Fond Y (cm)</mat-label>
+                    <input matInput type="number" [(ngModel)]="h.bgYDraft" [disabled]="h.readonlyLayout()" />
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Fond largeur (cm)</mat-label>
+                    <input matInput type="number" [(ngModel)]="h.bgWDraft" [disabled]="h.readonlyLayout()" />
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Fond hauteur (cm)</mat-label>
+                    <input matInput type="number" [(ngModel)]="h.bgHDraft" [disabled]="h.readonlyLayout()" />
+                  </mat-form-field>
+                  <button mat-stroked-button type="button" (click)="h.saveBackgroundPlacement()" [disabled]="h.readonlyLayout()">
+                    Appliquer le calage
+                  </button>
+                  <button mat-stroked-button type="button" color="warn" (click)="h.clearBackground()" [disabled]="h.readonlyLayout() || !ven.background_data_url">
+                    Retirer l’image
+                  </button>
+                </div>
+              </mat-expansion-panel>
+              <mat-expansion-panel
+                class="room-side-panel"
+                (opened)="h.onRoomPanelOpened('walls')"
+                (closed)="h.onRoomPanelClosed('walls')"
+              >
+                <mat-expansion-panel-header>
+                  <mat-panel-title>Placement des murs</mat-panel-title>
+                </mat-expansion-panel-header>
+                <p class="f-s-13 text-muted panel-hint">
+                  Une seule section à la fois : tant que celle-ci est ouverte, vous pouvez tracer des murs sur le plan. Réglez l’épaisseur, puis 1ᵉʳ clic, filigrane jusqu’au 2ᵉ clic. Magnétisme = cadrillage si activé. Survolez un mur dans la liste pour le repérer sur le plan.
+                </p>
+                <mat-form-field appearance="outline" class="wall-thickness-field">
+                  <mat-label>Épaisseur du prochain mur (cm)</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    min="1"
+                    max="500"
+                    step="1"
+                    [(ngModel)]="h.wallNewThicknessCm"
+                    [disabled]="h.readonlyLayout() || h.wallDraft() !== null"
+                  />
+                </mat-form-field>
+                @if (h.wallDraft(); as d) {
+                  <div class="wall-draft-banner">
+                    <span class="f-s-13"
+                      >1ᵉʳ point <strong>{{ d.x }}, {{ d.y }}</strong> cm — épaisseur <strong>{{ d.thickness_cm }}</strong> cm — placez le 2ᵉ point (filigrane sous le curseur).</span
+                    >
+                    <button mat-stroked-button type="button" (click)="h.cancelWallDraft()" [disabled]="h.readonlyLayout()">Annuler le tracé</button>
+                  </div>
+                }
+                <h4 class="wall-list-title">Segments existants</h4>
+                <ul class="wall-list">
+                  @for (w of h.walls(); track w.id) {
+                    <li
+                      class="wall-list-row"
+                      [class.wall-list-row--hover]="h.hoveredWallId() === w.id"
+                      (mouseenter)="h.setHoveredWall(w.id)"
+                      (mouseleave)="h.clearHoveredWall()"
+                    >
+                      <span class="wall-list-coords"
+                        >({{ w.x1_cm }}, {{ w.y1_cm }}) → ({{ w.x2_cm }}, {{ w.y2_cm }}) — {{ h.wallStrokeCm(w) }} cm</span
+                      >
+                      <button mat-icon-button type="button" (click)="h.deleteWall(w.id)" [disabled]="h.readonlyLayout()" matTooltip="Supprimer ce mur">
+                        <mat-icon>close</mat-icon>
+                      </button>
+                    </li>
+                  } @empty {
+                    <li class="text-muted f-s-13">Aucun mur — tracez sur le canevas.</li>
+                  }
+                </ul>
+              </mat-expansion-panel>
+              <mat-expansion-panel
+                class="room-side-panel"
+                (opened)="h.onRoomPanelOpened('windows')"
+                (closed)="h.onRoomPanelClosed('windows')"
+              >
+                <mat-expansion-panel-header>
+                  <mat-panel-title>Placement des fenêtres</mat-panel-title>
+                </mat-expansion-panel-header>
+                <mat-form-field appearance="outline" class="wall-thickness-field">
+                  <mat-label>Largeur de la fenêtre (cm)</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    min="5"
+                    max="5000"
+                    step="1"
+                    [(ngModel)]="h.newWindowWidthCm"
+                    [disabled]="h.readonlyLayout()"
+                  />
+                </mat-form-field>
+                <h4 class="wall-list-title">Fenêtres placées</h4>
+                <ul class="wall-list">
+                  @for (win of h.windows(); track win.id) {
+                    <li
+                      class="wall-list-row"
+                      [class.wall-list-row--hover]="h.hoveredWindowId() === win.id"
+                      (mouseenter)="h.setHoveredWindow(win.id)"
+                      (mouseleave)="h.clearHoveredWindow()"
+                    >
+                      <span class="wall-list-coords">{{ h.windowSummary(win) }}</span>
+                      <button mat-icon-button type="button" (click)="h.deleteWindow(win.id)" [disabled]="h.readonlyLayout()" matTooltip="Supprimer cette fenêtre">
+                        <mat-icon>close</mat-icon>
+                      </button>
+                    </li>
+                  } @empty {
+                    <li class="text-muted f-s-13">Aucune fenêtre — cliquez sur un mur avec cette section ouverte.</li>
+                  }
+                </ul>
+              </mat-expansion-panel>
+              <mat-expansion-panel
+                class="room-side-panel"
+                (opened)="h.onRoomPanelOpened('doors')"
+                (closed)="h.onRoomPanelClosed('doors')"
+              >
+                <mat-expansion-panel-header>
+                  <mat-panel-title>Portes et ouvertures</mat-panel-title>
+                </mat-expansion-panel-header>
+                <mat-form-field appearance="outline" class="wall-thickness-field">
+                  <mat-label>Type</mat-label>
+                  <mat-select [(ngModel)]="h.newDoorKind" [disabled]="h.readonlyLayout()">
+                    <mat-option value="single">Porte simple (un battant)</mat-option>
+                    <mat-option value="double">Porte double (deux battants)</mat-option>
+                    <mat-option value="opening">Ouverture (sans porte)</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="wall-thickness-field">
+                  <mat-label>Largeur d’embrasure (cm)</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    min="30"
+                    max="5000"
+                    step="1"
+                    [(ngModel)]="h.newDoorWidthCm"
+                    [disabled]="h.readonlyLayout()"
+                  />
+                </mat-form-field>
+                <h4 class="wall-list-title">Éléments placés</h4>
+                <ul class="wall-list">
+                  @for (dr of h.doors(); track dr.id) {
+                    <li
+                      class="wall-list-row"
+                      [class.wall-list-row--hover]="h.hoveredDoorId() === dr.id"
+                      (mouseenter)="h.setHoveredDoor(dr.id)"
+                      (mouseleave)="h.clearHoveredDoor()"
+                    >
+                      <span class="wall-list-coords">{{ h.doorSummary(dr) }}</span>
+                      <button mat-icon-button type="button" (click)="h.deleteDoor(dr.id)" [disabled]="h.readonlyLayout()" matTooltip="Supprimer">
+                        <mat-icon>close</mat-icon>
+                      </button>
+                    </li>
+                  } @empty {
+                    <li class="text-muted f-s-13">Aucune porte — ouvrez cette section et cliquez sur un mur.</li>
+                  }
+                </ul>
+              </mat-expansion-panel>
+              <mat-expansion-panel
+                class="room-side-panel"
+                (opened)="h.onRoomPanelOpened('freeforms')"
+                (closed)="h.onRoomPanelClosed('freeforms')"
+              >
+                <mat-expansion-panel-header>
+                  <mat-panel-title>Formes libres</mat-panel-title>
+                </mat-expansion-panel-header>
+                <mat-form-field appearance="outline" class="wall-thickness-field">
+                  <mat-label>Épaisseur du trait (cm)</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    min="0.5"
+                    max="80"
+                    step="0.5"
+                    [(ngModel)]="h.newFreeformStrokeWidthCm"
+                    [disabled]="h.readonlyLayout()"
+                  />
+                </mat-form-field>
+                <h4 class="wall-list-title">Formes placées</h4>
+                <ul class="wall-list">
+                  @for (ff of h.freeforms(); track ff.id) {
+                    <li
+                      class="wall-list-row"
+                      [class.wall-list-row--hover]="h.hoveredFreeformId() === ff.id"
+                      (mouseenter)="h.setHoveredFreeform(ff.id)"
+                      (mouseleave)="h.clearHoveredFreeform()"
+                    >
+                      <span class="wall-list-coords">{{ h.freeformSummary(ff) }}</span>
+                      <button mat-icon-button type="button" (click)="h.deleteFreeform(ff.id)" [disabled]="h.readonlyLayout()" matTooltip="Supprimer">
+                        <mat-icon>close</mat-icon>
+                      </button>
+                    </li>
+                  } @empty {
+                    <li class="text-muted f-s-13">Aucune forme — ouvrez cette section et cliquez dans la pièce.</li>
+                  }
+                </ul>
+              </mat-expansion-panel>
+            </mat-accordion>
+          </mat-card-content>
+        </mat-card>
+      }
+      @if (h.mode() === 'tables') {
+        <mat-card class="cardWithShadow">
+          <mat-card-content>
+            <mat-card-title>Tables</mat-card-title>
+            <div class="form-stack">
+              <mat-form-field appearance="outline">
+                <mat-label>Forme</mat-label>
+                <mat-select [(ngModel)]="h.newTableShape" [disabled]="h.readonlyLayout()">
+                  <mat-option value="round">Ronde</mat-option>
+                  <mat-option value="rect">Rectangulaire</mat-option>
+                  <mat-option value="oval">Ovale</mat-option>
+                  <mat-option value="capsule">Capsule (demi-cercles aux extrémités)</mat-option>
+                </mat-select>
+              </mat-form-field>
+              <button mat-flat-button color="primary" type="button" (click)="h.addTable()" [disabled]="h.readonlyLayout()">
+                <mat-icon>add</mat-icon>
+                Ajouter une table au centre
+              </button>
+            </div>
+            @if (h.selectedTable(); as st) {
+              <h4 class="side-subtitle">Table sélectionnée</h4>
+              <div class="form-stack">
+                <mat-form-field appearance="outline">
+                  <mat-label>Libellé</mat-label>
+                  <input matInput [(ngModel)]="h.editTableLabel" [disabled]="h.readonlyLayout()" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Largeur / diamètre (cm)</mat-label>
+                  <input matInput type="number" [(ngModel)]="h.editTableWidth" [disabled]="h.readonlyLayout()" />
+                </mat-form-field>
+                @if (st.shape !== 'round') {
+                  <mat-form-field appearance="outline">
+                    <mat-label>
+                      @switch (st.shape) {
+                        @case ('capsule') {
+                          Longueur centrale (cm)
+                        }
+                        @default {
+                          Profondeur (cm)
+                        }
+                      }
+                    </mat-label>
+                    <input matInput type="number" [(ngModel)]="h.editTableDepth" [disabled]="h.readonlyLayout()" />
+                    @if (st.shape === 'capsule') {
+                      <mat-hint>Entre les deux demi-cercles (diamètre = largeur)</mat-hint>
+                    }
+                  </mat-form-field>
+                }
+                <mat-form-field appearance="outline">
+                  <mat-label>Places max</mat-label>
+                  <input matInput type="number" [(ngModel)]="h.editTableMaxChairs" [disabled]="h.readonlyLayout()" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Rotation (°)</mat-label>
+                  <input matInput type="number" [(ngModel)]="h.editTableRotation" [disabled]="h.readonlyLayout()" />
+                </mat-form-field>
+                <button mat-stroked-button type="button" (click)="h.applyTableEdits()" [disabled]="h.readonlyLayout()">Appliquer</button>
+                <button mat-stroked-button type="button" color="warn" (click)="h.deleteSelectedTable()" [disabled]="h.readonlyLayout()">
+                  Supprimer la table
+                </button>
+              </div>
+            } @else {
+              <p class="text-muted f-s-13 m-t-12">Cliquez une table sur le plan pour l’éditer.</p>
+            }
+          </mat-card-content>
+        </mat-card>
+      }
+      @if (h.mode() === 'assign') {
+        <mat-card class="cardWithShadow">
+          <mat-card-content>
+            <mat-card-title>Invités au repas</mat-card-title>
+            <mat-form-field appearance="outline" class="assign-search-field" subscriptSizing="dynamic">
+              <mat-label>Rechercher prénom, nom ou famille</mat-label>
+              <input
+                matInput
+                type="search"
+                autocomplete="off"
+                [ngModel]="h.assignListSearch()"
+                (ngModelChange)="h.assignListSearch.set($event)"
+              />
+              @if (h.assignListSearch()) {
+                <button
+                  matSuffix
+                  mat-icon-button
+                  type="button"
+                  aria-label="Effacer la recherche"
+                  (click)="h.assignListSearch.set('')"
+                >
+                  <mat-icon>close</mat-icon>
+                </button>
+              }
+            </mat-form-field>
+            <h4 class="side-subtitle">
+              Non placés sur cette variante : {{ h.unassignedPersonnes().length }}
+              @if (h.assignListSearch().trim()) {
+                <span class="text-muted"> — affichés : {{ h.unassignedFilteredCount() }}</span>
+              }
+            </h4>
+            <div class="assign-unplaced-scroll">
+              @for (block of h.unassignedFamilleBlocks(); track block.familleId) {
+                <section class="famille-block">
+                  <h5 class="famille-block-title">{{ block.title }}</h5>
+                  <ul class="people-list people-list--nested">
+                    @for (p of block.personnes; track p.id) {
+                      <li
+                        class="person-row"
+                        (mousedown)="h.startDragPersonne(p.id, $event)"
+                        [class.dragging]="h.draggingPersonneId() === p.id"
+                      >
+                        {{ h.displayPersonne(p) }}
+                      </li>
+                    }
+                  </ul>
+                </section>
+              } @empty {
+                @if (h.unassignedPersonnes().length === 0) {
+                  <p class="text-muted f-s-13 assign-unplaced-empty">Tout le monde est placé sur cette variante.</p>
+                } @else {
+                  <p class="text-muted f-s-13 assign-unplaced-empty">Aucun résultat pour « {{ h.assignListSearch().trim() }} ».</p>
+                }
+              }
+            </div>
+            @if (h.selectedTable(); as st) {
+              <h4 class="side-subtitle">À « {{ st.label || 'Table ' + st.id }} »</h4>
+              <ul class="people-list">
+                @for (a of h.assignmentsByTable().get(st.id) ?? []; track a.id) {
+                  <li class="person-row placed">
+                    @if (h.personneById().get(a.personne_id); as pers) {
+                      {{ h.displayPersonne(pers) }}
+                    }
+                    @if (!h.readonlyLayout()) {
+                      <button mat-icon-button type="button" (click)="h.unassign(a.personne_id)" matTooltip="Retirer">
+                        <mat-icon>person_off</mat-icon>
+                      </button>
+                    }
+                  </li>
+                } @empty {
+                  <li class="text-muted f-s-13">Personne pour l’instant</li>
+                }
+              </ul>
+            }
+          </mat-card-content>
+        </mat-card>
+      }
+    </aside>
+  }
+}

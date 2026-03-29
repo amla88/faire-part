@@ -1,0 +1,196 @@
+.toolbar-card {
+  flex-shrink: 0;
+}
+
+.toolbar-card mat-card-content {
+  padding-bottom: 8px !important;
+}
+
+.toolbar-card--mobile mat-card-content {
+  padding-bottom: 12px !important;
+}
+
+.toolbar-mobile-inner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.toolbar-mobile-variant-field {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.toolbar-mobile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.toolbar-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Ligne 1 : modes à gauche, gestion des variantes alignée à droite. */
+.toolbar-top-row {
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.toolbar-modes {
+  flex-shrink: 0;
+
+  mat-button-toggle-group {
+    flex-wrap: nowrap;
+  }
+}
+
+.toolbar-top-rest {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.toolbar-variant-group,
+.toolbar-zoom-export-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.toolbar-variant-group {
+  flex: 0 1 auto;
+  justify-content: flex-end;
+}
+
+/* Ligne Outils : zoom + export poussés à droite (séparés des icônes calque). */
+.toolbar-zoom-export-group {
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-left: 12px;
+  border-left: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.variant-field {
+  width: 200px;
+  max-width: min(200px, 100%);
+}
+
+.zoom-readout {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.65);
+  white-space: nowrap;
+}
+
+@media (max-width: 1199.98px) {
+  .toolbar-top-row {
+    flex-wrap: wrap;
+  }
+
+  .toolbar-top-rest {
+    flex: 1 1 100%;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 959.98px) {
+  .toolbar-modes {
+    width: 100%;
+
+    mat-button-toggle-group {
+      flex-wrap: wrap;
+      width: 100%;
+    }
+  }
+
+  .toolbar-top-rest {
+    flex-basis: 100%;
+    justify-content: flex-end;
+  }
+
+  .toolbar-variant-group {
+    flex: 1 1 100%;
+    justify-content: flex-end;
+  }
+}
+
+.tools-options-row {
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  padding-top: 6px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  gap: 8px;
+}
+
+@media (max-width: 959.98px) {
+  .tools-options-row {
+    flex-wrap: wrap;
+  }
+
+  .toolbar-zoom-export-group {
+    flex: 1 1 100%;
+    justify-content: flex-end;
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
+    padding-top: 6px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+  }
+}
+
+.tools-bar-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, 0.45);
+  flex-shrink: 0;
+}
+
+.canvas-tools-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.canvas-tool-btn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+
+  .mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.canvas-tool-btn--on:not([disabled]) {
+  box-shadow: 0 0 0 1px rgba(25, 118, 210, 0.35);
+  border-radius: 50%;
+}

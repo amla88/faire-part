@@ -1,0 +1,338 @@
+/* Le host ne participe pas au flex : le .canvas-panel reste l’item de .main-split comme avant l’extraction. */
+:host {
+  display: contents;
+}
+
+.canvas-panel {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.canvas-viewport {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+.canvas-viewport.viewport-panning {
+  cursor: grabbing;
+}
+
+.map-scale-legend {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 4;
+  pointer-events: none;
+  text-align: right;
+  font-size: 11px;
+  line-height: 1.35;
+  color: rgba(48, 40, 32, 0.92);
+  background: rgba(255, 252, 247, 0.94);
+  border: 1px solid rgba(92, 74, 58, 0.18);
+  border-radius: 8px;
+  padding: 8px 12px 9px;
+  box-shadow: 0 2px 10px rgba(40, 30, 20, 0.08);
+  font-variant-numeric: tabular-nums;
+  max-width: min(200px, 42vw);
+}
+
+.scale-bar-gmaps {
+  display: inline-flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  margin-bottom: 2px;
+}
+
+.scale-cap {
+  display: inline-block;
+  width: 1px;
+  height: 7px;
+  background: rgba(48, 40, 32, 0.88);
+  align-self: flex-end;
+}
+
+.scale-line {
+  display: inline-block;
+  height: 5px;
+  border-bottom: 2px solid rgba(48, 40, 32, 0.88);
+  border-top: none;
+  vertical-align: bottom;
+  min-width: 28px;
+  box-sizing: border-box;
+}
+
+.scale-distance {
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.01em;
+  margin-bottom: 4px;
+}
+
+.grid-square-legend {
+  font-size: 10px;
+  color: rgba(72, 62, 52, 0.78);
+  border-top: 1px solid rgba(92, 74, 58, 0.12);
+  padding-top: 6px;
+  margin-top: 2px;
+
+  &.is-off {
+    font-style: italic;
+    opacity: 0.75;
+  }
+}
+
+.canvas-world {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
+}
+
+.floor-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+}
+
+.floor-svg .coord-probe-dot {
+  fill: rgba(255, 152, 0, 0.92);
+  stroke: #fff;
+  stroke-width: 1.5;
+}
+
+.floor-svg .coord-probe-label {
+  fill: #3e2723;
+  font-weight: 600;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  filter: drop-shadow(0 0 0.5px rgba(255, 255, 255, 1)) drop-shadow(0 0 1px rgba(255, 255, 255, 0.9));
+}
+
+.floor-svg .measure-origin-dot {
+  fill: #1565c0;
+  stroke: #fff;
+  stroke-width: 1.5;
+}
+
+.floor-svg .measure-line {
+  stroke: #1565c0;
+  stroke-width: 2;
+  stroke-dasharray: 8 5;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.9;
+}
+
+.floor-svg .measure-hud-label {
+  fill: #0d47a1;
+  font-weight: 700;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  filter: drop-shadow(0 0 0.5px rgba(255, 255, 255, 1)) drop-shadow(0 0 1px rgba(255, 255, 255, 0.95));
+}
+
+.outer-wall-ring {
+  fill: #4a3f35;
+}
+
+.mode-tables .floor-svg {
+  cursor: default;
+}
+
+.mode-assign .floor-svg .table-group {
+  cursor: default;
+}
+
+.table-group {
+  cursor: pointer;
+}
+
+.mode-room .table-group {
+  pointer-events: none;
+}
+
+.mode-tables .table-group {
+  cursor: grab;
+}
+
+.mode-tables .table-group:active {
+  cursor: grabbing;
+}
+
+.table-shape {
+  fill: rgba(212, 196, 168, 0.55);
+  stroke: #6b5344;
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.table-selected .table-shape {
+  stroke: #5c6bc0 !important;
+  stroke-width: 2.5 !important;
+  fill: rgba(156, 175, 240, 0.45) !important;
+}
+
+.floor-svg .table-group.table-assign-drop--ok .table-shape {
+  stroke: #1b5e20 !important;
+  stroke-width: 3.2 !important;
+  fill: rgba(165, 214, 167, 0.42) !important;
+}
+
+.floor-svg .table-group.table-assign-drop--bad .table-shape {
+  stroke: #b71c1c !important;
+  stroke-width: 3.2 !important;
+  fill: rgba(239, 154, 154, 0.38) !important;
+}
+
+.table-label {
+  font-size: 20px;
+  font-weight: 600;
+  fill: #3e2723;
+  pointer-events: none;
+  user-select: none;
+}
+
+.chair-marker-interactive {
+  cursor: grab;
+}
+
+.chair-marker-interactive:active {
+  cursor: grabbing;
+}
+
+.chair-dot {
+  fill: #fff;
+  stroke: #5d4037;
+  stroke-width: 1.8;
+}
+
+.chair-dot--ghost {
+  opacity: 0.94;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.28));
+}
+
+.personne-drag-ghost {
+  pointer-events: none;
+}
+
+.chair-initials {
+  font-size: 12px;
+  font-weight: 600;
+  fill: #3e2723;
+  user-select: none;
+}
+
+.floor-svg .wall-line {
+  stroke: #5c4a3a;
+  transition: stroke 0.12s ease, stroke-width 0.12s ease;
+}
+
+.floor-svg .wall-line--hover {
+  stroke: #283593;
+  filter: drop-shadow(0 0 1.5px rgba(40, 53, 147, 0.45));
+}
+
+.floor-svg .window-opening {
+  stroke: #8ad4f0;
+  opacity: 0.98;
+  transition: stroke 0.12s ease, filter 0.12s ease;
+}
+
+.floor-svg .window-opening--hover {
+  stroke: #4cc4ef;
+  filter: drop-shadow(0 0 2px rgba(76, 196, 239, 0.4));
+}
+
+.floor-svg .window-placement-preview {
+  stroke: #5ec8f0;
+  fill: none;
+  opacity: 0.88;
+  stroke-dasharray: 10 7;
+  stroke-linecap: round;
+}
+
+.floor-svg .door-plan .door-threshold {
+  stroke: #64b5f6;
+  stroke-linecap: butt;
+}
+
+.floor-svg .door-plan .door-swing-arc,
+.floor-svg .door-plan .door-leaf {
+  stroke: #1976d2;
+  fill: none;
+  stroke-linecap: round;
+}
+
+.floor-svg .door-plan .door-jamb {
+  stroke: #1976d2;
+  stroke-linecap: round;
+}
+
+.floor-svg .door-plan--preview {
+  opacity: 0.78;
+}
+
+.floor-svg .door-plan--preview .door-threshold,
+.floor-svg .door-plan--preview .door-swing-arc,
+.floor-svg .door-plan--preview .door-leaf,
+.floor-svg .door-plan--preview .door-jamb {
+  stroke-dasharray: 7 5;
+}
+
+.floor-svg .door-plan--hover .door-threshold,
+.floor-svg .door-plan--hover .door-swing-arc,
+.floor-svg .door-plan--hover .door-leaf,
+.floor-svg .door-plan--hover .door-jamb {
+  stroke: #ffb74d;
+  filter: drop-shadow(0 0 2px rgba(255, 183, 77, 0.45));
+}
+
+.floor-svg .freeform-polygon {
+  stroke: #5c4a3a;
+  fill: rgba(92, 74, 58, 0.1);
+}
+
+.floor-svg .freeform-polygon--hover {
+  stroke: #7a5f4a;
+  fill: rgba(92, 74, 58, 0.16);
+  filter: drop-shadow(0 0 2px rgba(92, 74, 58, 0.35));
+}
+
+.floor-svg .freeform-draft-polyline {
+  stroke: #6d5a48;
+  stroke-width: 1.1;
+  stroke-dasharray: 8 6;
+  fill: none;
+}
+
+.floor-svg .freeform-draft-rubber {
+  stroke: #8b7355;
+  stroke-width: 0.9;
+  stroke-dasharray: 4 6;
+  opacity: 0.88;
+  fill: none;
+}
+
+.floor-svg .freeform-draft-vertex {
+  fill: #fff;
+  stroke: #5c4a3a;
+  stroke-width: 0.35;
+}
+
+.floor-svg .wall-preview-filigree {
+  stroke: #7b61ff;
+  stroke-linecap: round;
+  fill: none;
+  opacity: 0.42;
+  stroke-dasharray: 14 10;
+}

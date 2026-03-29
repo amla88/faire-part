@@ -1,6 +1,18 @@
 /** Épaisseur du mur périphérique dessiné à l’extérieur de la pièce (cm), purement visuel. */
 export const SEATING_PERIMETER_WALL_CM = 20;
 
+/** Dimensions du viewBox / export : pièce + marges du mur extérieur (cm). */
+export function seatingCanvasOuterSizeCm(venue: { room_width_cm: number; room_height_cm: number }): {
+  widthCm: number;
+  heightCm: number;
+} {
+  const t = SEATING_PERIMETER_WALL_CM;
+  return {
+    widthCm: venue.room_width_cm + 2 * t,
+    heightCm: venue.room_height_cm + 2 * t,
+  };
+}
+
 /** Arrondit `value` au multiple entier le plus proche de `stepCm` (cm). */
 export function snapCm(value: number, stepCm: number): number {
   const step = Math.max(1, Math.min(50_000, Math.round(stepCm)));

@@ -1,0 +1,189 @@
+@if (readonlyLayout()) {
+  <mat-card class="cardWithShadow toolbar-card toolbar-card--mobile">
+    <mat-card-content class="toolbar-mobile-inner">
+      <mat-form-field appearance="outline" class="toolbar-mobile-variant-field" subscriptSizing="dynamic">
+        <mat-label>Variante</mat-label>
+        <mat-select
+          [value]="selectedVariantId()"
+          (selectionChange)="variantChange.emit($event.value)"
+        >
+          @for (vr of variants(); track vr.id) {
+            <mat-option [value]="vr.id">{{ vr.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <div class="toolbar-mobile-actions">
+        <button
+          mat-flat-button
+          color="primary"
+          type="button"
+          (click)="exportPng.emit()"
+          matTooltip="Image PNG du plan (variante affichée)"
+          matTooltipPosition="below"
+        >
+          <mat-icon>image</mat-icon>
+          PNG
+        </button>
+        <button
+          mat-stroked-button
+          type="button"
+          (click)="exportPdf.emit()"
+          matTooltip="PDF : plan + liste des invités par table"
+          matTooltipPosition="below"
+        >
+          <mat-icon>picture_as_pdf</mat-icon>
+          PDF
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+} @else {
+  <mat-card class="cardWithShadow toolbar-card">
+    <mat-card-content class="toolbar-inner">
+      <div class="toolbar-row toolbar-top-row">
+        <div class="toolbar-modes">
+          <mat-button-toggle-group
+            [value]="mode()"
+            (change)="modeChange.emit($any($event).value)"
+            hideSingleSelectionIndicator
+          >
+            <mat-button-toggle value="room">Construction</mat-button-toggle>
+            <mat-button-toggle value="tables">Tables</mat-button-toggle>
+            <mat-button-toggle value="assign">Invités</mat-button-toggle>
+          </mat-button-toggle-group>
+        </div>
+        <div class="toolbar-top-rest">
+          <div class="toolbar-variant-group">
+            <mat-form-field appearance="outline" class="variant-field">
+              <mat-label>Variante</mat-label>
+              <mat-select
+                [value]="selectedVariantId()"
+                (selectionChange)="variantChange.emit($event.value)"
+              >
+                @for (vr of variants(); track vr.id) {
+                  <mat-option [value]="vr.id">{{ vr.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <button mat-stroked-button type="button" (click)="addVariant.emit()">
+              <mat-icon>add</mat-icon>
+              Créer
+            </button>
+            <button
+              mat-stroked-button
+              type="button"
+              (click)="copyVariant.emit()"
+              [disabled]="selectedVariantId() == null"
+              matTooltip="Duplique la variante sélectionnée (tables et placements invités)"
+              matTooltipPosition="below"
+            >
+              <mat-icon>content_copy</mat-icon>
+              Copier
+            </button>
+            <button
+              mat-stroked-button
+              type="button"
+              color="warn"
+              (click)="deleteVariant.emit()"
+              [disabled]="variants().length <= 1"
+            >
+              <mat-icon>delete</mat-icon>
+              Supprimer
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="toolbar-row tools-options-row">
+        <span class="tools-bar-label">Outils</span>
+        <div class="canvas-tools-buttons">
+          <button
+            mat-icon-button
+            type="button"
+            class="canvas-tool-btn"
+            [class.canvas-tool-btn--on]="gridVisible()"
+            [color]="gridVisible() ? 'primary' : undefined"
+            (click)="toggleGrid.emit()"
+            [matTooltip]="gridVisible() ? 'Masquer le cadrillage adaptatif' : 'Afficher le cadrillage adaptatif'"
+            matTooltipShowDelay="350"
+            matTooltipPosition="below"
+            [attr.aria-label]="gridVisible() ? 'Masquer la grille' : 'Afficher la grille'"
+          >
+            <mat-icon>{{ gridVisible() ? 'grid_on' : 'grid_off' }}</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            type="button"
+            class="canvas-tool-btn"
+            [class.canvas-tool-btn--on]="snapEnabled()"
+            [color]="snapEnabled() ? 'primary' : undefined"
+            (click)="toggleSnap.emit()"
+            [matTooltip]="
+              snapEnabled()
+                ? 'Désactiver le magnétisme'
+                : 'Magnétisme : aligne murs, tables et repère sur le pas du cadrillage affiché (même taille que les carreaux).'
+            "
+            matTooltipShowDelay="350"
+            matTooltipPosition="below"
+            [attr.aria-label]="snapEnabled() ? 'Désactiver le magnétisme' : 'Activer le magnétisme'"
+          >
+            <mat-icon>control_point</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            type="button"
+            class="canvas-tool-btn"
+            [class.canvas-tool-btn--on]="coordinateProbeEnabled()"
+            [color]="coordinateProbeEnabled() ? 'primary' : undefined"
+            (click)="toggleCoordinateProbe.emit()"
+            [matTooltip]="coordinateProbeTooltip()"
+            matTooltipShowDelay="350"
+            matTooltipPosition="below"
+            aria-label="Coordonnées sous le curseur"
+          >
+            <mat-icon>my_location</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            type="button"
+            class="canvas-tool-btn"
+            [class.canvas-tool-btn--on]="measureToolEnabled()"
+            [color]="measureToolEnabled() ? 'primary' : undefined"
+            (click)="toggleMeasureTool.emit()"
+            [matTooltip]="measureToolTooltip()"
+            matTooltipShowDelay="350"
+            matTooltipPosition="below"
+            aria-label="Mesure de distance sur le plan"
+          >
+            <mat-icon>straighten</mat-icon>
+          </button>
+        </div>
+        <div class="toolbar-zoom-export-group" aria-label="Zoom, vue et export">
+          <span
+            class="zoom-readout"
+            matTooltip="Molette : zoom · Clic droit glisser, clic molette ou Alt+glisser : déplacer · Maj : déplacement horizontal ou vertical seul"
+          >
+            Zoom {{ zoomPercentLabel() }}
+          </span>
+          <button mat-stroked-button type="button" (click)="resetView.emit()" matTooltip="Zoom 100 % et centrage dans la zone">
+            <mat-icon>center_focus_strong</mat-icon>
+            Vue
+          </button>
+          <button mat-stroked-button type="button" (click)="exportPng.emit()" matTooltip="PNG ~3 px/cm : pièce, tables et noms des invités sur le plan">
+            <mat-icon>image</mat-icon>
+            PNG
+          </button>
+          <button
+            mat-stroked-button
+            type="button"
+            (click)="exportPdf.emit()"
+            matTooltip="PDF : 1ʳᵉ page A4 paysage (plan), pages suivantes A4 portrait (liste des invités par table)"
+          >
+            <mat-icon>picture_as_pdf</mat-icon>
+            PDF
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+}
