@@ -19,41 +19,27 @@ Objectif: produire un mini-RPG pixel art "Bridgerton x geek" jouable en 10-15 mi
 
 - Moteur: Phaser 3 + TypeScript.
 - Integrateur: Angular (route dediee `/jeu` + composant hote canvas).
-- Level design: Tiled Map Editor (tilemaps JSON).
-- Donnees: Supabase (RPC existants + quelques RPC de progression jeu).
+- Level design: Tiled Map Editor (tilemaps JSON) — **backlog assets** (maps placeholder / rectangles pour l’instant).
+- Donnees: Supabase (RPC existants + RPC progression jeu `*_game_progress_for_token`).
 - Images upload: API IONOS existante.
 - UI jeu:
   - overlay HTML Angular pour menus globaux (pause, map rapide),
   - UI in-canvas Phaser pour dialogues / HUD minimal.
 
-## 3) Architecture de base (a creer)
+## 3) Architecture de base (etat actuel du repo)
 
-- `src/app/pages/jeu/jeu.component.ts` (hote Angular + fullscreen/orientation guards)
-- `src/game/boot/` (preload assets, init services)
+- `src/app/pages/jeu/jeu.component.ts` (hote Angular + plein ecran / orientation / carte)
+- `src/game/core/` — `create-game.ts`, `game-state.ts`, `input-state.ts`
 - `src/game/scenes/`
-  - `Act0CarrosseScene.ts`
-  - `Act1CourScene.ts`
-  - `Act2OfficeScene.ts`
-  - `Act3GrangeScene.ts`
-  - `HubOpenWorldScene.ts` (deblocage actes 4-6)
-  - `FinalGazetteScene.ts`
+  - `BootScene.ts` (reprise sauvegarde / ordre des actes)
+  - `Act0CarrosseScene.ts` … `Act7FinalGazetteScene.ts`, `HubOpenWorldScene.ts`
 - `src/game/systems/`
-  - `InputSystem.ts` (clavier + joystick tactile)
-  - `DialogueSystem.ts` (portrait PNJ + texte JRPG)
-  - `QuestSystem.ts` (etats de quetes / actes)
-  - `TravelMapSystem.ts` (carte rapide lieux visites)
-- `src/game/ui/`
-  - `VirtualControls.ts`
-  - `DialogueBox.ts`
-  - `QuestToast.ts`
-- `src/game/data/`
-  - `acts.config.ts`
-  - `pnj.dialogues.ts`
-  - `locations.config.ts`
-- `src/game/services/`
-  - `GameBackendBridge.ts` (wrappers vers RPC Supabase existants)
-- `src/assets/game/`
-  - `tilesets/`, `maps/`, `sprites/`, `portraits/`, `ui/`, `audio/`
+  - `SceneInput.ts` (clavier + etat virtuel depuis Angular)
+  - `QuestSystem.ts` (flags / actes)
+- `src/game/ui/` — `DialogueBox.ts`, `FormBox.ts`, `AvatarBox.ts`, `PhotoUploadBox.ts`, `BridgertonCard.ts`
+- `src/game/data/` — `dialogues.catalog.ts` (catalogue des dialogues PNJ)
+- `src/game/services/` — `GameBackendBridge.ts` (RPC Supabase + progression)
+- `src/assets/game/` — **à enrichir** (`tilesets/`, `maps/`, `sprites/`, etc.) pour la DA pixel finale
 
 ## 4) UX obligatoire (Definition of Done)
 
@@ -74,37 +60,37 @@ Objectif: produire un mini-RPG pixel art "Bridgerton x geek" jouable en 10-15 mi
 ## 5) Plan de production par phases
 
 ## Phase A - Fondations (2-3 jours)
-- [ ] Creer route Angular `/jeu` + composant hote Phaser.
-- [ ] Initialiser structure `src/game/*`.
-- [ ] Support input clavier + joystick tactile.
-- [ ] Ecran orientation paysage + aide "comment jouer".
-- [ ] Fullscreen toggle.
+- [x] Creer route Angular `/jeu` + composant hote Phaser.
+- [x] Initialiser structure `src/game/*`.
+- [x] Support input clavier + joystick tactile.
+- [x] Ecran orientation paysage + aide "comment jouer".
+- [x] Fullscreen toggle.
 
 Livrable A: personnage qui se deplace sur une map test, desktop + mobile.
 
 ## Phase B - Systeme narratif (2 jours)
-- [ ] Dialogue box JRPG (portrait + nom + texte + next).
-- [ ] Interaction PNJ (zone trigger + touche interaction).
-- [ ] Systeme de quetes simple (flags en memoire).
-- [ ] Donnees scenario externalisees (`pnj.dialogues.ts`).
+- [x] Dialogue box JRPG (portrait + nom + texte + next).
+- [x] Interaction PNJ (zone trigger + touche interaction).
+- [x] Systeme de quetes simple (flags en memoire).
+- [x] Donnees scenario externalisees (`dialogues.catalog.ts`).
 
 Livrable B: micro-sequence complete avec 1 PNJ, 1 quete, 1 validation.
 
 ## Phase C - Actes 0 a 3 lineaires (4-6 jours)
-- [ ] Acte 0 carrosse (selection perso).
-- [ ] Acte 1 registre (presence).
-- [ ] Acte 2 allergenes.
-- [ ] Acte 3 avatar.
-- [ ] Verrouillage/ordre des actes.
-- [ ] Ecriture Supabase via bridge.
+- [x] Acte 0 carrosse (selection perso).
+- [x] Acte 1 registre (presence).
+- [x] Acte 2 allergenes.
+- [x] Acte 3 avatar.
+- [x] Verrouillage/ordre des actes.
+- [x] Ecriture Supabase via bridge.
 
 Livrable C: parcours lineaire complet, donnees sauvegardees.
 
 ## Phase D - Monde ouvert + fast travel (3-4 jours)
-- [ ] Hub ouvert pour actes 4-6.
-- [ ] Carte rapide (lieux visites uniquement).
-- [ ] Teleport stable + retour scene.
-- [ ] Acte 7 final + gazette + countdown.
+- [x] Hub ouvert pour actes 4-6.
+- [x] Carte rapide (lieux visites uniquement).
+- [x] Teleport stable + retour scene.
+- [x] Acte 7 final + gazette + countdown.
 
 Livrable D: experience complete 10-15 min.
 
@@ -116,7 +102,13 @@ Livrable D: experience complete 10-15 min.
 
 Livrable E: V1 preprod.
 
+**Reste principalement:** remplacer decors/sprites placeholder par assets pixel (§6), finitions accessibilite et QA.
+
 ## 6) Strategy assets pixel art (cout maitrise)
+
+**Source de vérité DA (palette, vue, taille de tile)** : [GAME_DA_SPEC.md](GAME_DA_SPEC.md).  
+**Outils & pipeline** : [GAME_PIXEL_TOOLCHAIN.md](GAME_PIXEL_TOOLCHAIN.md).  
+Placeholders générés : `npm run game:placeholders`.
 
 Priorite: packs existants + IA uniquement pour variantes/polish.
 
@@ -144,8 +136,8 @@ Priorite: packs existants + IA uniquement pour variantes/polish.
 
 ## 8) Checklist de lancement V1
 
-- [ ] Route `/jeu` disponible dans le menu.
-- [ ] Phase A a E completee.
+- [x] Route `/jeu` disponible dans le menu.
+- [ ] Phase E completee (polish + QA).
 - [ ] Tests desktop Chrome/Edge + mobile Android/iOS.
 - [ ] Temps moyen session entre 10 et 15 min.
 - [ ] Donnees clefs bien poussees en base (RSVP, allergenes, avatar, musiques, idees).
@@ -158,4 +150,3 @@ Priorite: packs existants + IA uniquement pour variantes/polish.
 - SFX adaptatifs selon zone.
 - Sauvegarde cross-device avancee.
 - Cinematiques pixel (intro/outro) plus riches.
-

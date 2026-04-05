@@ -11,7 +11,7 @@
   - Allergènes / préférences alimentaires
   - Anecdote / texte libre
   - Boîte à idées (messages libres)
-  - (Option) un mode “jeu vidéo” 2D (Phaser) pour remplir les infos de manière ludique
+  - Mode “jeu vidéo” 2D (Phaser) : parcours **La Chronique du Domaine** sur `/jeu` (voir §3)
 - Thème visuel (important):
   - **Référence actuelle de l’UI invité** : esthétique **Bridgerton** (régence, crème, or, en-têtes typographiques *Italiana* / *Cormorant Garamond*, cartes `bridgerton-card`, etc.) — voir § “Cohérence graphique”.
   - **À terme** : accents **geek / pixel art** (ludiques, rétro) en complément, sans casser la base élégante.
@@ -73,6 +73,13 @@
   - Édition: `email`, `rue`, `numéro`, `boîte`, `code postal`, `ville`, `pays`
   - Carte intégrée de l'adresse (embed Google Maps)
   - Bloc QR personnel: aperçu, téléchargement PNG, action "Ajouter en favori"
+- **Jeu 2D (Phaser) — parcours ludique** :
+  - Route `/jeu`, entrée menu **Chronique pixel** ; hôte Angular : `src/app/pages/jeu/jeu.component.ts`.
+  - Moteur et scènes : `src/game/` (Phaser 3) — actes 0–7, hub, `BootScene`, pont vers Supabase via `src/game/services/GameBackendBridge.ts`.
+  - Progression : état local (`src/game/core/game-state.ts`) + sync JSON côté Supabase (RPC dédiées ci‑dessous).
+  - RPC jeu (SECURITY DEFINER, invité) : `get_game_progress_for_token`, `upsert_game_progress_for_token`, `reset_game_progress_for_token` (migration `supabase/migrations/20260327180000_game_progress_for_token.sql`).
+  - Narration / dialogues : `src/game/data/dialogues.catalog.ts` ; scénario narratif : `docs/Scénario.md` ; feuille de route production : `docs/JEU_V1_ROADMAP.md`.
+  - Compte à rebours fin de parcours : meta `wedding-date-iso` (injectée par `tools/inject-env.js` depuis `WEDDING_DATE_ISO` dans `.env.local`, et en prod via le workflow GitHub si le secret est défini).
 
 ## 4) Tech stack / framework (côté app)
 - Frontend:
@@ -102,6 +109,7 @@
   - build prod: `npm run build -- --configuration production`
   - fallback SPA: copie `index.html` vers `404.html`
   - injection secrets Supabase dans `dist/.../browser/index.html` et `404.html` (meta tags)
+  - (optionnel) injection du secret GitHub `WEDDING_DATE_ISO` en meta `wedding-date-iso` (compte à rebours dans le jeu)
   - copie des APIs PHP IONOS (`photos-*.php` + `spotify-search.php`) vers `dist/.../browser/api`
   - injection secrets Spotify dans `supabase-meta.json` au build (si fournis)
   - déploiement via SFTP/`lftp` vers IONOS (mirror sur dossier `public`)
@@ -112,6 +120,7 @@
   - `SUPABASE_ANON_KEY`
   - `QR_CODE_BASE_URL`
   - `BASE_PATH`
+  - (optionnel) `WEDDING_DATE_ISO` — date/heure du mariage en ISO 8601 (ex. `2026-08-30T14:00:00+02:00`) pour le compte à rebours dans le jeu (`meta name="wedding-date-iso"`)
   - (optionnel) `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` côté déploiement CI
 - Injection meta tags:
   - Script: `tools/inject-env.js` (écrit `src/index.html`)
@@ -129,6 +138,7 @@
   - `delete_musique_for_token(p_token, p_musique_id)`
   - `get_profile_for_token(p_token, p_personne_id)`
   - `update_profile_for_token(p_token, p_personne_id, ...)`
+  - **Progression jeu** : `get_game_progress_for_token(p_token, p_personne_id)`, `upsert_game_progress_for_token(...)`, `reset_game_progress_for_token(...)`
 - Quelques accès directs:
   - tableaux `familles`, `personnes` etc via le client Supabase côté admin.
 

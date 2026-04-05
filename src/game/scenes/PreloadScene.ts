@@ -1,0 +1,50 @@
+import Phaser from 'phaser';
+import {
+  ACT2_CHEF_TEXTURE_KEY,
+  ACT2_CUISINIER_TEXTURE_KEY,
+  registerAct2KitchenNpcAnims,
+} from '../data/act2-kitchen-npcs';
+import { LPC_PLAYER_SHEET_LOADS, registerLpcPlayerIdleAnimsAll, registerLpcPlayerWalkAnimsAll } from '../data/lpc-garcon';
+
+/** Chemins relatifs au dossier `src/assets` servi par Angular sous `/assets/`. */
+const G = 'assets/game';
+
+export class PreloadScene extends Phaser.Scene {
+  constructor() {
+    super('PreloadScene');
+  }
+
+  preload(): void {
+    this.load.image('tile-courtyard', `${G}/tilesets/tile-courtyard.png`);
+    this.load.image('tile-border', `${G}/tilesets/tile-border.png`);
+    for (const { key, path } of LPC_PLAYER_SHEET_LOADS) {
+      this.load.spritesheet(key, `${G}/${path}`, {
+        frameWidth: 64,
+        frameHeight: 64,
+      });
+    }
+    this.load.image('player-top', `${G}/sprites/player-top.png`);
+    this.load.image('npc-majordome-top', `${G}/sprites/npc-majordome-top.png`);
+    this.load.spritesheet(ACT2_CHEF_TEXTURE_KEY, `${G}/sprites/cuisinier_chef.png`, {
+      frameWidth: 64,
+      frameHeight: 64,
+    });
+    this.load.spritesheet(ACT2_CUISINIER_TEXTURE_KEY, `${G}/sprites/cuisinier.png`, {
+      frameWidth: 64,
+      frameHeight: 64,
+    });
+    this.load.image('portrait-generic', `${G}/portraits/portrait-generic.png`);
+    this.load.image('portrait-majordome', `${G}/portraits/portrait-majordome.png`);
+    this.load.image('archetype-lady', `${G}/sprites/archetype-lady.png`);
+    this.load.image('archetype-gentleman', `${G}/sprites/archetype-gentleman.png`);
+    this.load.image('archetype-reine', `${G}/sprites/archetype-reine.png`);
+    this.load.image('archetype-duc', `${G}/sprites/archetype-duc.png`);
+  }
+
+  create(): void {
+    registerLpcPlayerWalkAnimsAll(this);
+    registerLpcPlayerIdleAnimsAll(this);
+    registerAct2KitchenNpcAnims(this);
+    this.scene.start('BootScene');
+  }
+}

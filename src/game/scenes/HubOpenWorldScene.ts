@@ -15,7 +15,7 @@ export class HubOpenWorldScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor('#f3ebe4');
 
-    this.add.text(18, 14, 'HUB - Domaine (monde ouvert)', {
+    this.add.text(18, 14, 'Le Domaine — Place du hub', {
       fontFamily: 'monospace',
       fontSize: '14px',
       color: '#2c2433',

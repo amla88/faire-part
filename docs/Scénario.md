@@ -7,8 +7,7 @@
 
 ## 🎭 ACTE 0 : L'Habillage dans le Carrosse (Sélection)
 * **Lieu :** Intérieur d'un carrosse de luxe. Banquettes de velours, dorures pixelisées. On voit la campagne belge défiler par les fenêtres.
-* **Élément central :** Un grand miroir de cour à psyché (pivotant) au centre de la cabine.
-* **L'Action :** Le joueur clique sur l'une des 4 silhouettes assises pour qu'elle se lève et se regarde dans le miroir.
+* **Implémentation actuelle (V1) :** cabine stylisée en pixel ; **quatre silhouettes** au banc (pas de miroir animé pour l’instant). Le joueur **sélectionne** une silhouette (souris ou **flèches / ZQSD**, puis validation), ce qui fixe l’archétype pour la partie. Un miroir de cour pourra enrichir la scène dans une itération ultérieure si les assets le permettent.
 * **Les Personnages :** * *La Lady* (Robe empire)
     * *Le Gentleman* (Redingote & Haut-de-forme)
     * *La Reine de la Nuit* (Dragqueen monumentale)
@@ -71,3 +70,22 @@
 * **Texte de la Gazette :** > "Très chers lecteurs, l'attente touche à sa fin. Les cuisines sont alertées, les musiciens accordés et les cœurs synchronisés. Tout est désormais prêt pour l'union la plus attendue de l'année. Le destin est en marche..."
 * **Écran de fin :** * Compte à rebours dynamique (Jours/Heures/Minutes).
     * Remerciements personnalisés basés sur les données Supabase.
+
+---
+
+## Progression technique (alignée sur le code)
+
+Les actes **1 à 3** sont **linéaires** (RSVP → allergènes → avatar). Après l’acte 3, le **hub** et la **carte rapide** débloquent les actes **4 à 6** (parcours libre entre ces lieux).
+
+**Pour déclencher automatiquement l’acte 7 (Gazette)** une fois les étapes clés validées, l’application vérifie en parallèle :
+
+| Condition | Rôle |
+|-----------|------|
+| RSVP enregistré (acte 1) | Obligatoire |
+| Allergènes / remarques (acte 2) | Obligatoire |
+| Avatar enregistré (acte 3) | Obligatoire |
+| **Au moins une** anecdote **ou** **au moins une** photo (acte 4) | Requis pour la fin automatique |
+| Au moins une idée en boîte à idées (acte 5) | Requis pour la fin automatique |
+| Au moins une musique proposée (acte 6) | Requis pour la fin automatique |
+
+Les actes 4–6 restent **narrativement** des confidences / suggestions / musiques « à la carte », mais **au moins une contribution dans chaque colonne** (verger, gloriette, écurie) est attendue pour considérer le parcours **complet** et afficher la Gazette sans rester bloqué. Pour ajuster cette règle (par ex. tout optionnel sauf RSVP), modifier la logique `allStepsDone()` dans `src/app/pages/jeu/jeu.component.ts`.

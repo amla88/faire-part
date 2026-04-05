@@ -22,7 +22,7 @@ export class Act3GrangeScene extends Phaser.Scene {
     gameState.setAct('act3');
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor('#f3ebe4');
-    this.add.text(18, 14, 'ACTE 3 - Grande grange (prototype)', {
+    this.add.text(18, 14, 'ACTE 3 — La Grande Grange', {
       fontFamily: 'monospace',
       fontSize: '14px',
       color: '#2c2433',

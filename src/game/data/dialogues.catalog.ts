@@ -26,6 +26,7 @@ export const dialoguesCatalog: Record<DialogueId, DialogueData> = {
     steps: [
       {
         speaker: 'Monsieur de La Plume',
+        portraitTexture: 'portrait-majordome',
         portraitColor: 0xc9a55c,
         text:
           "Votre nom, s'il vous plaît ? Le protocole du banquet est une science exacte. Je dois savoir si vous honorerez notre table pour le souper ou si vous nous rejoindrez pour les festivités nocturnes.",
@@ -36,6 +37,7 @@ export const dialoguesCatalog: Record<DialogueId, DialogueData> = {
     steps: [
       {
         speaker: 'Monsieur de La Plume',
+        portraitTexture: 'portrait-majordome',
         portraitColor: 0xc9a55c,
         text:
           "Ah ! Votre nom brille déjà dans nos colonnes comme une promesse de fête. Entrez, la cour trépigne de vous voir !",
@@ -46,19 +48,20 @@ export const dialoguesCatalog: Record<DialogueId, DialogueData> = {
     steps: [
       {
         speaker: 'Monsieur de La Plume',
+        portraitTexture: 'portrait-majordome',
         portraitColor: 0xc9a55c,
         text:
-          "Parfait. Un dernier détail — et non des moindres. Le Chef a réclamé votre attention avec l’urgence d’un patch en production : il veut vous parler… dans les cuisines. Je vous déconseille de le faire patienter, il manie la louche comme d’autres manient la satire.",
+          "Parfait. Un dernier détail — et non des moindres. L’Intendant des Cuisines a réclamé votre attention avec l’urgence d’un patch en production : il veut vous parler… près des fourneaux. Je vous déconseille de le faire patienter — il manie la louche comme d’autres manient la satire.",
       },
     ],
   },
   'act2.chefIntro': {
     steps: [
       {
-        speaker: 'Le Chef',
+        speaker: "L'Intendant des Cuisines",
         portraitColor: 0xabbca6,
         text:
-          "Ah, vous voilà ! J’ai des casseroles, des timings… et des invités. Or, un invité malheureux, c’est un bug critique. Dites-moi : y a-t-il des noix, du gluten, ou quelque sortilège alimentaire que je dois bannir de mon code… euh, de ma cuisine ?",
+          "Doucement, voyageur ! Ma cuisine est un temple de délices, mais je refuserais de vous empoisonner par mégarde. Y a-t-il des noix, du gluten ou d’autres maléfices que votre estomac ne saurait tolérer ? Confiez-moi vos interdits — et si vous préférez le ton technique : j’ai aussi des casseroles, des timings… et des invités. Un invité malheureux, c’est un bug critique.",
       },
     ],
   },
@@ -80,7 +83,7 @@ export const dialoguesCatalog: Record<DialogueId, DialogueData> = {
         speaker: 'Madame Chromatique',
         portraitColor: 0xabbca6,
         text:
-          "Tenez. Une carte. Elle vous évitera de tourner en rond comme un curseur sans focus. Désormais, libre à vous d’errer : revenir au Registre, saluer le Chef… ou courir vers de nouvelles scènes.",
+          "Tenez. Une carte. Elle vous évitera de tourner en rond comme un curseur sans focus. Désormais, libre à vous d’errer : revenir au Registre, saluer l’Intendant des Cuisines… ou courir vers de nouvelles scènes.",
       },
     ],
   },

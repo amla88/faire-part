@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { gameState, isPlayerArchetype, REMOTE_PROGRESS_PLAYER_KEY } from '../core/game-state';
 
 type RpcResult<T> = { data: T | null; error: any };
 
@@ -52,7 +53,7 @@ export class GameBackendBridge {
     return Number.isFinite(personneId) ? personneId : null;
   }
 
-  async getGameProgressForSelected(): Promise<Record<string, boolean>> {
+  async getGameProgressForSelected(): Promise<Record<string, unknown>> {
     const token = this.getToken();
     if (!token) return {};
     const personneId = this.getSelectedPersonneId();
@@ -61,7 +62,7 @@ export class GameBackendBridge {
     if (res.error) return {};
     const flags = res.data as any;
     if (!flags || typeof flags !== 'object') return {};
-    return flags as Record<string, boolean>;
+    return flags as Record<string, unknown>;
   }
 
   async upsertGameProgressForSelected(flags: Record<string, boolean>): Promise<void> {
@@ -69,10 +70,17 @@ export class GameBackendBridge {
     if (!token) return;
     const personneId = this.getSelectedPersonneId();
     if (!personneId) return;
+    const remote = await this.getGameProgressForSelected();
+    const remotePlayerRaw = remote[REMOTE_PROGRESS_PLAYER_KEY];
+    const remotePlayer =
+      typeof remotePlayerRaw === 'string' && isPlayerArchetype(remotePlayerRaw) ? remotePlayerRaw : undefined;
+    const pl = gameState.snapshot.player ?? remotePlayer;
+    const payload: Record<string, unknown> = { ...(flags || {}) };
+    if (pl) payload[REMOTE_PROGRESS_PLAYER_KEY] = pl;
     const res = await this.rpc('upsert_game_progress_for_token', {
       p_token: token,
       p_personne_id: personneId,
-      p_flags: flags || {},
+      p_flags: payload,
     });
     if (res.error) throw res.error;
   }

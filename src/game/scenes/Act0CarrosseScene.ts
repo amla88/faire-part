@@ -5,10 +5,27 @@ import { quests, QuestFlags } from '../systems/QuestSystem';
 import { SceneInput } from '../systems/SceneInput';
 import { getDialogue } from '../data/dialogues.catalog';
 import { gameBackend } from '../services/GameBackendBridge';
+import {
+  LPC_PLAYER_IDLE_FIRST_FRAMES,
+  LPC_TEXTURE_KEY_BY_ARCHETYPE,
+  playLpcPlayerIdle,
+  setLpcPlayerIdleFrame,
+  type LpcFacing,
+} from '../data/lpc-garcon';
+
+const ACT0_ARCHETYPES: PlayerArchetype[] = [
+  'Lady',
+  'Gentleman',
+  'Reine de la nuit',
+  'Duc de la scene',
+];
+
+/** Vue « face caméra » pour la grille de choix. */
+const CHOICE_FACING: LpcFacing = 'down';
 
 export class Act0CarrosseScene extends Phaser.Scene {
   private inputState!: SceneInput;
-  private optionRects: Phaser.GameObjects.Rectangle[] = [];
+  private optionSprites: Phaser.GameObjects.Sprite[] = [];
   private currentIndex = 0;
 
   private dialogueBox!: DialogueBox;
@@ -29,7 +46,7 @@ export class Act0CarrosseScene extends Phaser.Scene {
 
     this.add.rectangle(width / 2, height * 0.28, width * 0.66, 32, 0x6b4f44);
     this.add.rectangle(width / 2, height * 0.72, width * 0.66, 32, 0x6b4f44);
-    this.add.text(18, 14, 'ACTE 0 - Carrosse (prototype)', {
+    this.add.text(18, 14, 'ACTE 0 — Le carrosse', {
       fontFamily: 'monospace',
       fontSize: '14px',
       color: '#2c2433',
@@ -41,28 +58,38 @@ export class Act0CarrosseScene extends Phaser.Scene {
       color: '#2c2433',
     }).setOrigin(0.5);
 
-    // Silhouettes cible (placeholder).
+    const spriteScale = 2;
     const targets = [
       { x: width * 0.28, y: height * 0.5, label: 'Lady' },
       { x: width * 0.41, y: height * 0.5, label: 'Gentleman' },
       { x: width * 0.59, y: height * 0.5, label: 'Reine de la nuit' },
       { x: width * 0.72, y: height * 0.5, label: 'Duc de la scene' },
     ];
-    this.optionRects = targets.map((t, index) => {
-      const rect = this.add.rectangle(t.x, t.y, 24, 38, 0x1b1821);
-      rect.setInteractive({ useHandCursor: true });
-      rect.on('pointerdown', () => {
+    this.optionSprites = targets.map((t, index) => {
+      const tex = LPC_TEXTURE_KEY_BY_ARCHETYPE[ACT0_ARCHETYPES[index]!];
+      const spr = this.add
+        .sprite(t.x, t.y, tex, LPC_PLAYER_IDLE_FIRST_FRAMES[CHOICE_FACING])
+        .setScale(spriteScale);
+      spr.setInteractive({ useHandCursor: true });
+      spr.on('pointerover', () => {
+        if (this.selectionLocked || this.dialogueBox.active) return;
+        if (this.currentIndex === index) return;
+        this.currentIndex = index;
+        this.updateHighlight();
+      });
+      spr.on('pointerdown', () => {
         if (this.selectionLocked || this.dialogueBox.active) return;
         this.currentIndex = index;
         this.updateHighlight();
         this.validateSelection();
       });
-      this.add.text(t.x, t.y + 30, t.label, {
+      const labelY = t.y + 32 * spriteScale + 8;
+      this.add.text(t.x, labelY, t.label, {
         fontFamily: 'monospace',
         fontSize: '10px',
         color: '#f2dfc3',
       }).setOrigin(0.5, 0);
-      return rect;
+      return spr;
     });
 
     this.dialogueBox = new DialogueBox(this);
@@ -80,16 +107,16 @@ export class Act0CarrosseScene extends Phaser.Scene {
       return;
     }
 
-    if (!this.optionRects.length) return;
+    if (!this.optionSprites.length) return;
 
     const leftPressed = this.inputState.leftJustDown();
     const rightPressed = this.inputState.rightJustDown();
 
     if (leftPressed) {
-      this.currentIndex = (this.currentIndex + this.optionRects.length - 1) % this.optionRects.length;
+      this.currentIndex = (this.currentIndex + this.optionSprites.length - 1) % this.optionSprites.length;
       this.updateHighlight();
     } else if (rightPressed) {
-      this.currentIndex = (this.currentIndex + 1) % this.optionRects.length;
+      this.currentIndex = (this.currentIndex + 1) % this.optionSprites.length;
       this.updateHighlight();
     }
 
@@ -104,8 +131,7 @@ export class Act0CarrosseScene extends Phaser.Scene {
     if (this.selectionLocked || this.dialogueBox.active) return;
     this.selectionLocked = true;
 
-    const labels: PlayerArchetype[] = ['Lady', 'Gentleman', 'Reine de la nuit', 'Duc de la scene'];
-    const chosen = labels[this.currentIndex] ?? 'Lady';
+    const chosen = ACT0_ARCHETYPES[this.currentIndex] ?? 'Lady';
     gameState.setPlayer(chosen);
     quests.done(QuestFlags.act0Chosen);
 
@@ -124,11 +150,13 @@ export class Act0CarrosseScene extends Phaser.Scene {
   }
 
   private updateHighlight(): void {
-    this.optionRects.forEach((rect, index) => {
+    this.optionSprites.forEach((sprite, index) => {
       if (index === this.currentIndex) {
-        rect.setStrokeStyle(3, 0xf5c16c, 1);
+        sprite.setTint(0xfff2c4);
+        playLpcPlayerIdle(this, sprite, CHOICE_FACING);
       } else {
-        rect.setStrokeStyle(1, 0x000000, 0.5);
+        sprite.clearTint();
+        setLpcPlayerIdleFrame(sprite, CHOICE_FACING);
       }
     });
   }

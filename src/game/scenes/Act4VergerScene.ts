@@ -25,7 +25,7 @@ export class Act4VergerScene extends Phaser.Scene {
     gameState.setAct('act4');
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor('#f3ebe4');
-    this.add.text(18, 14, 'ACTE 4 - Verger (placeholder)', {
+    this.add.text(18, 14, 'ACTE 4 — Le Verger des confidences', {
       fontFamily: 'monospace',
       fontSize: '14px',
       color: '#2c2433',

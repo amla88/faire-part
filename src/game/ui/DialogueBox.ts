@@ -4,7 +4,10 @@ import { createCardGraphics } from './BridgertonCard';
 export interface DialogueStep {
   speaker: string;
   text: string;
+  /** Couleur d’accent si `portraitTexture` est absent (tint sur `portrait-generic`). */
   portraitColor?: number;
+  /** Texture préchargée (ex. `portrait-majordome`). Sinon silhouette générique + tint. */
+  portraitTexture?: string;
 }
 
 export interface DialogueData {
@@ -14,7 +17,7 @@ export interface DialogueData {
 export class DialogueBox {
   private shadow: Phaser.GameObjects.Graphics;
   private bg: Phaser.GameObjects.Graphics;
-  private portrait: Phaser.GameObjects.Rectangle;
+  private portrait: Phaser.GameObjects.Image;
   private speakerText: Phaser.GameObjects.Text;
   private bodyText: Phaser.GameObjects.Text;
 
@@ -36,22 +39,23 @@ export class DialogueBox {
     this.shadow = g.shadow;
     this.bg = g.card;
 
-    // Portrait: accent sauge
-    this.portrait = scene.add.rectangle(x - boxW / 2 + 28, y, 46, 46, 0xabbca6, 0.28);
-    this.portrait.setStrokeStyle(2, 0x2a3228, 0.28);
+    // Portrait pixel (texture `portrait-generic` ou clé dédiée préchargée).
+    this.portrait = scene.add.image(x - boxW / 2 + 28, y, 'portrait-generic');
+    this.portrait.setDisplaySize(46, 46);
+    this.portrait.setAlpha(0.95);
 
     this.speakerText = scene.add.text(x - boxW / 2 + 88, y - boxH / 2 + 16, '', {
       fontFamily: 'monospace',
-      fontSize: '14px',
+      fontSize: '15px',
       color: '#2c2433',
     });
 
     this.bodyText = scene.add.text(x - boxW / 2 + 88, y - boxH / 2 + 34, '', {
       fontFamily: 'monospace',
-      fontSize: '14px',
+      fontSize: '15px',
       color: '#2c2433',
       wordWrap: { width: boxW - 88 - 18 },
-      lineSpacing: 4,
+      lineSpacing: 5,
     });
 
     this.hide();
@@ -89,8 +93,13 @@ export class DialogueBox {
     if (!step) return;
     this.speakerText.setText(step.speaker || '');
 
-    if (typeof step.portraitColor === 'number') {
-      this.portrait.setFillStyle(step.portraitColor, 0.35);
+    const tex = step.portraitTexture?.trim();
+    if (tex && this.scene.textures.exists(tex)) {
+      this.portrait.setTexture(tex);
+      this.portrait.clearTint();
+    } else {
+      this.portrait.setTexture('portrait-generic');
+      this.portrait.setTint(step.portraitColor ?? 0xabbca6);
     }
 
     this.bodyText.setText(step.text || '');

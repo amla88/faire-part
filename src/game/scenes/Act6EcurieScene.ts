@@ -23,7 +23,7 @@ export class Act6EcurieScene extends Phaser.Scene {
     gameState.setAct('act6');
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor('#f3ebe4');
-    this.add.text(18, 14, 'ACTE 6 - Écurie musicale (placeholder)', {
+    this.add.text(18, 14, 'ACTE 6 — L’Écurie musicale', {
       fontFamily: 'monospace',
       fontSize: '14px',
       color: '#2c2433',

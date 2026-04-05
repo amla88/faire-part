@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { PreloadScene } from '../scenes/PreloadScene';
 import { BootScene } from '../scenes/BootScene';
 import { Act0CarrosseScene } from '../scenes/Act0CarrosseScene';
 import { Act1CourScene } from '../scenes/Act1CourScene';
@@ -26,6 +27,7 @@ export function createGame(container: HTMLElement): Phaser.Game {
       height: 540,
     },
     scene: [
+      PreloadScene,
       BootScene,
       Act0CarrosseScene,
       Act1CourScene,

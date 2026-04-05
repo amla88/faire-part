@@ -6,6 +6,13 @@ import { SceneInput } from '../systems/SceneInput';
 import { getDialogue } from '../data/dialogues.catalog';
 import { gameBackend } from '../services/GameBackendBridge';
 import { gameState } from '../core/game-state';
+import {
+  LPC_PLAYER_IDLE_FIRST_FRAMES,
+  type LpcFacing,
+  playLpcPlayerIdle,
+  playLpcPlayerWalk,
+  resolveLpcPlayerTextureKey,
+} from '../data/lpc-garcon';
 
 export class Act1CourScene extends Phaser.Scene {
   private inputState!: SceneInput;
@@ -13,8 +20,8 @@ export class Act1CourScene extends Phaser.Scene {
   private dialogueBox!: DialogueBox;
   private formBox!: FormBox;
 
-  private player!: Phaser.GameObjects.Rectangle;
-  private npc!: Phaser.GameObjects.Rectangle;
+  private player!: Phaser.GameObjects.Sprite;
+  private npc!: Phaser.GameObjects.Sprite;
   private npcLabel!: Phaser.GameObjects.Text;
 
   private hintText!: Phaser.GameObjects.Text;
@@ -22,6 +29,7 @@ export class Act1CourScene extends Phaser.Scene {
   private choicesText!: Phaser.GameObjects.Text;
   private saving = false;
   private toChefQueued = false;
+  private playerFacing: LpcFacing = 'down';
 
   constructor() {
     super('Act1CourScene');
@@ -32,19 +40,25 @@ export class Act1CourScene extends Phaser.Scene {
 
     this.cameras.main.setBackgroundColor('#f3ebe4');
 
-    // Sol (prototype).
-    this.add.rectangle(width / 2, height / 2, width * 0.92, height * 0.78, 0xffffff, 0.22);
-    this.add.rectangle(width / 2, height / 2, width * 0.92, height * 0.78, 0x000000, 0.04).setStrokeStyle(2, 0xabbca6, 0.25);
+    const TILE_SCALE = 2;
+    this.add
+      .tileSprite(0, 0, width, height, 'tile-courtyard')
+      .setOrigin(0, 0)
+      .setTileScale(TILE_SCALE);
 
-    // Player (placeholder).
-    this.player = this.add.rectangle(width / 2 - 140, height / 2 + 60, 22, 26, 0xf5c16c, 0.85);
-    this.player.setStrokeStyle(2, 0xf4dfbf, 0.35);
+    this.add
+      .rectangle(width / 2, height / 2, width * 0.92, height * 0.78, 0x000000, 0)
+      .setStrokeStyle(2, 0xabbca6, 0.35);
 
-    // PNJ (placeholder) - "Le Majordome".
+    const playerTex = resolveLpcPlayerTextureKey(gameState.snapshot.player);
+    this.player = this.add
+      .sprite(width / 2 - 140, height / 2 + 60, playerTex, LPC_PLAYER_IDLE_FIRST_FRAMES.down)
+      .setScale(TILE_SCALE);
+    playLpcPlayerIdle(this, this.player, this.playerFacing);
+
     const npcX = width / 2 + 130;
     const npcY = height / 2 - 40;
-    this.npc = this.add.rectangle(npcX, npcY, 28, 40, 0x4b86c5, 0.3);
-    this.npc.setStrokeStyle(2, 0x90c7ff, 0.45);
+    this.npc = this.add.sprite(npcX, npcY, 'npc-majordome-top').setScale(TILE_SCALE);
 
     this.npcLabel = this.add.text(npcX, npcY + 44, 'M. de La Plume', {
       fontFamily: 'monospace',
@@ -89,12 +103,14 @@ export class Act1CourScene extends Phaser.Scene {
     const interactJustDown = this.inputState.actionJustDown();
 
     if (this.dialogueBox.active) {
+      playLpcPlayerIdle(this, this.player, this.playerFacing);
       if (interactJustDown) this.dialogueBox.next();
       this.inputState.commit();
       return;
     }
 
     if (this.formBox.active) {
+      playLpcPlayerIdle(this, this.player, this.playerFacing);
       this.formBox.handleToggleInput({
         up: this.inputState.upJustDown(),
         down: this.inputState.downJustDown(),
@@ -121,6 +137,13 @@ export class Act1CourScene extends Phaser.Scene {
         vy /= len;
       }
 
+      if (Math.abs(vx) > Math.abs(vy)) {
+        this.playerFacing = vx > 0 ? 'right' : 'left';
+      } else if (vy !== 0) {
+        this.playerFacing = vy > 0 ? 'down' : 'up';
+      }
+      playLpcPlayerWalk(this, this.player, this.playerFacing);
+
       const { width, height } = this.scale;
       const minX = 24;
       const maxX = width - 24;
@@ -129,6 +152,8 @@ export class Act1CourScene extends Phaser.Scene {
 
       this.player.x = Phaser.Math.Clamp(this.player.x + vx * speed * dt, minX, maxX);
       this.player.y = Phaser.Math.Clamp(this.player.y + vy * speed * dt, minY, maxY);
+    } else {
+      playLpcPlayerIdle(this, this.player, this.playerFacing);
     }
 
     if (!quests.isDone(QuestFlags.act1RegisterDone)) {

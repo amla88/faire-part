@@ -44,6 +44,22 @@ jobs:
             fi
           done
 
+      - name: Injection meta date mariage (compte à rebours jeu)
+        env:
+          WEDDING_DATE_ISO: ${{ secrets.WEDDING_DATE_ISO }}
+        run: |
+          if [ -z "${WEDDING_DATE_ISO:-}" ]; then
+            echo "WEDDING_DATE_ISO non défini — compte à rebours jeu sans date cible (optionnel)."
+            exit 0
+          fi
+          for f in dist/faire-part/browser/index.html dist/faire-part/browser/404.html; do
+            if grep -q 'name="wedding-date-iso"' "$f"; then
+              sed -i "s|<meta name=\"wedding-date-iso\" content=\"[^\"]*\">|<meta name=\"wedding-date-iso\" content=\"${WEDDING_DATE_ISO}\">|g" "$f"
+            else
+              sed -i "1,/<\/head>/s|</head>|  <meta name=\"wedding-date-iso\" content=\"${WEDDING_DATE_ISO}\">\n</head>|" "$f"
+            fi
+          done
+
       - name: Deploy PHP API (photos + Spotify)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

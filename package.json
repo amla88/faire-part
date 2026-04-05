@@ -4,9 +4,10 @@
   "scripts": {
     "ng": "ng",
     "start": "node ./tools/inject-env.js && ng serve --proxy-config proxy.conf.json",
-    "build": "ng build --base-href=/",
+    "build": "node ./tools/inject-env.js && ng build --base-href=/",
     "watch": "ng build --watch --configuration development",
-    "spa-fallback": "copy dist\\faire-part\\browser\\index.html dist\\faire-part\\browser\\404.html"
+    "spa-fallback": "copy dist\\faire-part\\browser\\index.html dist\\faire-part\\browser\\404.html",
+    "game:placeholders": "node tools/generate-game-placeholders.js"
   },
   "private": true,
   "dependencies": {
@@ -45,6 +46,7 @@
     "@types/jszip": "^3.4.0",
     "@types/node": "^24.9.1",
     "@types/qrcode": "^1.5.6",
+    "pngjs": "^7.0.0",
     "supabase": "^2.79.0",
     "typescript": "~5.9.3"
   }

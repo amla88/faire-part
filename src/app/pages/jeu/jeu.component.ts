@@ -13,7 +13,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { createGame } from 'src/game/core/create-game';
 import { resetVirtualInputState, virtualInputState } from 'src/game/core/input-state';
-import { gameState } from 'src/game/core/game-state';
+import { gameState, isPlayerArchetype, REMOTE_PROGRESS_PLAYER_KEY } from 'src/game/core/game-state';
 import { gameBackend } from 'src/game/services/GameBackendBridge';
 
 @Component({
@@ -65,9 +65,7 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
     window.addEventListener('resize', this.resizeHandler);
     window.addEventListener('fp-game-show-map', this.mapEventHandler as any);
     window.addEventListener('fp-game-progress-updated', this.progressUpdatedHandler as any);
-    this.hasSave.set(gameState.hasSave());
-    this.refreshProgress();
-    this.game = createGame(this.gameHost.nativeElement);
+    void this.bootstrapGame();
     // Certains navigateurs n'autorisent le fullscreen qu'après un geste utilisateur.
     // On mémorise le premier pointerdown dans la zone du jeu.
     try {
@@ -79,6 +77,38 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
         { passive: true }
       );
     } catch {}
+  }
+
+  /** Charge la sauvegarde locale + progression serveur avant de démarrer Phaser (évite course async / perso absent). */
+  private async bootstrapGame(): Promise<void> {
+    try {
+      gameState.load();
+    } catch {}
+    this.syncProgressSignalsFromGameState();
+    try {
+      const remote = await gameBackend.getGameProgressForSelected();
+      this.applyRemoteGameProgress(remote);
+      this.syncProgressSignalsFromGameState();
+    } catch {}
+    this.game = createGame(this.gameHost.nativeElement);
+  }
+
+  private applyRemoteGameProgress(remote: Record<string, unknown>): void {
+    if (!remote || typeof remote !== 'object') return;
+    for (const [k, v] of Object.entries(remote)) {
+      if (k === REMOTE_PROGRESS_PLAYER_KEY && typeof v === 'string' && isPlayerArchetype(v)) {
+        if (!gameState.snapshot.player) gameState.setPlayer(v);
+        continue;
+      }
+      if (v === true) gameState.setFlag(k, true);
+    }
+  }
+
+  private syncProgressSignalsFromGameState(): void {
+    const flags = (gameState.snapshot.flags || {}) as Record<string, boolean>;
+    this.progressFlags.set({ ...flags });
+    this.mapUnlocked.set(flags['hub.map_unlocked'] === true);
+    this.hasSave.set(gameState.hasSave());
   }
 
   ngOnDestroy(): void {
@@ -160,6 +190,7 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
     return this.progressFlags()?.[flagKey] === true;
   }
 
+  /** Règles détaillées : docs/Scénario.md (section « Progression technique »). */
   allStepsDone(): boolean {
     // Étapes "validées" attendues pour déclencher le final.
     return (
@@ -176,20 +207,12 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
     try {
       gameState.load();
     } catch {}
-    const flags = (gameState.snapshot.flags || {}) as Record<string, boolean>;
-    this.progressFlags.set({ ...flags });
-    this.mapUnlocked.set(flags['hub.map_unlocked'] === true);
+    this.syncProgressSignalsFromGameState();
 
-    // Best-effort: recharger la progression server et la refléter en local.
     try {
       void gameBackend.getGameProgressForSelected().then((remote) => {
-        if (!remote || typeof remote !== 'object') return;
-        for (const [k, v] of Object.entries(remote)) {
-          if (v === true) gameState.setFlag(k, true);
-        }
-        const merged = (gameState.snapshot.flags || {}) as Record<string, boolean>;
-        this.progressFlags.set({ ...merged });
-        this.mapUnlocked.set(merged['hub.map_unlocked'] === true);
+        this.applyRemoteGameProgress(remote);
+        this.syncProgressSignalsFromGameState();
       });
     } catch {}
   }

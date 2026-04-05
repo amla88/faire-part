@@ -23,7 +23,7 @@ export class Act5GlorietteScene extends Phaser.Scene {
     gameState.setAct('act5');
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor('#f3ebe4');
-    this.add.text(18, 14, 'ACTE 5 - Gloriette (placeholder)', {
+    this.add.text(18, 14, 'ACTE 5 — La Gloriette aux souhaits', {
       fontFamily: 'monospace',
       fontSize: '14px',
       color: '#2c2433',

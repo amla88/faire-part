@@ -15,7 +15,7 @@ export class Act7FinalGazetteScene extends Phaser.Scene {
     gameState.setAct('act7');
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor('#f3ebe4');
-    this.add.text(18, 14, 'ACTE 7 - Gazette (placeholder)', {
+    this.add.text(18, 14, 'ACTE 7 — La Gazette', {
       fontFamily: 'monospace',
       fontSize: '14px',
       color: '#2c2433',

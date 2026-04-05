@@ -1,5 +1,19 @@
 export type PlayerArchetype = 'Lady' | 'Gentleman' | 'Reine de la nuit' | 'Duc de la scene';
 
+const PLAYER_ARCHETYPE_VALUES: readonly PlayerArchetype[] = [
+  'Lady',
+  'Gentleman',
+  'Reine de la nuit',
+  'Duc de la scene',
+] as const;
+
+export function isPlayerArchetype(v: string): v is PlayerArchetype {
+  return (PLAYER_ARCHETYPE_VALUES as readonly string[]).includes(v);
+}
+
+/** Clé dans le jsonb `flags` Supabase (chaîne), distincte des flags booléens. */
+export const REMOTE_PROGRESS_PLAYER_KEY = 'player_archetype';
+
 export type ActId = 'act0' | 'act1' | 'act2' | 'act3' | 'hub' | 'act4' | 'act5' | 'act6' | 'act7';
 
 export interface GameStateSnapshot {
@@ -48,8 +62,11 @@ export class GameState {
       )
         return false;
       const flags = parsed.flags && typeof parsed.flags === 'object' ? (parsed.flags as Record<string, boolean>) : {};
-      const player = parsed.player;
-      this.state = { act, flags, player: player as any };
+      let player: PlayerArchetype | undefined;
+      if (typeof parsed.player === 'string' && isPlayerArchetype(parsed.player)) {
+        player = parsed.player;
+      }
+      this.state = { act, flags, player };
       return true;
     } catch {
       return false;
