@@ -41,7 +41,71 @@
       </mat-card-header>
 
       <mat-card-content>
-        <form class="musiques-comment" [formGroup]="commentForm">
+        <h2 class="musiques-section-title musiques-section-title--first">Vos propositions</h2>
+
+        @if (loading()) {
+          <div class="musiques-loading musiques-loading--saved">
+            <mat-progress-spinner diameter="32" mode="indeterminate" color="primary"></mat-progress-spinner>
+            <span>Chargement…</span>
+          </div>
+        } @else if (rows().length === 0) {
+          <p class="musiques-empty musiques-empty--saved">Aucune proposition pour l’instant — la scène attend votre première entrée.</p>
+        } @else {
+          <ul class="musiques-saved-list musiques-saved-list--compact" role="list">
+            @for (m of rows(); track m.id) {
+              <li class="musiques-saved musiques-saved--compact">
+                @if (m.album_image_url) {
+                  <img class="musiques-saved-thumb" [src]="m.album_image_url" alt="" width="40" height="40" />
+                } @else {
+                  <div class="musiques-saved-thumb musiques-saved-thumb--placeholder" aria-hidden="true">
+                    <mat-icon>album</mat-icon>
+                  </div>
+                }
+                <div class="musiques-saved-main">
+                  <div class="musiques-saved-head musiques-saved-head--compact">
+                    <span
+                      class="musiques-status musiques-status--compact"
+                      [class.musiques-status--pending]="m.status === 'pending'"
+                      [class.musiques-status--approved]="m.status === 'approved'"
+                      [class.musiques-status--rejected]="m.status === 'rejected'"
+                    >{{ statusLabel(m.status) }}</span>
+                    <time class="musiques-date musiques-date--compact" [attr.datetime]="m.created_at">{{ formatDate(m.created_at) }}</time>
+                  </div>
+                  <p class="musiques-saved-title">{{ m.titre }}</p>
+                  <p class="musiques-saved-meta">{{ m.auteur }} · {{ m.album_name || '—' }}</p>
+                  @if (m.commentaire) {
+                    <p class="musiques-saved-note musiques-saved-note--compact">« {{ m.commentaire }} »</p>
+                  }
+                  <a
+                    class="musiques-open-spotify musiques-open-spotify--compact"
+                    [href]="m.lien"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {{ linkLabel(m.lien) }}
+                    <mat-icon class="musiques-open-ico">open_in_new</mat-icon>
+                  </a>
+                </div>
+                @if (m.status === 'pending' || m.status === 'rejected') {
+                  <button
+                    mat-icon-button
+                    type="button"
+                    class="musiques-delete musiques-delete--compact"
+                    [attr.aria-label]="
+                      m.status === 'rejected' ? 'Supprimer cette proposition refusée' : 'Retirer cette proposition'
+                    "
+                    (click)="remove(m.id)"
+                    [disabled]="saving()"
+                  >
+                    <mat-icon>delete_outline</mat-icon>
+                  </button>
+                }
+              </li>
+            }
+          </ul>
+        }
+
+        <form class="musiques-comment musiques-block-after-saved" [formGroup]="commentForm">
           <mat-form-field appearance="outline" class="musiques-field" subscriptSizing="dynamic">
             <mat-label>Note pour les mariés (optionnelle)</mat-label>
             <textarea
@@ -55,7 +119,7 @@
           </mat-form-field>
         </form>
 
-        <div class="musiques-search-block">
+        <div class="musiques-search-block musiques-block-after-saved">
           <h2 class="musiques-section-title">Rechercher sur Spotify</h2>
           <form [formGroup]="searchForm" class="musiques-search-form">
             <mat-form-field appearance="outline" class="musiques-field musiques-search-field" subscriptSizing="dynamic">
@@ -68,6 +132,18 @@
                 placeholder="Au moins 2 caractères"
               />
               <mat-icon matPrefix>search</mat-icon>
+              @if ((searchForm.controls.q.value || '').length > 0) {
+                <button
+                  matSuffix
+                  mat-icon-button
+                  type="button"
+                  class="musiques-search-clear"
+                  aria-label="Effacer la recherche"
+                  (click)="clearSearch()"
+                >
+                  <mat-icon>close</mat-icon>
+                </button>
+              }
             </mat-form-field>
           </form>
 
@@ -147,63 +223,6 @@
             </div>
           </form>
         </div>
-
-        <h2 class="musiques-section-title m-t-24">Vos propositions</h2>
-
-        @if (loading()) {
-          <div class="musiques-loading">
-            <mat-progress-spinner diameter="36" mode="indeterminate" color="primary"></mat-progress-spinner>
-            <span>Chargement…</span>
-          </div>
-        } @else if (rows().length === 0) {
-          <p class="musiques-empty">Aucune proposition pour l’instant — la scène attend votre première entrée.</p>
-        } @else {
-          <ul class="musiques-saved-list" role="list">
-            @for (m of rows(); track m.id) {
-              <li class="musiques-saved">
-                @if (m.album_image_url) {
-                  <img class="musiques-hit-cover" [src]="m.album_image_url" alt="" width="56" height="56" />
-                } @else {
-                  <div class="musiques-hit-cover musiques-hit-cover--placeholder" aria-hidden="true">
-                    <mat-icon>album</mat-icon>
-                  </div>
-                }
-                <div class="musiques-hit-body">
-                  <div class="musiques-saved-head">
-                    <span class="musiques-status" [class]="'musiques-status--' + m.status">{{ statusLabel(m.status) }}</span>
-                    <time class="musiques-date" [attr.datetime]="m.created_at">{{ formatDate(m.created_at) }}</time>
-                  </div>
-                  <p class="musiques-hit-title">{{ m.titre }}</p>
-                  <p class="musiques-hit-meta">{{ m.auteur }} · {{ m.album_name || '—' }}</p>
-                  @if (m.commentaire) {
-                    <p class="musiques-saved-note">« {{ m.commentaire }} »</p>
-                  }
-                  <a
-                    class="musiques-open-spotify"
-                    [href]="m.lien"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {{ linkLabel(m.lien) }}
-                    <mat-icon class="musiques-open-ico">open_in_new</mat-icon>
-                  </a>
-                </div>
-                @if (m.status === 'pending') {
-                  <button
-                    mat-icon-button
-                    type="button"
-                    class="musiques-delete"
-                    aria-label="Retirer cette proposition"
-                    (click)="remove(m.id)"
-                    [disabled]="saving()"
-                  >
-                    <mat-icon>delete_outline</mat-icon>
-                  </button>
-                }
-              </li>
-            }
-          </ul>
-        }
       </mat-card-content>
     </mat-card>
   }

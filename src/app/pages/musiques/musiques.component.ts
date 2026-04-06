@@ -146,6 +146,12 @@ export class MusiquesComponent implements OnInit, OnDestroy {
     this.search$.next(q);
   }
 
+  clearSearch(): void {
+    this.searchForm.patchValue({ q: '' });
+    this.searchHits.set([]);
+    this.searchLoading.set(false);
+  }
+
   async load(): Promise<void> {
     const pid = this.selectedPersonneId();
     if (pid == null) {
