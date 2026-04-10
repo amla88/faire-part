@@ -179,4 +179,13 @@
 		justify-content: flex-start;
 		align-items: flex-start;
 	}
+
+	/* Badge « invitation déclinée » : pas toute la largeur, aligné à gauche comme le nom */
+	.person-declined {
+		align-self: flex-start;
+		width: auto;
+		max-width: 100%;
+		text-align: left;
+		box-sizing: border-box;
+	}
 }
