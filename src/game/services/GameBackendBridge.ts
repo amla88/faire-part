@@ -281,7 +281,7 @@ export class GameBackendBridge {
   }
 
   /** Acte 3: sauvegarder avatar via RPC token-based existant */
-  async upsertAvatarForSelected(seed: string, options: any): Promise<void> {
+  async upsertAvatarForSelected(seed: string, options: any, imageDataUri?: string | null): Promise<void> {
     const token = this.getToken();
     if (!token) throw new Error("Jeton d'invitation introuvable.");
     const personneId = this.getSelectedPersonneId();
@@ -293,6 +293,31 @@ export class GameBackendBridge {
       p_options: options,
     });
     if (res.error) throw res.error;
+    this.mergeAvatarIntoAppUserCache(personneId, { seed, options, imageDataUri: imageDataUri ?? undefined });
+  }
+
+  /** Aligné sur AvatarService.setAvatarInCache (aperçu PNG côté client). */
+  private mergeAvatarIntoAppUserCache(
+    personneId: number,
+    row: { seed?: string; options?: any; imageDataUri?: string }
+  ): void {
+    try {
+      const raw = localStorage.getItem('app_user');
+      if (!raw) return;
+      const user = JSON.parse(raw) as Record<string, any>;
+      user['avatars'] = user['avatars'] || {};
+      const av = user['avatars'] as Record<string, any>;
+      const existing = av[personneId] ?? av[String(personneId)] ?? {};
+      av[personneId] = {
+        ...existing,
+        seed: row.seed ?? existing.seed,
+        options: row.options ?? existing.options,
+        imageDataUri: row.imageDataUri ?? existing.imageDataUri,
+      };
+      localStorage.setItem('app_user', JSON.stringify(user));
+    } catch {
+      // ignore
+    }
   }
 }
 

@@ -47,6 +47,7 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
     this.mapUnlocked.set(true);
     this.showMap.set(true);
   };
+
   private progressUpdatedHandler = () => {
     this.refreshProgress();
     // Si tout est validé, basculer automatiquement vers le final.
@@ -255,4 +256,3 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
     }
   }
 }
-

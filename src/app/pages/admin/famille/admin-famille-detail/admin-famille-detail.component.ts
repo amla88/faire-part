@@ -21,6 +21,8 @@ import {
   QR_MODULE_COLOR_LIGHT_HEX,
   qrCanvasToDownloadablePngDataUrl,
 } from 'src/app/utils/qr-export-png';
+import { ConfirmDialogService } from 'src/app/shared/dialogs/confirm-dialog/confirm-dialog.service';
+import { ConfirmDialogData } from 'src/app/shared/dialogs/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-admin-famille-detail',
@@ -104,11 +106,12 @@ export class AdminFamilleDetailComponent implements OnInit {
   ];
 
   constructor(
-    private route: ActivatedRoute, 
-    private ngSupabase: NgSupabaseService, 
-    private snackBar: MatSnackBar, 
+    private route: ActivatedRoute,
+    private ngSupabase: NgSupabaseService,
+    private snackBar: MatSnackBar,
     private fb: FormBuilder,
     private adminAuth: AdminAuthService,
+    private confirmDialog: ConfirmDialogService,
     @Inject(DOCUMENT) private document: Document,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
@@ -269,13 +272,31 @@ export class AdminFamilleDetailComponent implements OnInit {
     throw new Error('Impossible de générer un token unique après plusieurs tentatives');
   }
 
-  /** Régénère le login_token pour la famille chargée (confirmation simple) */
+  /** Régénère ou crée le login_token pour la famille chargée (confirmation Material). */
   async regenerateToken() {
     const familleId = this.famille()?.id;
     if (!familleId) return;
-    if(this.currentToken()) {
-      if (!confirm('Régénérer le code d\'accès ?\nL\'ancien ne sera plus valide.')) return;
-    }
+
+    const hasToken = !!this.currentToken();
+    const dialogData: ConfirmDialogData = hasToken
+      ? {
+          title: 'Régénérer le code d’accès ?',
+          message:
+            'L’ancien code et le QR associé ne seront plus valides. Les invités devront utiliser le nouveau lien ou le nouveau QR.',
+          confirmText: 'Régénérer',
+          cancelText: 'Annuler',
+          isDanger: true,
+        }
+      : {
+          title: 'Générer un code d’accès ?',
+          message: 'Un code unique sera attribué à cette famille pour la connexion rapide.',
+          confirmText: 'Générer',
+          cancelText: 'Annuler',
+        };
+
+    const ok = await this.confirmDialog.confirm(dialogData);
+    if (!ok) return;
+
     this.loading.set(true);
     try {
       const client = this.ngSupabase.getClient();
