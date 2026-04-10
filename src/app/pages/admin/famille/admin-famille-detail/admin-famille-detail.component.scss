@@ -3,3 +3,19 @@
 .title-margin-bottom {
     margin-bottom: 12px;
 }
+
+.admin-family-qr {
+  line-height: 0;
+}
+
+.admin-family-qr qrcode {
+  display: inline-block;
+  max-width: min(220px, 100%);
+  vertical-align: top;
+}
+
+.admin-family-qr ::ng-deep canvas {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+}

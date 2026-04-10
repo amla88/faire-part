@@ -22,15 +22,13 @@
 		4px 0 24px rgba(44, 36, 51, 0.05);
 }
 
-.branding {
-	padding: 18px 20px 20px;
-	border-bottom: 1px solid color-mix(in srgb, var(--bridgerton-sage) 22%, transparent);
-	background: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, transparent 100%);
-}
-
 .sidebar-list {
 	&.mdc-list {
 		padding: 8px 18px 24px;
+
+		&.sidebar-list--no-branding {
+			padding-top: 18px;
+		}
 
 		// Sous-titres de section (Home, Pages, Auth…)
 		.nav-caption,

@@ -16,6 +16,11 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatRadioModule } from '@angular/material/radio';
 import { QRCodeComponent } from 'angularx-qrcode';
+import {
+  QR_MODULE_COLOR_DARK_HEX,
+  QR_MODULE_COLOR_LIGHT_HEX,
+  qrCanvasToDownloadablePngDataUrl,
+} from 'src/app/utils/qr-export-png';
 
 @Component({
   selector: 'app-admin-famille-detail',
@@ -46,6 +51,9 @@ export class AdminFamilleDetailComponent implements OnInit {
   currentToken = signal<string | null>(null);
   
   private qrCodeBaseUrl = '';
+
+  readonly qrColorDark = QR_MODULE_COLOR_DARK_HEX;
+  readonly qrColorLight = QR_MODULE_COLOR_LIGHT_HEX;
 
   qrCodeUrl = computed(() => {
     const token = this.currentToken();
@@ -217,10 +225,10 @@ export class AdminFamilleDetailComponent implements OnInit {
   }
   
   downloadQrCode() {
-    const qrCanvas = this.document.querySelector('qrcode canvas') as HTMLCanvasElement;
+    const qrCanvas = this.document.querySelector('.admin-family-qr qrcode canvas') as HTMLCanvasElement;
     if (qrCanvas) {
       const a = this.document.createElement('a');
-      a.href = qrCanvas.toDataURL('image/png');
+      a.href = qrCanvasToDownloadablePngDataUrl(qrCanvas);
       a.download = `QR_Code_Famille_${this.familyDisplayName().replace(/\s+/g, '_')}.png`;
       this.document.body.appendChild(a);
       a.click();

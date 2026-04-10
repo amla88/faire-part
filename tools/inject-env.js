@@ -50,12 +50,45 @@ function upsertMeta(name, content) {
   }
 }
 
+/**
+ * Déduit <base href> depuis QR_CODE_BASE_URL.
+ * Ex. https://host/authentication/quick/ → /
+ * Ex. https://host/sous-app/authentication/quick/ → /sous-app/
+ */
+function deriveAppBaseHrefFromQr(qrUrl) {
+  try {
+    const u = new URL(qrUrl);
+    let p = u.pathname.replace(/\/+$/, '') || '/';
+    const suf = '/authentication/quick';
+    if (p.endsWith(suf)) {
+      p = p.slice(0, -suf.length) || '/';
+      if (p === '/' || p === '') return '/';
+      return p.endsWith('/') ? p : `${p}/`;
+    }
+  } catch (_) {
+    /* ignore */
+  }
+  return '/';
+}
+
+function upsertBaseHref(href) {
+  const normalized = href.endsWith('/') ? href : `${href}/`;
+  const re = /<base\s+href="[^"]*"\s*>/i;
+  const tag = `<base href="${normalized}">`;
+  if (re.test(index)) {
+    index = index.replace(re, tag);
+  }
+}
+
+const appBaseHref = env.APP_BASE_HREF || deriveAppBaseHrefFromQr(qrCodeBaseUrl);
+
 upsertMeta('supabase-url', supabaseUrl);
 upsertMeta('supabase-anon-key', supabaseKey);
 upsertMeta('qr-code-base-url', qrCodeBaseUrl);
+upsertBaseHref(appBaseHref);
 if (weddingDateIso) {
   upsertMeta('wedding-date-iso', weddingDateIso);
 }
 
 fs.writeFileSync(indexPath, index, 'utf8');
-console.log('Injected SUPABASE and QR code meta tags into src/index.html');
+console.log('Injected SUPABASE, QR meta, and <base href> into src/index.html');

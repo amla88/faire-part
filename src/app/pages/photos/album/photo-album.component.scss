@@ -144,8 +144,8 @@
 	}
 }
 
-.album-card-content {
-	padding-top: 8px !important;
+.album-main-card.bridgerton-card > .mat-mdc-card-content.album-card-content {
+	padding: 8px 8px 16px !important;
 }
 
 .album-loading {

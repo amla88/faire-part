@@ -72,10 +72,13 @@
                   </div>
                 </div>
                 
-                <div *ngIf="qrCodeUrl()" class="text-center p-l-16">
+                <div *ngIf="qrCodeUrl()" class="text-center p-l-16 admin-family-qr">
                   <qrcode
                     [qrdata]="qrCodeUrl()!"
-                    [width]="128"
+                    [width]="420"
+                    [margin]="0"
+                    [colorDark]="qrColorDark"
+                    [colorLight]="qrColorLight"
                     [errorCorrectionLevel]="'M'"
                     elementType="canvas"
                   ></qrcode>

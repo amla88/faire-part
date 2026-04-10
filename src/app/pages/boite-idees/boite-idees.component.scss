@@ -88,6 +88,14 @@
 	margin: 0 !important;
 }
 
+.bi-card.bridgerton-card > .mat-mdc-card-content.bi-no-person {
+	padding: 28px 16px 32px !important;
+}
+
+.bi-card.bridgerton-card > .mat-mdc-card-content:not(.bi-no-person) {
+	padding: 8px 8px 24px !important;
+}
+
 .bi-form {
 	margin-bottom: 28px;
 }
@@ -197,7 +205,6 @@
 
 .bi-no-person {
 	text-align: center;
-	padding: 28px 16px 32px;
 }
 
 .bi-no-person-icon {

@@ -88,6 +88,14 @@
 	margin: 0 !important;
 }
 
+.anecdotes-card.bridgerton-card > .mat-mdc-card-content.anecdotes-no-person {
+	padding: 28px 16px 32px !important;
+}
+
+.anecdotes-card.bridgerton-card > .mat-mdc-card-content:not(.anecdotes-no-person) {
+	padding: 8px 8px 24px !important;
+}
+
 .anecdotes-form {
 	margin-bottom: 28px;
 }
@@ -197,7 +205,6 @@
 
 .anecdotes-no-person {
 	text-align: center;
-	padding: 28px 16px 32px;
 }
 
 .anecdotes-no-person-icon {

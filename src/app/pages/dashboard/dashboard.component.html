@@ -12,4 +12,66 @@
 	</section>
 
 	<app-response-summary></app-response-summary>
+
+	<section class="dashboard-email-wrap" aria-labelledby="dashboard-email-title">
+		<mat-card class="bridgerton-card dashboard-email-card">
+			@if (emailLoading()) {
+				<mat-card-content>
+					<p class="bridgerton-loading">Chargement de votre correspondance…</p>
+				</mat-card-content>
+			} @else if (profileEmail()) {
+				<mat-card-content>
+					<div class="dashboard-email-heading">
+						<span class="bridgerton-card-kicker">Messagerie du domaine</span>
+						<h2 id="dashboard-email-title" class="bridgerton-card-title dashboard-email-title">
+							Votre adresse de courriel
+						</h2>
+					</div>
+					<p class="dashboard-email-value" [attr.title]="profileEmail()">{{ profileEmail() }}</p>
+					<p class="dashboard-email-prose">
+						C’est à cette adresse que nous pourrions vous faire parvenir des nouvelles. Si elle n’est point la bonne,
+						nous vous prions de la corriger dans votre profil.
+					</p>
+					<div class="dashboard-email-actions">
+						<button
+							mat-flat-button
+							color="primary"
+							type="button"
+							routerLink="/profile"
+							class="bridgerton-rsvp-btn"
+						>
+							<mat-icon>person</mat-icon>
+							Mon profil
+						</button>
+					</div>
+				</mat-card-content>
+			} @else {
+				<mat-card-content>
+					<div class="dashboard-email-heading dashboard-email-heading--oops">
+						<span class="bridgerton-card-kicker">Messagerie du domaine</span>
+						<p class="dashboard-email-oops" aria-hidden="true">Oups</p>
+						<h2 id="dashboard-email-title" class="bridgerton-card-title dashboard-email-title">
+							Aucune adresse E-mail enregistrée
+						</h2>
+					</div>
+					<p class="dashboard-email-prose">
+						Il nous manque une direction électronique pour vous joindre — ce serait fort aimable d’en déposer une
+						dans votre profil, lorsque vous aurez un moment.
+					</p>
+					<div class="dashboard-email-actions">
+						<button
+							mat-flat-button
+							color="primary"
+							type="button"
+							routerLink="/profile"
+							class="bridgerton-rsvp-btn"
+						>
+							<mat-icon>edit</mat-icon>
+							Ajouter mon courriel
+						</button>
+					</div>
+				</mat-card-content>
+			}
+		</mat-card>
+	</section>
 </div>

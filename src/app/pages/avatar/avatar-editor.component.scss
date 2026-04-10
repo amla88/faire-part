@@ -119,9 +119,9 @@
 	flex-direction: column;
 }
 
-.preview-section mat-card-content,
-.settings-section mat-card-content {
-	padding-top: 4px !important;
+.preview-section.bridgerton-card > .mat-mdc-card-content,
+.settings-section.bridgerton-card > .mat-mdc-card-content {
+	padding: 4px 0 0 !important;
 }
 
 .preview-container {

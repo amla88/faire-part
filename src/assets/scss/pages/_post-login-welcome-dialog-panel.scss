@@ -1,0 +1,9 @@
+/* Panneau Material du dialogue d’accueil post-login (classe passée à MatDialog.open) */
+.post-login-welcome-dialog-panel .mat-mdc-dialog-container .mat-mdc-dialog-surface {
+	border-radius: 2px !important;
+	border: 1px solid rgba(184, 149, 106, 0.42) !important;
+	background: linear-gradient(165deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 246, 241, 0.99) 100%) !important;
+	box-shadow:
+		0 1px 0 rgba(255, 255, 255, 0.8) inset,
+		0 18px 48px rgba(44, 36, 51, 0.1) !important;
+}

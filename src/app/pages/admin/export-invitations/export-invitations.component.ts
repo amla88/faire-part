@@ -12,6 +12,7 @@ import { QRCodeComponent } from 'angularx-qrcode';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import * as QRCode from 'qrcode';
 import JSZip from 'jszip';
+import { QR_MODULE_COLOR_DARK_HEX, QR_MODULE_COLOR_LIGHT_HEX } from 'src/app/utils/qr-export-png';
 
 // Basic interfaces based on assumptions
 export interface Personne {
@@ -54,6 +55,9 @@ type FilterType = 'reception' | 'soiree' | 'reception_soiree' | 'tout' | 'autre'
 })
 export class ExportInvitationsComponent {
   private supabase = inject(NgSupabaseService);
+
+  readonly qrColorDark = QR_MODULE_COLOR_DARK_HEX;
+  readonly qrColorLight = QR_MODULE_COLOR_LIGHT_HEX;
 
   loading = signal(true);
   familles = signal<Famille[]>([]);
@@ -197,9 +201,20 @@ export class ExportInvitationsComponent {
           [this.tsvCell(familyName), this.tsvCell(famille.login_token), this.tsvCell(qrCodeFileName)].join('\t')
         );
 
-        // Generate QR code and add to zip
+        // Generate QR code and add to zip (gris neutre + alpha → recoloration facile dans InDesign)
         const loginUrl = this.getLoginUrl(famille.login_token);
-        const qrCodeDataUrl = await QRCode.toDataURL(loginUrl, { errorCorrectionLevel: 'M', width: 300 });
+        const qrOpts = {
+          errorCorrectionLevel: 'M' as const,
+          width: 512,
+          margin: 0,
+          color: {
+            dark: QR_MODULE_COLOR_DARK_HEX,
+            light: QR_MODULE_COLOR_LIGHT_HEX,
+          },
+        };
+        const canvas = document.createElement('canvas');
+        await QRCode.toCanvas(canvas, loginUrl, qrOpts);
+        const qrCodeDataUrl = canvas.toDataURL('image/png');
         const qrCodeBlob = this.dataUrlToBlob(qrCodeDataUrl);
         zip.file(qrCodeFileName, qrCodeBlob);
       }
@@ -319,7 +334,7 @@ export class ExportInvitationsComponent {
 
   /**
    * URL de connexion par code : route réelle `authentication/quick/:code` (PathLocationStrategy).
-   * Si la balise meta `qr-code-base-url` est définie (ex. déploiement sous /faire-part/), elle est utilisée telle quelle.
+   * Si la balise meta `qr-code-base-url` est définie, elle est utilisée telle quelle (URL absolue des QR).
    */
   getLoginUrl(token: string): string {
     const clean = String(token ?? '').trim();

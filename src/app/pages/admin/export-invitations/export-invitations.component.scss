@@ -1,1 +1,17 @@
-/* No custom styles needed for now */
+.export-qr-cell {
+  vertical-align: middle;
+  padding: 2px 8px !important;
+}
+
+.export-qr-cell qrcode {
+  display: block;
+  line-height: 0;
+}
+
+/* Canvas intrinsèque plus grand : on le met à l’échelle de la colonne */
+.export-qr-cell ::ng-deep canvas {
+  display: block;
+  width: 100% !important;
+  max-width: 120px;
+  height: auto !important;
+}
