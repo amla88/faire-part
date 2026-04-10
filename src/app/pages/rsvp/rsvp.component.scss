@@ -158,9 +158,22 @@
 
 .person-row {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
-	padding: 10px 6px;
+	gap: 8px 12px;
+	padding: 10px 6px 4px;
+	border-bottom: none;
+}
+
+.rsvp-decline-row {
+	padding: 0 6px 10px 48px;
 	border-bottom: 1px dashed rgba(107, 61, 79, 0.08);
+}
+
+.rsvp-decline-checkbox {
+	font-family: 'Plus Jakarta Sans', sans-serif;
+	font-size: 0.88rem;
+	line-height: 1.35;
 }
 
 .person-col {

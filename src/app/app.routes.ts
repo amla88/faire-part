@@ -6,6 +6,11 @@ import { adminGuard } from './services/admin.guard';
 
 export const routes: Routes = [
   {
+    path: 'quick-login',
+    loadComponent: () =>
+      import('./pages/authentication/quick-login-legacy.component').then((m) => m.QuickLoginLegacyComponent),
+  },
+  {
     path: '',
     component: FullComponent,
     canActivateChild: [AuthGuard],

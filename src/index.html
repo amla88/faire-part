@@ -16,6 +16,26 @@
   <meta name="qr-code-base-url" content="https://amaurythibaud.be/faire-part/authentication/quick/">
 </head>
 <body class="mat-typography blue_theme light-theme">
+  <!-- Anciens QR au format #/quick-login?token=… : le routeur Angular ignore le hash avec PathLocationStrategy — on redirige avant le boot. -->
+  <script>
+    (function () {
+      try {
+        var hash = window.location.hash || '';
+        if (hash.indexOf('quick-login') === -1 || hash.indexOf('token=') === -1) return;
+        var q = hash.indexOf('?');
+        if (q === -1) return;
+        var params = new URLSearchParams(hash.slice(q + 1));
+        var token = params.get('token');
+        if (!token) return;
+        var baseEl = document.querySelector('base[href]');
+        var bh = (baseEl && baseEl.getAttribute('href')) || '/';
+        var prefix = '';
+        if (bh && bh !== '/' && bh !== '') prefix = bh.replace(/\/$/, '');
+        var path = prefix + '/authentication/quick/' + encodeURIComponent(token.trim());
+        window.location.replace(window.location.origin + path);
+      } catch (e) {}
+    })();
+  </script>
   <app-root></app-root>
 </body>
 </html>

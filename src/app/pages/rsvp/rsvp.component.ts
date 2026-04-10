@@ -92,6 +92,7 @@ export class RsvpComponent implements OnInit {
         present_repas: r.present_repas ?? false,
         invite_soiree: r.invite_soiree ?? false,
         present_soiree: r.present_soiree ?? false,
+        decline_invitation: r.decline_invitation ?? false,
         allergenes_alimentaires: r.allergenes_alimentaires ?? '',
         regimes_remarques: r.regimes_remarques ?? '',
       }));
@@ -106,14 +107,41 @@ export class RsvpComponent implements OnInit {
       // build form array
       this.personnesArray.clear();
       for (const p of this.personnes) {
-        this.personnesArray.push(this.fb.group({
+        const g = this.fb.group({
           personne_id: [p.id, Validators.required],
+          decline_invitation: [!!p.decline_invitation],
           present_reception: [{ value: !!p.present_reception, disabled: !p.invite_reception }],
           present_repas: [{ value: !!p.present_repas, disabled: !p.invite_repas }],
           present_soiree: [{ value: !!p.present_soiree, disabled: !p.invite_soiree }],
           allergenes_alimentaires: [p.allergenes_alimentaires || '', [Validators.maxLength(2000)]],
           regimes_remarques: [p.regimes_remarques || '', [Validators.maxLength(2000)]],
-        }));
+        });
+        this.personnesArray.push(g);
+
+        g.get('decline_invitation')?.valueChanges.subscribe((decl: boolean) => {
+          this.applyDeclineToRow(g, p, !!decl);
+        });
+
+        const clearDeclineIfAnyPresent = (): void => {
+          const v = g.getRawValue() as {
+            present_reception?: boolean;
+            present_repas?: boolean;
+            present_soiree?: boolean;
+            decline_invitation?: boolean;
+          };
+          if (v.present_reception || v.present_repas || v.present_soiree) {
+            if (v.decline_invitation) {
+              g.patchValue({ decline_invitation: false }, { emitEvent: true });
+            }
+          }
+        };
+        g.get('present_reception')?.valueChanges.subscribe(clearDeclineIfAnyPresent);
+        g.get('present_repas')?.valueChanges.subscribe(clearDeclineIfAnyPresent);
+        g.get('present_soiree')?.valueChanges.subscribe(clearDeclineIfAnyPresent);
+
+        if (p.decline_invitation) {
+          this.applyDeclineToRow(g, p, true);
+        }
       }
     } catch (err) {
       console.error('Erreur lors de la récupération des personnes :', err);
@@ -135,6 +163,7 @@ export class RsvpComponent implements OnInit {
         const v = (c as FormGroup).getRawValue();
         return {
           personne_id: v.personne_id,
+          decline_invitation: !!v.decline_invitation,
           present_reception: !!v.present_reception,
           present_repas: !!v.present_repas,
           present_soiree: !!v.present_soiree,
@@ -173,6 +202,51 @@ export class RsvpComponent implements OnInit {
 
   cancel() {
     this.router.navigateByUrl('/');
+  }
+
+  /**
+   * Refus : aucune présence ni infos banquet ; sinon réactive les contrôles selon les invitations.
+   */
+  private applyDeclineToRow(
+    g: FormGroup,
+    p: { invite_reception: boolean; invite_repas: boolean; invite_soiree: boolean },
+    declined: boolean
+  ): void {
+    if (declined) {
+      g.patchValue(
+        {
+          present_reception: false,
+          present_repas: false,
+          present_soiree: false,
+          allergenes_alimentaires: '',
+          regimes_remarques: '',
+        },
+        { emitEvent: false }
+      );
+      g.get('present_reception')?.disable({ emitEvent: false });
+      g.get('present_repas')?.disable({ emitEvent: false });
+      g.get('present_soiree')?.disable({ emitEvent: false });
+      g.get('allergenes_alimentaires')?.disable({ emitEvent: false });
+      g.get('regimes_remarques')?.disable({ emitEvent: false });
+      return;
+    }
+
+    if (p.invite_reception) g.get('present_reception')?.enable({ emitEvent: false });
+    else g.get('present_reception')?.disable({ emitEvent: false });
+
+    if (p.invite_repas) g.get('present_repas')?.enable({ emitEvent: false });
+    else g.get('present_repas')?.disable({ emitEvent: false });
+
+    if (p.invite_soiree) g.get('present_soiree')?.enable({ emitEvent: false });
+    else g.get('present_soiree')?.disable({ emitEvent: false });
+
+    if (p.invite_repas) {
+      g.get('allergenes_alimentaires')?.enable({ emitEvent: false });
+      g.get('regimes_remarques')?.enable({ emitEvent: false });
+    } else {
+      g.get('allergenes_alimentaires')?.disable({ emitEvent: false });
+      g.get('regimes_remarques')?.disable({ emitEvent: false });
+    }
   }
 
   /** Data URI affichable pour le macaron (cache hydraté par loadAvatarFromRpc). */

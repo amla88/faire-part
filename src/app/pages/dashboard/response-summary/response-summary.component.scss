@@ -56,6 +56,20 @@
 	font-size: 1.1rem;
 }
 
+.person-declined {
+	flex-shrink: 0;
+	font-family: 'Plus Jakarta Sans', sans-serif;
+	font-size: 0.78rem;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: #8b3a3a;
+	padding: 6px 12px;
+	border: 1px solid rgba(139, 58, 58, 0.35);
+	border-radius: 4px;
+	background: rgba(139, 58, 58, 0.06);
+}
+
 .person-events {
 	display: flex;
 	gap: 10px;

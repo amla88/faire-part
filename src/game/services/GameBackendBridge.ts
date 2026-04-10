@@ -227,6 +227,7 @@ export class GameBackendBridge {
     present_reception?: boolean;
     present_repas?: boolean;
     present_soiree?: boolean;
+    decline_invitation?: boolean;
     allergenes_alimentaires?: string;
     regimes_remarques?: string;
   }): Promise<void> {
@@ -243,6 +244,7 @@ export class GameBackendBridge {
     if (typeof opts.present_reception === 'boolean') next['present_reception'] = opts.present_reception;
     if (typeof opts.present_repas === 'boolean') next['present_repas'] = opts.present_repas;
     if (typeof opts.present_soiree === 'boolean') next['present_soiree'] = opts.present_soiree;
+    if (typeof opts.decline_invitation === 'boolean') next['decline_invitation'] = opts.decline_invitation;
 
     // Ne pas effacer: si vide, on n'envoie pas le champ (donc aucun overwrite en NULL).
     if (typeof opts.allergenes_alimentaires === 'string') {
@@ -261,6 +263,8 @@ export class GameBackendBridge {
       if (!('present_repas' in next) && typeof existing.present_repas === 'boolean') next['present_repas'] = existing.present_repas;
       if (!('present_soiree' in next) && typeof existing.present_soiree === 'boolean')
         next['present_soiree'] = existing.present_soiree;
+      if (!('decline_invitation' in next) && typeof existing.decline_invitation === 'boolean')
+        next['decline_invitation'] = existing.decline_invitation;
       if (!('allergenes_alimentaires' in next) && typeof existing.allergenes_alimentaires === 'string')
         next['allergenes_alimentaires'] = existing.allergenes_alimentaires;
       if (!('regimes_remarques' in next) && typeof existing.regimes_remarques === 'string')

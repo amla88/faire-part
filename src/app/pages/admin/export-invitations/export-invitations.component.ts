@@ -317,7 +317,29 @@ export class ExportInvitationsComponent {
     return `Famille #${famille.id}`;
   }
 
+  /**
+   * URL de connexion par code : route réelle `authentication/quick/:code` (PathLocationStrategy).
+   * Si la balise meta `qr-code-base-url` est définie (ex. déploiement sous /faire-part/), elle est utilisée telle quelle.
+   */
   getLoginUrl(token: string): string {
-    return `${window.location.origin}/#/quick-login?token=${token}`;
+    const clean = String(token ?? '').trim();
+    if (typeof document !== 'undefined') {
+      const meta = document.querySelector('meta[name="qr-code-base-url"]') as HTMLMetaElement | null;
+      const base = meta?.content?.trim();
+      if (base) {
+        return `${base.replace(/\/$/, '')}/${encodeURIComponent(clean)}`;
+      }
+    }
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const prefix = this.getAppBasePathPrefix();
+    return `${origin}${prefix}/authentication/quick/${encodeURIComponent(clean)}`;
+  }
+
+  private getAppBasePathPrefix(): string {
+    if (typeof document === 'undefined') return '';
+    const base = document.querySelector('base[href]') as HTMLBaseElement | null;
+    const href = base?.getAttribute('href') || '/';
+    if (href === '/' || href === '') return '';
+    return href.replace(/\/$/, '');
   }
 }
