@@ -76,14 +76,17 @@
                   @if (m.commentaire) {
                     <p class="musiques-saved-note musiques-saved-note--compact">« {{ m.commentaire }} »</p>
                   }
+                </div>
+                <div class="musiques-saved-actions">
                   <a
-                    class="musiques-open-spotify musiques-open-spotify--compact"
+                    mat-stroked-button
+                    color="primary"
+                    class="musiques-listen-btn"
                     [href]="m.lien"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    {{ linkLabel(m.lien) }}
-                    <mat-icon class="musiques-open-ico">open_in_new</mat-icon>
+                    Écouter sur Spotify
                   </a>
                 </div>
                 @if (m.status === 'pending' || m.status === 'rejected') {
@@ -94,7 +97,7 @@
                     [attr.aria-label]="
                       m.status === 'rejected' ? 'Supprimer cette proposition refusée' : 'Retirer cette proposition'
                     "
-                    (click)="remove(m.id)"
+                    (click)="remove(m)"
                     [disabled]="saving()"
                   >
                     <mat-icon>delete_outline</mat-icon>
@@ -167,27 +170,31 @@
                     <p class="musiques-hit-title">{{ t.name }}</p>
                     <p class="musiques-hit-meta">{{ t.artist_label }} · {{ t.album_name }}</p>
                     <p class="musiques-hit-dur">{{ formatDuration(t.duration_ms) }}</p>
+                  </div>
+                  <div class="musiques-hit-actions">
                     <a
-                      class="musiques-open-spotify"
+                      mat-stroked-button
+                      color="primary"
+                      class="musiques-listen-btn musiques-listen-btn--search"
                       [href]="t.external_url"
                       target="_blank"
                       rel="noopener noreferrer"
                     >
                       Écouter sur Spotify
-                      <mat-icon class="musiques-open-ico">open_in_new</mat-icon>
                     </a>
+
+                    <button
+                      mat-flat-button
+                      color="primary"
+                      type="button"
+                      class="musiques-add-btn"
+                      [disabled]="!canAddMore || saving()"
+                      (click)="addTrack(t)"
+                    >
+                      <mat-icon>add</mat-icon>
+                      Ajouter
+                    </button>
                   </div>
-                  <button
-                    mat-flat-button
-                    color="primary"
-                    type="button"
-                    class="musiques-add-btn"
-                    [disabled]="!canAddMore || saving()"
-                    (click)="addTrack(t)"
-                  >
-                    <mat-icon>add</mat-icon>
-                    Ajouter
-                  </button>
                 </li>
               }
             </ul>

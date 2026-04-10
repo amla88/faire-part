@@ -232,13 +232,16 @@
 .musiques-saved--compact {
 	align-items: flex-start;
 	flex-wrap: nowrap;
-	gap: 10px;
-	padding: 8px 10px 10px;
+	gap: 8px;
+	padding: 6px 8px 7px;
+	position: relative;
+	/* Reserve space for the top-right delete icon. */
+	padding-right: 44px;
 }
 
 .musiques-saved-thumb {
-	width: 40px;
-	height: 40px;
+	width: 32px;
+	height: 32px;
 	object-fit: cover;
 	border-radius: 2px;
 	flex-shrink: 0;
@@ -253,9 +256,9 @@
 	color: var(--bridgerton-gold);
 
 	.mat-icon {
-		font-size: 22px;
-		width: 22px;
-		height: 22px;
+		font-size: 18px;
+		width: 18px;
+		height: 18px;
 	}
 }
 
@@ -264,72 +267,183 @@
 	min-width: 0;
 }
 
+.musiques-saved-actions {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 6px;
+	flex-shrink: 0;
+	padding-left: 2px;
+	align-self: stretch;
+	justify-content: flex-end;
+}
+
+.musiques-saved-actions .musiques-listen-btn {
+	margin-top: auto;
+}
+
 .musiques-saved-head--compact {
-	margin-bottom: 4px;
+	margin-bottom: 2px;
 }
 
 .musiques-status--compact {
-	font-size: 0.65rem;
-	padding: 2px 7px;
+	font-size: 0.62rem;
+	padding: 1px 6px;
 	letter-spacing: 0.05em;
 }
 
 .musiques-date--compact {
-	font-size: 0.72rem;
+	font-size: 0.68rem;
 }
 
 .musiques-saved-title {
 	font-family: 'Cormorant Garamond', serif;
-	font-size: 0.98rem;
+	font-size: 0.92rem;
 	font-weight: 600;
 	color: var(--bridgerton-ink);
-	margin: 0 0 2px;
-	line-height: 1.25;
+	margin: 0 0 1px;
+	line-height: 1.2;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	display: -webkit-box;
-	-webkit-line-clamp: 2;
+	-webkit-line-clamp: 1;
 	-webkit-box-orient: vertical;
 }
 
 .musiques-saved-meta {
 	font-family: 'Plus Jakarta Sans', sans-serif;
-	font-size: 0.78rem;
+	font-size: 0.74rem;
 	color: var(--bridgerton-muted);
 	margin: 0;
-	line-height: 1.35;
+	line-height: 1.25;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
 
 .musiques-saved-note--compact {
-	font-size: 0.82rem;
-	margin: 4px 0 0;
-	line-height: 1.35;
+	font-size: 0.78rem;
+	margin: 3px 0 0;
+	line-height: 1.25;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	display: -webkit-box;
-	-webkit-line-clamp: 2;
+	-webkit-line-clamp: 1;
 	-webkit-box-orient: vertical;
 }
 
 .musiques-open-spotify--compact {
-	margin-top: 4px;
-	font-size: 0.78rem;
+	margin-top: 2px;
+	font-size: 0.74rem;
+}
+
+.musiques-listen-btn.mat-mdc-outlined-button {
+	min-width: 0;
+	padding: 0 10px;
+	height: 30px;
+	line-height: 28px;
+	font-family: 'Plus Jakarta Sans', sans-serif;
+	font-size: 0.72rem;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	text-transform: none;
+	white-space: nowrap;
 }
 
 .musiques-delete--compact {
-	align-self: flex-start;
-	margin-top: -2px;
-	width: 36px;
-	height: 36px;
+	align-self: flex-end;
+	margin-top: 0;
+	width: 32px;
+	height: 32px;
 	padding: 0;
+	position: absolute;
+	top: 4px;
+	right: 6px;
 
 	.mat-icon {
-		font-size: 20px;
-		width: 20px;
-		height: 20px;
+		font-size: 18px;
+		width: 18px;
+		height: 18px;
+	}
+}
+
+@media (max-width: 520px) {
+	.musiques-saved--compact {
+		flex-wrap: wrap;
+		align-items: flex-start;
+	}
+
+	.musiques-saved-main {
+		flex: 1 1 calc(100% - 40px);
+		min-width: 0;
+	}
+
+	.musiques-saved-actions {
+		width: 100%;
+		flex-direction: column;
+		align-items: stretch;
+		gap: 8px;
+		padding-left: 0;
+	}
+
+	.musiques-delete--compact {
+		top: 4px;
+		right: 6px;
+	}
+
+	.musiques-listen-btn.mat-mdc-outlined-button {
+		width: 100%;
+		justify-content: center;
+		height: 32px;
+		line-height: 30px;
+	}
+
+	.musiques-hit {
+		gap: 10px;
+	}
+
+	.musiques-hit-cover {
+		width: 44px;
+		height: 44px;
+	}
+
+	.musiques-hit-body {
+		flex: 1 1 calc(100% - 54px);
+		min-width: 0;
+	}
+
+	.musiques-hit-title {
+		font-size: 0.98rem;
+		margin-bottom: 2px;
+		line-height: 1.2;
+	}
+
+	.musiques-hit-meta,
+	.musiques-hit-dur {
+		font-size: 0.78rem;
+		margin-bottom: 2px;
+		line-height: 1.3;
+	}
+
+	.musiques-hit-dur {
+		margin-bottom: 4px;
+	}
+
+	.musiques-hit-actions {
+		width: 100%;
+		align-items: stretch;
+	}
+
+	.musiques-listen-btn--search.mat-mdc-outlined-button {
+		width: 100%;
+		justify-content: center;
+		height: 32px;
+		line-height: 30px;
+	}
+
+	.musiques-add-btn {
+		width: 100%;
+		justify-content: center;
 	}
 }
 
@@ -353,6 +467,19 @@
 .musiques-hit-body {
 	flex: 1;
 	min-width: 0;
+}
+
+.musiques-hit-actions {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 8px;
+	flex-shrink: 0;
+}
+
+.musiques-listen-btn--search.mat-mdc-outlined-button {
+	height: 36px;
+	line-height: 34px;
 }
 
 .musiques-hit-title {

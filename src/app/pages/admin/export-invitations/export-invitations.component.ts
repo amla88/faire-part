@@ -32,7 +32,7 @@ export interface Famille {
   personnes: Personne[];
 }
 
-type FilterType = 'reception' | 'soiree' | 'reception_soiree' | 'tout';
+type FilterType = 'reception' | 'soiree' | 'reception_soiree' | 'tout' | 'autre';
 
 @Component({
   selector: 'app-export-invitations',
@@ -86,6 +86,9 @@ export class ExportInvitationsComponent {
         case 'tout':
           personnes = f.personnes.filter(p => p.invite_reception && p.invite_repas && p.invite_soiree);
           break;
+        case 'autre':
+          personnes = f.personnes.filter((p) => !this.personneMatchesUnDesQuatreFiltres(p));
+          break;
         default:
           personnes = f.personnes;
           break;
@@ -121,6 +124,19 @@ export class ExportInvitationsComponent {
     } else if (this.activeFilter() === filter) {
       this.activeFilter.set(null);
     }
+  }
+
+  /** True si la personne entre dans l’un des 4 filtres « standard » (réception seule, soirée seule, réception+soirée sans repas, tout). */
+  private personneMatchesUnDesQuatreFiltres(p: Personne): boolean {
+    const R = !!p.invite_reception;
+    const P = !!p.invite_repas;
+    const S = !!p.invite_soiree;
+    return (
+      (R && !P && !S) ||
+      (!R && !P && S) ||
+      (R && !P && S) ||
+      (R && P && S)
+    );
   }
 
   async fetchFamilles() {
@@ -159,23 +175,27 @@ export class ExportInvitationsComponent {
 
     try {
       const zip = new JSZip();
-      const headers = ['famille', 'prenom', 'nom', 'loginToken', '@qrCode'];
-      const csvRows = [headers.join(',')];
+      // One CSV row per family (publipostage): primary last name first, then unique other last names.
+      const headers = ['famille', 'loginToken', '@qrCode'];
+      const sep = ';';
+      const csvRows = [headers.join(sep)];
+      const indesignHeaders = ['famille', 'loginToken', '@qrCode'];
+      const tsvRows = [indesignHeaders.join('\t')];
 
       for (const famille of familles) {
-        const familyName = this.getFamilyDisplayName(famille);
+        const familyName = this.getFamilyExportName(famille);
         const qrCodeFileName = `${famille.login_token}.png`;
 
-        for (const personne of famille.personnes) {
-          const row = [
-            `"${familyName}"`,
-            `"${personne.prenom}"`,
-            `"${personne.nom}"`,
-            `"${famille.login_token}"`,
-            `"${qrCodeFileName}"`
-          ];
-          csvRows.push(row.join(','));
-        }
+        const row = [
+          this.csvEscape(familyName),
+          this.csvEscape(famille.login_token),
+          this.csvEscape(qrCodeFileName),
+        ];
+        csvRows.push(row.join(sep));
+
+        tsvRows.push(
+          [this.tsvCell(familyName), this.tsvCell(famille.login_token), this.tsvCell(qrCodeFileName)].join('\t')
+        );
 
         // Generate QR code and add to zip
         const loginUrl = this.getLoginUrl(famille.login_token);
@@ -184,8 +204,13 @@ export class ExportInvitationsComponent {
         zip.file(qrCodeFileName, qrCodeBlob);
       }
 
-      const csvContent = csvRows.join('\n');
+      // Excel-friendly CSV: UTF-8 with BOM + CRLF newlines to preserve accents (e.g., Isaé).
+      const csvContent = `\uFEFF${csvRows.join('\r\n')}`;
       zip.file('invitations.csv', csvContent);
+
+      // InDesign Data Merge: tabulations + UTF-16 LE + BOM (souvent requis pour « fichier pris en charge » + accents).
+      const tsvText = tsvRows.join('\r\n');
+      zip.file('invitations_indesign.txt', this.encodeUtf16Le(tsvText), { binary: true });
 
       const zipBlob = await zip.generateAsync({ type: 'blob' });
       const link = document.createElement('a');
@@ -213,6 +238,65 @@ export class ExportInvitationsComponent {
       u8arr[n] = bstr.charCodeAt(n);
     }
     return new Blob([u8arr], { type: mime });
+  }
+
+  private csvEscape(value: unknown): string {
+    const s = String(value ?? '');
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+
+  /** Pas de tab / retours ligne dans une cellule TSV (InDesign). */
+  private tsvCell(value: unknown): string {
+    return String(value ?? '')
+      .replace(/\r\n|\r|\n/g, ' ')
+      .replace(/\t/g, ' ')
+      .trim();
+  }
+
+  /** UTF-16 LE avec BOM — format souvent requis par InDesign (publipostage / accents). */
+  private encodeUtf16Le(text: string): Uint8Array {
+    const parts: number[] = [];
+    for (const char of text) {
+      const cp = char.codePointAt(0)!;
+      if (cp <= 0xffff) {
+        parts.push(cp & 0xff, (cp >> 8) & 0xff);
+      } else {
+        const c = cp - 0x10000;
+        const hi = 0xd800 + (c >> 10);
+        const lo = 0xdc00 + (c & 0x3ff);
+        parts.push(hi & 0xff, (hi >> 8) & 0xff, lo & 0xff, (lo >> 8) & 0xff);
+      }
+    }
+    const bom = new Uint8Array([0xff, 0xfe]);
+    const body = new Uint8Array(parts);
+    const out = new Uint8Array(bom.length + body.length);
+    out.set(bom, 0);
+    out.set(body, bom.length);
+    return out;
+  }
+
+  /**
+   * Export label: primary person's last name first, then unique other last names (no duplicates).
+   * Example: Arnaud Hecq (primary), Laura Toubeau, Elena Hecq => "Hecq - Toubeau".
+   */
+  private getFamilyExportName(famille: Famille): string {
+    const personnes = Array.isArray(famille.personnes) ? famille.personnes : [];
+    const principale = famille.personne_principale
+      ? personnes.find((p) => Number(p.id) === Number(famille.personne_principale))
+      : undefined;
+
+    const primaryNom = (principale?.nom || '').trim();
+    const noms = personnes
+      .map((p) => (p?.nom || '').trim())
+      .filter((n) => n.length > 0);
+
+    const uniqueOther = Array.from(new Set(noms)).filter((n) => n !== primaryNom);
+    const parts = [primaryNom, ...uniqueOther].filter((x) => x && x.length > 0);
+    if (parts.length > 0) return parts.join(' - ');
+
+    // Fallbacks
+    if (noms.length > 0) return Array.from(new Set(noms)).join(' - ');
+    return `Famille #${famille.id}`;
   }
 
   getFamilyDisplayName(famille: Famille): string {
