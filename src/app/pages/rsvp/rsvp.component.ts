@@ -118,7 +118,7 @@ export class RsvpComponent implements OnInit {
         });
         this.personnesArray.push(g);
 
-        g.get('decline_invitation')?.valueChanges.subscribe((decl: boolean) => {
+        g.get('decline_invitation')?.valueChanges.subscribe((decl: boolean | null) => {
           this.applyDeclineToRow(g, p, !!decl);
         });
 

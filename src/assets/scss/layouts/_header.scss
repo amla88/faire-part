@@ -35,11 +35,25 @@ html .topbar {
 
 // App Topstrip (Bridgerton bandeau)
 
+app-topstrip {
+  display: block;
+}
+
 .app-topstrip {
   position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 12;
+  /* Inclus dans la hauteur mesurée (ResizeObserver) pour le décalage du contenu */
+  padding-top: env(safe-area-inset-top, 0px);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
   display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
   color: rgba(250, 246, 241, 0.96);
   background: linear-gradient(
     92deg,
@@ -54,7 +68,9 @@ html .topbar {
 
   @media (max-width: 991px) {
     flex-direction: column;
-    gap: 16px;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 12px;
   }
 
   .topstrip-right {
