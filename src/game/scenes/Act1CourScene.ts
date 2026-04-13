@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GAME_BACKGROUND_COLOR } from '../core/game-colors';
 import { DialogueBox } from '../ui/DialogueBox';
 import { FormBox } from '../ui/FormBox';
 import { quests, QuestFlags } from '../systems/QuestSystem';
@@ -38,7 +39,7 @@ export class Act1CourScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale;
 
-    this.cameras.main.setBackgroundColor('#f3ebe4');
+    this.cameras.main.setBackgroundColor(GAME_BACKGROUND_COLOR);
 
     const TILE_SCALE = 2;
     this.add

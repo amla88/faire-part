@@ -5,7 +5,7 @@
 
 .jeu-page {
   min-height: calc(100vh - 64px);
-  background: var(--bridgerton-cream);
+  background: var(--bridgerton-wood);
   padding: 8px;
 }
 
@@ -13,8 +13,8 @@
   position: relative;
   max-width: 1280px;
   margin: 0 auto;
-  background: color-mix(in srgb, var(--bridgerton-sage) 10%, var(--bridgerton-cream));
-  border: 1px solid color-mix(in srgb, var(--bridgerton-sage) 30%, var(--bridgerton-gold-border-soft));
+  background: var(--bridgerton-wood);
+  border: 1px solid color-mix(in srgb, var(--bridgerton-gold) 28%, var(--bridgerton-wood) 72%);
   min-height: calc(100vh - 90px);
   overflow: hidden;
 }
@@ -22,6 +22,7 @@
 .game-host {
   width: 100%;
   height: calc(100vh - 90px);
+  background: var(--bridgerton-wood);
 }
 
 .top-actions {

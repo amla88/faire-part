@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GAME_BACKGROUND_COLOR } from './game-colors';
 import { PreloadScene } from '../scenes/PreloadScene';
 import { BootScene } from '../scenes/BootScene';
 import { Act0CarrosseScene } from '../scenes/Act0CarrosseScene';
@@ -15,7 +16,7 @@ export function createGame(container: HTMLElement): Phaser.Game {
   const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
     parent: container,
-    backgroundColor: '#faf6f1',
+    backgroundColor: GAME_BACKGROUND_COLOR,
     pixelArt: true,
     dom: {
       createContainer: true,

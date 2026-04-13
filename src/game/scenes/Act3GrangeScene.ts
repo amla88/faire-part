@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GAME_BACKGROUND_COLOR } from '../core/game-colors';
 import { SceneInput } from '../systems/SceneInput';
 import { quests, QuestFlags } from '../systems/QuestSystem';
 import { gameBackend } from '../services/GameBackendBridge';
@@ -21,7 +22,7 @@ export class Act3GrangeScene extends Phaser.Scene {
   create(): void {
     gameState.setAct('act3');
     const { width, height } = this.scale;
-    this.cameras.main.setBackgroundColor('#f3ebe4');
+    this.cameras.main.setBackgroundColor(GAME_BACKGROUND_COLOR);
     this.add.text(18, 14, 'ACTE 3 — La Grande Grange', {
       fontFamily: 'monospace',
       fontSize: '14px',

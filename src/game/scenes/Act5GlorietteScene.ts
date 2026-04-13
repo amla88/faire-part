@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GAME_BACKGROUND_COLOR } from '../core/game-colors';
 import { gameState } from '../core/game-state';
 import { SceneInput } from '../systems/SceneInput';
 import { DialogueBox } from '../ui/DialogueBox';
@@ -22,7 +23,7 @@ export class Act5GlorietteScene extends Phaser.Scene {
   create(): void {
     gameState.setAct('act5');
     const { width, height } = this.scale;
-    this.cameras.main.setBackgroundColor('#f3ebe4');
+    this.cameras.main.setBackgroundColor(GAME_BACKGROUND_COLOR);
     this.add.text(18, 14, 'ACTE 5 — La Gloriette aux souhaits', {
       fontFamily: 'monospace',
       fontSize: '14px',

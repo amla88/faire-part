@@ -39,6 +39,9 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image('archetype-gentleman', `${G}/sprites/archetype-gentleman.png`);
     this.load.image('archetype-reine', `${G}/sprites/archetype-reine.png`);
     this.load.image('archetype-duc', `${G}/sprites/archetype-duc.png`);
+    this.load.image('act0-carrosse', `${G}/backgrounds/acte0-carrosse.png`);
+    this.load.image('act0-parallax-lointain', `${G}/backgrounds/acte0-parallax-lointain.png`);
+    this.load.image('act0-parallax-proche', `${G}/backgrounds/acte0-parallax-proche.png`);
   }
 
   create(): void {

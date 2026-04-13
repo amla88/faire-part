@@ -131,6 +131,28 @@ function main() {
     });
   }
 
+  // --- Acte 0 : fonds parallax (larges bandes tileables horizontalement, 512px de large) ---
+  const pW = 512;
+  const pH = 540;
+  writePng(path.join(ROOT, 'backgrounds', 'acte0-parallax-lointain.png'), pW, pH, (x, y) => {
+    const u = (x % 256) / 256;
+    const a = 55 + Math.sin(u * Math.PI * 2) * 12;
+    const b = 70 + Math.cos(u * Math.PI * 2) * 10;
+    return [Math.floor(a), Math.floor(b), 110, 255];
+  });
+  writePng(path.join(ROOT, 'backgrounds', 'acte0-parallax-proche.png'), pW, pH, (x, y) => {
+    const u = (x % 256) / 256;
+    const a = 130 + Math.sin(u * Math.PI * 4) * 25;
+    const b = 95 + Math.cos(u * Math.PI * 4) * 25;
+    const c = 70 + Math.sin(u * Math.PI * 2) * 15;
+    return [Math.floor(a), Math.floor(b), Math.floor(c), 255];
+  });
+
+  const carrossePath = path.join(ROOT, 'backgrounds', 'acte0-carrosse.png');
+  if (!fs.existsSync(carrossePath)) {
+    writePng(carrossePath, 960, 540, () => C.trans);
+  }
+
   // --- maps / ui : .gitkeep pour structure ---
   for (const sub of ['maps', 'ui']) {
     const d = path.join(ROOT, sub);

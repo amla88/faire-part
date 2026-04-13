@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GAME_BACKGROUND_COLOR } from '../core/game-colors';
 import { gameState } from '../core/game-state';
 import { gameBackend } from '../services/GameBackendBridge';
 
@@ -14,7 +15,7 @@ export class Act7FinalGazetteScene extends Phaser.Scene {
   create(): void {
     gameState.setAct('act7');
     const { width, height } = this.scale;
-    this.cameras.main.setBackgroundColor('#f3ebe4');
+    this.cameras.main.setBackgroundColor(GAME_BACKGROUND_COLOR);
     this.add.text(18, 14, 'ACTE 7 — La Gazette', {
       fontFamily: 'monospace',
       fontSize: '14px',

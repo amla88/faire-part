@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GAME_BACKGROUND_COLOR } from '../core/game-colors';
 import { SceneInput } from '../systems/SceneInput';
 import { gameState } from '../core/game-state';
 
@@ -13,7 +14,7 @@ export class HubOpenWorldScene extends Phaser.Scene {
   create(): void {
     gameState.setAct('hub');
     const { width, height } = this.scale;
-    this.cameras.main.setBackgroundColor('#f3ebe4');
+    this.cameras.main.setBackgroundColor(GAME_BACKGROUND_COLOR);
 
     this.add.text(18, 14, 'Le Domaine — Place du hub', {
       fontFamily: 'monospace',

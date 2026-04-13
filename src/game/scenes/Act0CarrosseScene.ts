@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GAME_BACKGROUND_COLOR } from '../core/game-colors';
 import { DialogueBox } from '../ui/DialogueBox';
 import { gameState, PlayerArchetype } from '../core/game-state';
 import { quests, QuestFlags } from '../systems/QuestSystem';
@@ -23,6 +24,11 @@ const ACT0_ARCHETYPES: PlayerArchetype[] = [
 /** Vue « face caméra » pour la grille de choix. */
 const CHOICE_FACING: LpcFacing = 'down';
 
+/** Lointain : défile lentement (px/s, texture qui se répète). */
+const PARALLAX_LOINTAIN_SPEED = 24;
+/** Proche : défile plus vite. */
+const PARALLAX_PROCHE_SPEED = 68;
+
 export class Act0CarrosseScene extends Phaser.Scene {
   private inputState!: SceneInput;
   private optionSprites: Phaser.GameObjects.Sprite[] = [];
@@ -31,6 +37,9 @@ export class Act0CarrosseScene extends Phaser.Scene {
   private dialogueBox!: DialogueBox;
   private selectionLocked = false;
 
+  private parallaxLointain!: Phaser.GameObjects.TileSprite;
+  private parallaxProche!: Phaser.GameObjects.TileSprite;
+
   constructor() {
     super('Act0CarrosseScene');
   }
@@ -38,24 +47,24 @@ export class Act0CarrosseScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale;
 
-    this.cameras.main.setBackgroundColor('#f3ebe4');
+    this.cameras.main.setBackgroundColor(GAME_BACKGROUND_COLOR);
 
-    // Faux decor de "carrosse" pixelise pour un prototype de deplacement.
-    const room = this.add.rectangle(width / 2, height / 2, width * 0.86, height * 0.74, 0x4b3b33);
-    room.setStrokeStyle(6, 0xc9a55c, 0.9);
+    this.parallaxLointain = this.add.tileSprite(0, 0, width, height, 'act0-parallax-lointain').setOrigin(0, 0);
 
-    this.add.rectangle(width / 2, height * 0.28, width * 0.66, 32, 0x6b4f44);
-    this.add.rectangle(width / 2, height * 0.72, width * 0.66, 32, 0x6b4f44);
+    this.parallaxProche = this.add.tileSprite(0, 0, width, height, 'act0-parallax-proche').setOrigin(0, 0);
+
+    this.add.image(width / 2, height / 2, 'act0-carrosse').setDisplaySize(width, height);
+
     this.add.text(18, 14, 'ACTE 0 — Le carrosse', {
       fontFamily: 'monospace',
-      fontSize: '14px',
-      color: '#2c2433',
+      fontSize: '20px',
+      color: '#f3ebe4',
     });
 
     this.add.text(width / 2, height * 0.16, 'Choisissez votre personnage', {
       fontFamily: 'monospace',
-      fontSize: '13px',
-      color: '#2c2433',
+      fontSize: '30px',
+      color: '#f3ebe4',
     }).setOrigin(0.5);
 
     const spriteScale = 2;
@@ -86,7 +95,7 @@ export class Act0CarrosseScene extends Phaser.Scene {
       const labelY = t.y + 32 * spriteScale + 8;
       this.add.text(t.x, labelY, t.label, {
         fontFamily: 'monospace',
-        fontSize: '10px',
+        fontSize: '20px',
         color: '#f2dfc3',
       }).setOrigin(0.5, 0);
       return spr;
@@ -98,7 +107,11 @@ export class Act0CarrosseScene extends Phaser.Scene {
     this.updateHighlight();
   }
 
-  override update(_: number, delta: number): void {
+  override update(_time: number, delta: number): void {
+    const dt = delta / 1000;
+    this.parallaxLointain.tilePositionX += PARALLAX_LOINTAIN_SPEED * dt;
+    this.parallaxProche.tilePositionX += PARALLAX_PROCHE_SPEED * dt;
+
     const validate = this.inputState.actionJustDown();
 
     if (this.dialogueBox.active) {
@@ -137,11 +150,9 @@ export class Act0CarrosseScene extends Phaser.Scene {
 
     this.dialogueBox.start(getDialogue('act0.intro'), () => {
       quests.done(QuestFlags.act0IntroSeen);
-      // Sync progression serveur (best-effort)
       try {
         void gameBackend.upsertGameProgressForSelected(gameState.snapshot.flags);
       } catch {}
-      // Pas de validation supplémentaire: enchaîner directement sur l'acte 1.
       this.time.delayedCall(50, () => {
         gameState.setAct('act1');
         this.scene.start('Act1CourScene');
@@ -161,4 +172,3 @@ export class Act0CarrosseScene extends Phaser.Scene {
     });
   }
 }
-

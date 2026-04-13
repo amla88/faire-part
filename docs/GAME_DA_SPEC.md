@@ -17,14 +17,15 @@ Document de référence pour garder une cohérence visuelle (V1). À mettre à j
 
 | Rôle        | Hex       | Usage                          |
 |------------|-----------|--------------------------------|
-| Crème fond | `#faf6f1` | Fond Phaser / ciel intérieur   |
+| Fond jeu (Phaser) | `#5c4033` | Canevas + fond caméra (bois)   |
+| Crème fond | `#faf6f1` | Intérieurs / UI claire         |
 | Crème sol  | `#e8ddd0` | Pavés / plancher clair         |
 | Encre      | `#48494c` | Contours, texte                |
 | Or         | `#c9a55c` | Filets, accents Bridgerton     |
 | Sauge      | `#abbca6` | Secondaire, UI dialogue        |
 | Brique     | `#9c4c4c` | Murs cour, toits               |
 | Pierre     | `#6b6560` | Pierre froide                  |
-| Bois       | `#5c4033` | Poutres, carrosse              |
+| Bois       | `#5c4033` | Poutres, carrosse (même teinte que fond jeu) |
 | Peau       | `#e8c4a8` | Silhouettes (teinte de base)   |
 | Manteau PNJ| `#8FAAC7` | Majordome (réf. acte 1)        |
 

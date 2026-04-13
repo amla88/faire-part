@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GAME_BACKGROUND_COLOR } from '../core/game-colors';
 import { DialogueBox } from '../ui/DialogueBox';
 import { FormBox } from '../ui/FormBox';
 import { SceneInput } from '../systems/SceneInput';
@@ -56,7 +57,7 @@ export class Act2OfficeScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.scale;
-    this.cameras.main.setBackgroundColor('#f3ebe4');
+    this.cameras.main.setBackgroundColor(GAME_BACKGROUND_COLOR);
     this.add.text(18, 14, 'ACTE 2 — L’Office des saveurs', {
       fontFamily: 'monospace',
       fontSize: '14px',
