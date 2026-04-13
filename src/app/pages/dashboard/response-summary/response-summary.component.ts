@@ -70,6 +70,7 @@ export class ResponseSummaryComponent implements OnInit {
         present_repas: r.present_repas ?? false,
         invite_soiree: r.invite_soiree ?? false,
         present_soiree: r.present_soiree ?? false,
+        decline_invitation: r.decline_invitation ?? false,
         allergenes_alimentaires: r.allergenes_alimentaires ?? '',
         regimes_remarques: r.regimes_remarques ?? '',
       }));

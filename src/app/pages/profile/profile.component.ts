@@ -12,6 +12,11 @@ import { AuthService } from 'src/app/services/auth.service';
 import { NgSupabaseService } from 'src/app/services/ng-supabase.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { QRCodeComponent } from 'angularx-qrcode';
+import {
+  QR_MODULE_COLOR_DARK_HEX,
+  QR_MODULE_COLOR_LIGHT_HEX,
+  qrCanvasToDownloadablePngDataUrl,
+} from 'src/app/utils/qr-export-png';
 
 interface GuestProfile {
   personne_id: number;
@@ -61,6 +66,8 @@ export class ProfileComponent implements OnInit {
   readonly mapEmbedUrl = signal<SafeResourceUrl | null>(null);
   readonly mapOpenUrl = signal<string | null>(null);
   readonly qrCodeUrl = signal<string | null>(null);
+  readonly qrColorDark = QR_MODULE_COLOR_DARK_HEX;
+  readonly qrColorLight = QR_MODULE_COLOR_LIGHT_HEX;
   private selectedPersonneId: number | null = null;
 
   form = this.fb.nonNullable.group({
@@ -209,11 +216,37 @@ export class ProfileComponent implements OnInit {
     }
   }
 
+  copyPersonalLink(): void {
+    const url = this.qrCodeUrl();
+    if (!url) return;
+    void (async () => {
+      try {
+        await navigator.clipboard.writeText(url);
+        this.snack.open('Lien copié dans le presse-papiers', undefined, { duration: 2500 });
+      } catch {
+        try {
+          const ta = this.document.createElement('textarea');
+          ta.value = url;
+          ta.setAttribute('readonly', '');
+          ta.style.position = 'fixed';
+          ta.style.left = '-9999px';
+          this.document.body.appendChild(ta);
+          ta.select();
+          this.document.execCommand('copy');
+          this.document.body.removeChild(ta);
+          this.snack.open('Lien copié dans le presse-papiers', undefined, { duration: 2500 });
+        } catch {
+          this.snack.open('Copie impossible — sélectionnez le texte du champ', 'OK', { duration: 4500 });
+        }
+      }
+    })();
+  }
+
   downloadQrCode(): void {
     const qrCanvas = this.document.querySelector('.profile-qr qrcode canvas') as HTMLCanvasElement | null;
     if (!qrCanvas) return;
     const a = this.document.createElement('a');
-    a.href = qrCanvas.toDataURL('image/png');
+    a.href = qrCanvasToDownloadablePngDataUrl(qrCanvas);
     a.download = `QR_Invitation_${(this.selectedLabel() || 'invite').replace(/\s+/g, '_')}.png`;
     this.document.body.appendChild(a);
     a.click();

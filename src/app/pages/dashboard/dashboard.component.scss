@@ -4,18 +4,22 @@
 
 .dashboard-bridgerton {
 	min-height: 100%;
-	padding: 8px 4px 32px;
+	padding: 8px 12px 40px;
+	background:
+		radial-gradient(ellipse 100% 55% at 50% -12%, rgba(232, 224, 235, 0.4), transparent 52%),
+		radial-gradient(ellipse 65% 40% at 100% 18%, rgba(171, 188, 166, 0.12), transparent 48%),
+		linear-gradient(180deg, var(--bridgerton-cream) 0%, var(--bridgerton-cream-deep) 100%);
 }
 
 .dashboard-hero {
 	max-width: 720px;
 	margin: 0 auto 28px;
-	padding: 4px;
+	padding: 0;
 }
 
 .dashboard-hero-frame {
 	position: relative;
-	padding: 28px 26px 32px;
+	padding: 28px 14px 32px;
 	border: 1px solid rgba(184, 149, 106, 0.35);
 	border-radius: 2px;
 	background: linear-gradient(145deg, rgba(255, 255, 255, 0.92) 0%, rgba(250, 246, 241, 0.98) 100%);
@@ -97,9 +101,87 @@
 
 @media (max-width: 600px) {
 	.dashboard-hero-frame {
-		padding: 22px 18px 26px;
+		padding: 22px 14px 26px;
 	}
 	.dashboard-lede {
 		font-size: 0.9rem;
+	}
+}
+
+/* —— Carte courriel (sous le registre) —— */
+.dashboard-email-wrap {
+	max-width: 720px;
+	margin: 24px auto 0;
+	padding: 0;
+}
+
+.dashboard-email-card {
+	padding-bottom: 8px !important;
+}
+
+.dashboard-email-heading {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	align-items: flex-start;
+	margin-bottom: 14px;
+}
+
+.dashboard-email-title {
+	margin: 0;
+	font-size: clamp(1.35rem, 3.5vw, 1.55rem) !important;
+}
+
+.dashboard-email-value {
+	font-family: 'Plus Jakarta Sans', sans-serif;
+	font-size: 1.05rem;
+	font-weight: 500;
+	color: var(--bridgerton-ink);
+	margin: 0 0 12px;
+	padding: 12px 14px;
+	border-radius: 2px;
+	border: 1px dashed rgba(107, 61, 79, 0.22);
+	background: rgba(255, 255, 255, 0.65);
+	word-break: break-word;
+	line-height: 1.45;
+}
+
+.dashboard-email-prose {
+	font-family: 'Plus Jakarta Sans', sans-serif;
+	font-size: 0.92rem;
+	line-height: 1.65;
+	color: var(--bridgerton-muted);
+	margin: 0 0 18px;
+	max-width: 40em;
+}
+
+.dashboard-email-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.dashboard-email-oops {
+	font-family: 'Cormorant Garamond', serif;
+	font-weight: 700;
+	font-size: clamp(2.75rem, 10vw, 4rem);
+	line-height: 0.95;
+	letter-spacing: 0.04em;
+	color: rgba(161, 64, 68, 0.88);
+	margin: 4px 0 2px;
+	text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.dashboard-email-heading--oops .bridgerton-card-kicker {
+	margin-bottom: 2px;
+}
+
+@media (max-width: 600px) {
+	.dashboard-email-wrap {
+		margin-top: 20px;
+	}
+	.dashboard-email-value {
+		font-size: 0.95rem;
+		padding: 10px 12px;
 	}
 }

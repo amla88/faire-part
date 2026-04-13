@@ -1,0 +1,36 @@
+<h2 mat-dialog-title class="welcome-title">Deux façons d’avancer, une seule fête</h2>
+
+<mat-dialog-content class="welcome-content">
+	<p class="welcome-lead">
+		Bienvenue&nbsp;! Vous voici au bon endroit pour tout ce qui concerne le grand jour — vos réponses, vos coordonnées,
+		vos envies…
+	</p>
+	<p>
+		Nous vous proposons <strong>deux chemins</strong>, aussi simples l’un que l’autre, du plus jeune âge au plus
+		«&nbsp;expérimenté&nbsp;»&nbsp;:
+	</p>
+	<ul class="welcome-list">
+		<li>
+			<strong>La Chronique pixel</strong> — une petite aventure pas à pas, comme une histoire où vous êtes le héros ou
+			l’héroïne. On a pensé aux amateurs de jeux vidéo, mais pas besoin de manette&nbsp;: il suffit de lire et de
+			cliquer quand c’est indiqué.
+		</li>
+		<li>
+			<strong>La méthode classique</strong> — les pages du site, une par une, tranquillement. Vous restez ici sur
+			<em>Les prémices</em> (l’accueil), et vous ouvrez les menus quand vous voulez.
+		</li>
+	</ul>
+	<p class="welcome-foot">
+		Les deux mènent au même résultat. Vous pourrez toujours utiliser l’autre mode plus tard, sans manquer une miette du
+		festin.
+	</p>
+</mat-dialog-content>
+
+<mat-dialog-actions class="welcome-actions" align="end">
+	<button mat-stroked-button type="button" class="welcome-btn-classic" (click)="chooseClassic()">
+		Rester aux prémices
+	</button>
+	<button mat-flat-button color="primary" type="button" class="welcome-btn-game" (click)="chooseGame()">
+		<span class="welcome-btn-label">Aller à la Chronique pixel</span>
+	</button>
+</mat-dialog-actions>

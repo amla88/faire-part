@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "node ./tools/inject-env.js && ng serve --proxy-config proxy.conf.json",
-    "build": "node ./tools/inject-env.js && ng build --base-href=/",
+    "start": "node ./tools/inject-env.js && node ./tools/ng-serve.js",
+    "build": "node ./tools/inject-env.js && node ./tools/ng-build.js",
     "watch": "ng build --watch --configuration development",
     "spa-fallback": "copy dist\\faire-part\\browser\\index.html dist\\faire-part\\browser\\404.html",
     "game:placeholders": "node tools/generate-game-placeholders.js"

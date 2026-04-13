@@ -69,9 +69,15 @@
 											</div>
 										</div>
 
+										<div class="rsvp-decline-row">
+											<mat-checkbox class="rsvp-decline-checkbox" formControlName="decline_invitation" color="warn">
+												Je ne pourrai pas venir (refus de l’invitation)
+											</mat-checkbox>
+										</div>
+
 										@if (p.invite_repas) {
 											<div class="person-dietary">
-												<mat-form-field appearance="outline" class="w-100">
+												<mat-form-field appearance="outline" class="w-100 rsvp-dietary-field" subscriptSizing="dynamic">
 													<mat-label>Allergènes &amp; intolérances alimentaires</mat-label>
 													<textarea
 														matInput
@@ -82,11 +88,9 @@
 														cdkAutosizeMinRows="2"
 														cdkAutosizeMaxRows="6"
 													></textarea>
-													<mat-hint>
-														Ex.&nbsp;: arachides, lactose, fruits à coque, gluten, sulfites…
-													</mat-hint>
+													<mat-hint>Ex.&nbsp;: arachides, lactose, fruits à coque, gluten, sulfites…</mat-hint>
 												</mat-form-field>
-												<mat-form-field appearance="outline" class="w-100">
+												<mat-form-field appearance="outline" class="w-100 rsvp-dietary-field" subscriptSizing="dynamic">
 													<mat-label>Régimes, préférences &amp; autres précisions</mat-label>
 													<textarea
 														matInput
@@ -97,9 +101,7 @@
 														cdkAutosizeMinRows="2"
 														cdkAutosizeMaxRows="6"
 													></textarea>
-													<mat-hint>
-														Ex.&nbsp;: végétarien, sans porc, halal/casher, chaise haute, etc.
-													</mat-hint>
+													<mat-hint>Ex.&nbsp;: végétarien, sans porc, halal/casher, chaise haute, etc.</mat-hint>
 												</mat-form-field>
 											</div>
 										}

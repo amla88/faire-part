@@ -19,7 +19,7 @@
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	padding: 10px 4px 6px;
+	padding: 10px 0 6px;
 }
 
 .person-dietary-notes {
@@ -54,6 +54,20 @@
 	color: var(--bc-ink);
 	font-family: 'Cormorant Garamond', serif;
 	font-size: 1.1rem;
+}
+
+.person-declined {
+	flex-shrink: 0;
+	font-family: 'Plus Jakarta Sans', sans-serif;
+	font-size: 0.78rem;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: #8b3a3a;
+	padding: 6px 12px;
+	border: 1px solid rgba(139, 58, 58, 0.35);
+	border-radius: 4px;
+	background: rgba(139, 58, 58, 0.06);
 }
 
 .person-events {
@@ -108,7 +122,7 @@
 .summary-header {
 	display: flex;
 	align-items: center;
-	padding: 8px 4px 10px;
+	padding: 8px 0 10px;
 	border-bottom: 1px solid rgba(44, 36, 51, 0.08);
 	margin-bottom: 4px;
 }
@@ -164,5 +178,14 @@
 	.card-actions {
 		justify-content: flex-start;
 		align-items: flex-start;
+	}
+
+	/* Badge « invitation déclinée » : pas toute la largeur, aligné à gauche comme le nom */
+	.person-declined {
+		align-self: flex-start;
+		width: auto;
+		max-width: 100%;
+		text-align: left;
+		box-sizing: border-box;
 	}
 }

@@ -1,9 +1,12 @@
 import {
   Component,
   ChangeDetectionStrategy,
+  OnInit,
   signal,
   effect,
   inject,
+  input,
+  output,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -40,7 +43,13 @@ type ColorPickerTarget = 'hair' | 'clothes' | 'skin' | 'background' | 'accessori
   styleUrls: ['./avatar-editor.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AvatarEditorComponent {
+export class AvatarEditorComponent implements OnInit {
+  /** Mode jeu : charge l’avatar depuis le serveur et notifie la boîte de dialogue après sauvegarde. */
+  readonly embedInGame = input(false);
+
+  /** Émis après un enregistrement réussi (RPC), pour fermer la surcouche jeu. */
+  readonly savedToServer = output<void>();
+
   readonly transparentColor = 'transparent';
   readonly noneOptionValue = 'none';
   openColorPickerTarget = signal<ColorPickerTarget | null>(null);
@@ -280,13 +289,40 @@ export class AvatarEditorComponent {
     effect(() => {
       this.generateAvatar();
     });
-    // Apply cached avatar if present in AuthService (selected when user chose a person)
+  }
+
+  ngOnInit(): void {
+    if (this.embedInGame()) {
+      void this.loadFreshFromServerForGameEmbed();
+      return;
+    }
     const user = this.auth.getUser();
-    if (user && user.selected_personne_id && user.avatars && user.avatars[user.selected_personne_id]) {
-      const a = user.avatars[user.selected_personne_id];
-      if (a.options) {
-        this.applyOptions(a.options);
+    if (user?.selected_personne_id && user.avatars?.[user.selected_personne_id]?.options) {
+      this.applyOptions(user.avatars[user.selected_personne_id].options);
+    }
+  }
+
+  private async loadFreshFromServerForGameEmbed(): Promise<void> {
+    const user = this.auth.getUser();
+    if (!user?.selected_personne_id) {
+      this.snackBar.open('Aucune personne sélectionnée pour ce portrait.', 'OK', { duration: 4000 });
+      return;
+    }
+    this.isLoading.set(true);
+    try {
+      const row = await this.avatarService.loadAvatarFromRpc(user.selected_personne_id as number);
+      if (row?.options) {
+        this.applyOptions(row.options);
+      } else {
+        this.setDefaultOptions();
       }
+      if (row?.seed != null && String(row.seed).trim() !== '') {
+        this.seed.set(String(row.seed));
+      }
+    } catch {
+      this.setDefaultOptions();
+    } finally {
+      this.isLoading.set(false);
     }
   }
 
@@ -408,10 +444,15 @@ export class AvatarEditorComponent {
     this.isSaving.set(true);
     try {
       const avatarRow = await this.avatarService.saveAvatar(seed, options, personneId, this.avatarDataUri());
-      if(avatarRow) {
+      if (avatarRow) {
+        if (this.embedInGame()) {
+          this.savedToServer.emit();
+          this.snackBar.open('Portrait enregistré', undefined, { duration: 1800 });
+        } else {
           this.snackBar.open('Avatar enregistré', undefined, { duration: 2000 });
+        }
       } else {
-          this.snackBar.open('Impossible d\'enregistrer l\'avatar', 'OK', { duration: 4000 });
+        this.snackBar.open('Impossible d\'enregistrer l\'avatar', 'OK', { duration: 4000 });
       }
     } catch (err) {
       console.error('Erreur saveAvatar', err);

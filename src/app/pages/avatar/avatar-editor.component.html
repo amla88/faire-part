@@ -1,10 +1,17 @@
-<div class="avatar-editor-container avatar-editor-bridgerton">
-  <div class="editor-header">
-    <p class="editor-eyebrow">Le salon des portraits</p>
-    <h1 class="editor-title">Éditeur d’avatar</h1>
-    <p class="editor-lede">Personnalisez votre effigie pour le mariage — cheveux, tenue et couleurs à votre gré.</p>
-    <div class="editor-flourish" aria-hidden="true"></div>
-  </div>
+<div class="avatar-editor-container avatar-editor-bridgerton" [class.avatar-editor--embed]="embedInGame()">
+  @if (!embedInGame()) {
+    <div class="editor-header">
+      <p class="editor-eyebrow">Le salon des portraits</p>
+      <h1 class="editor-title">Éditeur d’avatar</h1>
+      <p class="editor-lede">Personnalisez votre effigie pour le mariage — cheveux, tenue et couleurs à votre gré.</p>
+      <div class="editor-flourish" aria-hidden="true"></div>
+    </div>
+  } @else {
+    <div class="editor-embed-strip">
+      <p class="editor-embed-eyebrow">La Galerie des reflets</p>
+      <p class="editor-embed-lede">Même atelier que sur le site — visage, coiffure, tenue et couleurs.</p>
+    </div>
+  }
 
   <div class="editor-content">
     <mat-card class="bridgerton-card preview-section">

@@ -1,5 +1,46 @@
 .cardWithShadow { padding: 12px; }
 
 .title-margin-bottom {
-    margin-bottom: 12px;
+  margin-bottom: 12px;
+}
+
+.admin-family-access-row {
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-family-token-block {
+  min-width: 0;
+  flex: 1 1 200px;
+}
+
+.admin-family-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-shrink: 0;
+  max-width: 100%;
+  line-height: 0;
+}
+
+.admin-family-qr qrcode {
+  display: block;
+  max-width: 80px;
+  width: 100%;
+}
+
+.admin-family-qr ::ng-deep canvas {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+}
+
+.admin-family-qr-actions {
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }

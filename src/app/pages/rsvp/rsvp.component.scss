@@ -95,7 +95,7 @@
 }
 
 .rsvp-card-content {
-	padding-top: 8px !important;
+	padding: 8px 8px 20px !important;
 }
 
 .rsvp-loading {
@@ -148,7 +148,7 @@
 .person-dietary {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
+	gap: 16px;
 	padding: 8px 6px 0 48px;
 }
 
@@ -158,9 +158,29 @@
 
 .person-row {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
-	padding: 10px 6px;
+	gap: 8px 12px;
+	padding: 10px 6px 4px;
+	border-bottom: none;
+}
+
+.rsvp-decline-row {
+	padding: 0 6px 10px 48px;
 	border-bottom: 1px dashed rgba(107, 61, 79, 0.08);
+	display: flex;
+	justify-content: flex-start;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.rsvp-decline-checkbox {
+	font-family: 'Plus Jakarta Sans', sans-serif;
+	font-size: 0.88rem;
+	line-height: 1.35;
+	display: block;
+	width: 100%;
+	max-width: 100%;
 }
 
 .person-col {
@@ -270,4 +290,72 @@
 	.person-dietary {
 		padding-left: 6px;
 	}
+
+	.rsvp-decline-row {
+		padding-left: 6px;
+		padding-right: 6px;
+		justify-content: flex-start;
+		align-items: flex-start;
+	}
+
+	:host ::ng-deep .rsvp-decline-row .mat-mdc-checkbox {
+		.mdc-form-field {
+			align-items: flex-start;
+		}
+
+		.mdc-checkbox {
+			margin-top: 3px;
+		}
+	}
+}
+
+/* Refus : PC = case et libellé centrés verticalement ; mobile = haut du libellé aligné avec la case (lignes multiples) */
+:host ::ng-deep .rsvp-decline-row .mat-mdc-checkbox {
+	width: 100%;
+	max-width: 100%;
+
+	.mdc-form-field {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: flex-start;
+		width: 100%;
+		max-width: 100%;
+	}
+
+	.mdc-checkbox {
+		flex-shrink: 0;
+		align-self: center;
+	}
+
+	label.mdc-label {
+		width: auto;
+		flex: 1;
+		min-width: 0;
+		white-space: normal;
+		line-height: 1.35;
+		text-align: left;
+		padding-top: 0;
+	}
+}
+
+/* Hints longs : retour à la ligne + espace réservé (subscriptSizing=dynamic côté template) */
+:host ::ng-deep .person-dietary .mat-mdc-form-field-hint-wrapper {
+	white-space: normal;
+	word-break: break-word;
+	overflow-wrap: anywhere;
+	line-height: 1.35;
+}
+
+:host ::ng-deep .person-dietary .mat-mdc-form-field-hint {
+	white-space: normal;
+	word-break: break-word;
+	overflow-wrap: anywhere;
+}
+
+:host ::ng-deep .person-dietary textarea.mat-mdc-input-element::placeholder {
+	white-space: normal;
+	word-break: break-word;
+	line-height: 1.35;
+	font-size: 0.82rem;
 }

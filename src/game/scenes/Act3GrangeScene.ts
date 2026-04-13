@@ -5,14 +5,14 @@ import { quests, QuestFlags } from '../systems/QuestSystem';
 import { gameBackend } from '../services/GameBackendBridge';
 import { gameState } from '../core/game-state';
 import { DialogueBox } from '../ui/DialogueBox';
-import { AvatarBox } from '../ui/AvatarBox';
+import { AvatarEditorBox } from '../ui/AvatarEditorBox';
 import { getDialogue } from '../data/dialogues.catalog';
 
 export class Act3GrangeScene extends Phaser.Scene {
   private inputState!: SceneInput;
   private info!: Phaser.GameObjects.Text;
   private dialogueBox!: DialogueBox;
-  private avatarBox!: AvatarBox;
+  private avatarEditorBox!: AvatarEditorBox;
   private opening = false;
 
   constructor() {
@@ -31,7 +31,7 @@ export class Act3GrangeScene extends Phaser.Scene {
 
     this.inputState = new SceneInput(this);
     this.dialogueBox = new DialogueBox(this);
-    this.avatarBox = new AvatarBox(this);
+    this.avatarEditorBox = new AvatarEditorBox(this);
     this.info = this.add.text(
       width / 2,
       height / 2,
@@ -45,16 +45,26 @@ export class Act3GrangeScene extends Phaser.Scene {
     ).setOrigin(0.5);
   }
 
+  /** Éditeur DiceBear intégré à Phaser (mêmes options que le site). */
+  private openPhaserAvatarEditor(initial: { seed?: string; options?: unknown } | null): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
+      this.avatarEditorBox.start({
+        initial,
+        onClose: (saved) => resolve(saved),
+      });
+    });
+  }
+
   override update(): void {
     const act = this.inputState.actionJustDown();
 
-    if (this.dialogueBox.active) {
-      if (act) this.dialogueBox.next();
+    if (this.avatarEditorBox.active) {
       this.inputState.commit();
       return;
     }
 
-    if (this.avatarBox.active) {
+    if (this.dialogueBox.active) {
+      if (act) this.dialogueBox.next();
       this.inputState.commit();
       return;
     }
@@ -70,7 +80,8 @@ export class Act3GrangeScene extends Phaser.Scene {
       this.info.setText('Préparation du miroir…');
       gameBackend
         .getAvatarForSelected()
-        .then((existing) => {
+        .then((avatarRow) => {
+          this.info.setText('');
           this.dialogueBox.start(
             {
               steps: [
@@ -83,41 +94,29 @@ export class Act3GrangeScene extends Phaser.Scene {
               ],
             },
             () => {
-              this.avatarBox.start({
-                title: 'La Galerie des reflets',
-                defaults: existing ?? undefined,
-                onSubmit: ({ seed, options }) => {
-                  this.info.setText('Sauvegarde de votre effigie…');
-                  gameBackend
-                    .upsertAvatarForSelected(seed, options)
-                    .then(() => {
-                      quests.done(QuestFlags.act3AvatarDone);
-                      quests.done(QuestFlags.hubMapUnlocked);
-                      // Sync progression serveur (best-effort)
-                      try {
-                        void gameBackend.upsertGameProgressForSelected(gameState.snapshot.flags);
-                      } catch {}
-                      this.info.setText('Acte 3 validé.');
-                      this.dialogueBox.start(getDialogue('act3.mapUnlock'), () => {
-                        // À la fermeture: ouvrir la carte côté Angular (overlay) puis basculer en hub.
-                        try {
-                          window.dispatchEvent(new CustomEvent('fp-game-show-map'));
-                        } catch {}
-                        try {
-                          gameState.setAct('hub');
-                          this.scene.start('HubOpenWorldScene');
-                        } catch {
-                          // Si la scène hub n'existe pas encore, on reste ici.
-                        }
-                      });
-                    })
-                    .catch((e) => {
-                      this.info.setText('Erreur: ' + String(e?.message || e));
-                    })
-                    .finally(() => {
-                      this.opening = false;
-                    });
-                },
+              void this.openPhaserAvatarEditor(avatarRow).then((saved) => {
+                this.opening = false;
+                if (!saved) {
+                  this.info.setText('Approchez du miroir et façonnez votre effigie.\nEspace/Enter (ou bouton tactile) pour commencer.');
+                  return;
+                }
+                quests.done(QuestFlags.act3AvatarDone);
+                quests.done(QuestFlags.hubMapUnlocked);
+                try {
+                  void gameBackend.upsertGameProgressForSelected(gameState.snapshot.flags);
+                } catch {}
+                this.info.setText('Acte 3 validé.');
+                this.dialogueBox.start(getDialogue('act3.mapUnlock'), () => {
+                  try {
+                    window.dispatchEvent(new CustomEvent('fp-game-show-map'));
+                  } catch {}
+                  try {
+                    gameState.setAct('hub');
+                    this.scene.start('HubOpenWorldScene');
+                  } catch {
+                    // Si la scène hub n'existe pas encore, on reste ici.
+                  }
+                });
               });
             }
           );
@@ -130,4 +129,3 @@ export class Act3GrangeScene extends Phaser.Scene {
     this.inputState.commit();
   }
 }
-

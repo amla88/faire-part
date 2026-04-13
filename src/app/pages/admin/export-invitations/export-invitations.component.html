@@ -8,6 +8,7 @@
       <mat-checkbox [checked]="activeFilter() === 'soiree'" (change)="updateFilter('soiree', $event.checked)">QUE Invité à la soirée</mat-checkbox>
       <mat-checkbox [checked]="activeFilter() === 'reception_soiree'" (change)="updateFilter('reception_soiree', $event.checked)">Invité à la réception ET à la soirée</mat-checkbox>
       <mat-checkbox [checked]="activeFilter() === 'tout'" (change)="updateFilter('tout', $event.checked)">Invité à TOUT</mat-checkbox>
+      <mat-checkbox [checked]="activeFilter() === 'autre'" (change)="updateFilter('autre', $event.checked)">Autres cas (hors les filtres ci-dessus)</mat-checkbox>
       <span class="flex-grow"></span>
       <mat-slide-toggle [checked]="showQrCodes()" (change)="showQrCodes.set($event.checked)">Afficher les QR Codes</mat-slide-toggle>
       <button mat-flat-button color="primary" (click)="exportToZip()" [disabled]="loading()">
@@ -19,6 +20,10 @@
      <div class="f-s-13 text-muted m-b-12">
       Résultats : {{ filteredFamilles().length }} familles ({{ totalPersonnes() }} personnes)
     </div>
+    <p class="f-s-12 text-muted m-b-12">
+      Le ZIP contient <code>invitations.csv</code> (Excel, séparateur <code>;</code>) et
+      <code>invitations_indesign.txt</code> (tabulations, UTF‑16) pour le publipostage InDesign — dézippez le dossier et choisissez le <code>.txt</code> dans « Sources de données ».
+    </p>
 
     <div class="table-responsive" *ngIf="!loading()">
       <table mat-table [dataSource]="filteredFamilles()" class="w-100">
@@ -52,12 +57,16 @@
         <!-- QR Code Column -->
         <ng-container matColumnDef="qrcode">
           <th mat-header-cell *matHeaderCellDef class="f-w-600 f-s-14">QR Code</th>
-          <td mat-cell *matCellDef="let element">
-            <qrcode 
+          <td mat-cell *matCellDef="let element" class="export-qr-cell">
+            <qrcode
                 [qrdata]="getLoginUrl(element.login_token)"
-                [width]="128"
-                [errorCorrectionLevel]="'M'">
-            </qrcode>
+                [width]="200"
+                [margin]="0"
+                [colorDark]="qrColorDark"
+                [colorLight]="qrColorLight"
+                [errorCorrectionLevel]="'M'"
+                elementType="canvas"
+            ></qrcode>
           </td>
         </ng-container>
 

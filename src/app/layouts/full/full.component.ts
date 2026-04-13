@@ -6,7 +6,6 @@ import { CommonModule } from '@angular/common';
 import { NgScrollbarModule } from 'ngx-scrollbar';
 import { TablerIconsModule } from 'angular-tabler-icons';
 import { HeaderComponent } from './header/header.component';
-import { SidebarComponent } from './sidebar/sidebar.component';
 import { AppNavItemComponent } from './sidebar/nav-item/nav-item.component';
 import { navItems } from './sidebar/sidebar-data';
 import { navItemsAdmin } from './sidebar/sidebar-data-admin';
@@ -22,7 +21,6 @@ import { CoreService } from 'src/app/services/core.service';
     AppNavItemComponent,
     MaterialModule,
     CommonModule,
-    SidebarComponent,
     NgScrollbarModule,
     TablerIconsModule,
     HeaderComponent,

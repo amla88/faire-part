@@ -1,15 +1,15 @@
 <mat-card class="bridgerton-card">
-	<div class="card-actions" role="region" aria-labelledby="bridgerton-summary-title">
-		<div class="bridgerton-card-heading">
-			<span class="bridgerton-card-kicker">Registre du domaine</span>
-			<span id="bridgerton-summary-title" class="bridgerton-card-title">Mes réponses</span>
-		</div>
-		<button mat-flat-button color="primary" type="button" routerLink="/rsvp" class="bridgerton-rsvp-btn">
-			<mat-icon>edit_note</mat-icon>
-			Modifier mes réponses
-		</button>
-	</div>
 	<mat-card-content>
+		<div class="card-actions" role="region" aria-labelledby="bridgerton-summary-title">
+			<div class="bridgerton-card-heading">
+				<span class="bridgerton-card-kicker">Registre du domaine</span>
+				<span id="bridgerton-summary-title" class="bridgerton-card-title">Mes réponses</span>
+			</div>
+			<button mat-flat-button color="primary" type="button" routerLink="/rsvp" class="bridgerton-rsvp-btn">
+				<mat-icon>edit_note</mat-icon>
+				Modifier mes réponses
+			</button>
+		</div>
 		<div *ngIf="loading" class="bridgerton-loading">Chargement…</div>
 
 		<div *ngIf="!loading">
@@ -29,7 +29,11 @@
 				<div class="person-row">
 					<div class="person-name">{{ p.prenom }} {{ p.nom }}</div>
 
-					<div class="person-events">
+					<div *ngIf="isTrue(p.decline_invitation)" class="person-declined" role="status">
+						Invitation déclinée
+					</div>
+
+					<div *ngIf="!isTrue(p.decline_invitation)" class="person-events">
 						<mat-icon
 							class="event-icon"
 							[class.present]="isTrue(p.present_reception)"
@@ -61,7 +65,7 @@
 						<span *ngIf="isTrue(p.invite_soiree)" class="sr-only">Soirée: {{ isTrue(p.present_soiree) ? 'Présent' : 'Absent' }}</span>
 					</div>
 				</div>
-				<div *ngIf="isTrue(p.invite_repas) && hasDietaryNotes(p)" class="person-dietary-notes" aria-label="Notes pour le banquet">
+				<div *ngIf="!isTrue(p.decline_invitation) && isTrue(p.invite_repas) && hasDietaryNotes(p)" class="person-dietary-notes" aria-label="Notes pour le banquet">
 					<span *ngIf="(p.allergenes_alimentaires || '').trim()" class="dietary-block">
 						<span class="dietary-label">Allergènes :</span>
 						<span class="dietary-text">{{ p.allergenes_alimentaires }}</span>

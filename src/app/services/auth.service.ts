@@ -3,6 +3,9 @@ import { Router } from '@angular/router';
 import { NgSupabaseService } from './ng-supabase.service';
 import { AvatarService } from './avatar.service';
 
+/** Après un login réussi : le tableau de bord affiche une fois l’accueil jeu / classique. */
+export const SESSION_POST_LOGIN_ONBOARDING_KEY = 'faire-part-post-login-onboarding';
+
 export interface PersonneSummary {
   id: number;
   nom: string;
@@ -142,6 +145,12 @@ export class AuthService {
       try {
         this.avatar.initFromUser(user);
       } catch {}
+
+      try {
+        sessionStorage.setItem(SESSION_POST_LOGIN_ONBOARDING_KEY, '1');
+      } catch {
+        /* ignore */
+      }
 
       return { success: true, user };
     } catch (e: any) {

@@ -119,9 +119,9 @@
 	flex-direction: column;
 }
 
-.preview-section mat-card-content,
-.settings-section mat-card-content {
-	padding-top: 4px !important;
+.preview-section.bridgerton-card > .mat-mdc-card-content,
+.settings-section.bridgerton-card > .mat-mdc-card-content {
+	padding: 4px 0 0 !important;
 }
 
 .preview-container {
@@ -366,6 +366,48 @@
 ::ng-deep .mat-divider {
 	margin: 1.25rem 0;
 	border-top-color: var(--bridgerton-gold-border-soft) !important;
+}
+
+.avatar-editor--embed.avatar-editor-bridgerton {
+	min-height: 0;
+	padding: 0 0 8px;
+	background: transparent;
+}
+
+.avatar-editor--embed .editor-content {
+	max-width: none;
+	margin: 0;
+	gap: 1rem;
+}
+
+@media (max-width: 960px) {
+	.avatar-editor--embed .editor-content {
+		grid-template-columns: 1fr;
+	}
+}
+
+.editor-embed-strip {
+	text-align: center;
+	margin-bottom: 1rem;
+	padding: 0 4px;
+}
+
+.editor-embed-eyebrow {
+	font-family: 'Italiana', serif;
+	font-size: 0.72rem;
+	letter-spacing: 0.28em;
+	text-transform: uppercase;
+	color: var(--bridgerton-gold);
+	margin: 0 0 6px;
+}
+
+.editor-embed-lede {
+	font-family: 'Plus Jakarta Sans', sans-serif;
+	font-size: 0.88rem;
+	line-height: 1.5;
+	color: var(--bridgerton-muted);
+	margin: 0 auto;
+	max-width: 36em;
 }
 
 @media (max-width: 768px) {

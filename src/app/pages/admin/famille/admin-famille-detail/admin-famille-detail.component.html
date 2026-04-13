@@ -61,8 +61,8 @@
         <div class="m-t-12">
           <mat-card class="p-12">
             <ng-container *ngIf="currentToken()">
-              <div class="d-flex align-items-center justify-content-between">
-                <div class="flex-grow-1">
+              <div class="d-flex admin-family-access-row">
+                <div class="flex-grow-1 admin-family-token-block">
                   <div>
                     <strong>Code d'accès actuel:</strong>
                     <span class="f-w-600 m-l-4">{{ currentToken() }}</span>
@@ -72,14 +72,17 @@
                   </div>
                 </div>
                 
-                <div *ngIf="qrCodeUrl()" class="text-center p-l-16">
+                <div *ngIf="qrCodeUrl()" class="text-center admin-family-qr">
                   <qrcode
                     [qrdata]="qrCodeUrl()!"
-                    [width]="128"
+                    [width]="220"
+                    [margin]="0"
+                    [colorDark]="qrColorDark"
+                    [colorLight]="qrColorLight"
                     [errorCorrectionLevel]="'M'"
                     elementType="canvas"
                   ></qrcode>
-                  <div class="m-t-8">
+                  <div class="admin-family-qr-actions">
                     <button mat-stroked-button color="primary" type="button" (click)="downloadQrCode()">Télécharger</button>
                   </div>
                 </div>

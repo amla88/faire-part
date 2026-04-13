@@ -90,21 +90,43 @@
         @if (qrCodeUrl()) {
           <div class="profile-qr">
             <p class="profile-map-title">Code QR personnel</p>
-            <qrcode
-              [qrdata]="qrCodeUrl()!"
-              [width]="148"
-              [errorCorrectionLevel]="'M'"
-              elementType="canvas"
-            ></qrcode>
-            <div class="profile-actions profile-actions--left">
+            <div class="profile-qr-frame">
+              <qrcode
+                [qrdata]="qrCodeUrl()!"
+                [width]="220"
+                [margin]="0"
+                [colorDark]="qrColorDark"
+                [colorLight]="qrColorLight"
+                [errorCorrectionLevel]="'M'"
+                elementType="canvas"
+              ></qrcode>
+            </div>
+            <div class="profile-actions profile-actions--left profile-qr-actions">
               <button mat-stroked-button color="primary" type="button" (click)="downloadQrCode()">
                 <mat-icon>download</mat-icon>
                 Télécharger le QR
               </button>
-              <button mat-stroked-button color="primary" type="button" (click)="addLoginLinkToFavorites()">
-                <mat-icon>star</mat-icon>
-                Ajouter en favori
-              </button>
+              <div class="profile-qr-link-and-fav">
+                <div class="profile-personal-link-wrap">
+                  <mat-form-field appearance="outline" class="profile-link-field" subscriptSizing="dynamic">
+                    <mat-label>Lien personnel</mat-label>
+                    <input matInput readonly [value]="qrCodeUrl()!" />
+                    <button
+                      mat-icon-button
+                      matSuffix
+                      type="button"
+                      (click)="copyPersonalLink()"
+                      aria-label="Copier le lien personnel"
+                    >
+                      <mat-icon>content_copy</mat-icon>
+                    </button>
+                  </mat-form-field>
+                </div>
+                <button mat-stroked-button color="primary" type="button" (click)="addLoginLinkToFavorites()">
+                  <mat-icon>star</mat-icon>
+                  Ajouter en favori
+                </button>
+              </div>
             </div>
           </div>
         }

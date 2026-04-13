@@ -96,8 +96,11 @@ export class MusiquesComponent implements OnInit, OnDestroy {
         debounceTime(350),
         map((q: string) => q.trim()),
         distinctUntilChanged(),
-        filter((q: string) => q.length >= 2),
         switchMap((q: string) => {
+          if (q.length < 2) {
+            this.searchLoading.set(false);
+            return of([] as SpotifySearchTrack[]);
+          }
           this.searchLoading.set(true);
           return from(
             this.musiqueService.searchSpotify(q).finally(() => this.searchLoading.set(false))
@@ -141,9 +144,11 @@ export class MusiquesComponent implements OnInit, OnDestroy {
     if (t.length < 2) {
       this.searchHits.set([]);
       this.searchLoading.set(false);
+      // Cancel any debounced pending query.
+      this.search$.next('');
       return;
     }
-    this.search$.next(q);
+    this.search$.next(t);
   }
 
   clearSearch(): void {
@@ -226,10 +231,20 @@ export class MusiquesComponent implements OnInit, OnDestroy {
     }
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(m: MusiqueRow): Promise<void> {
+    const label = `${m.titre || 'ce titre'}${m.auteur ? ` — ${m.auteur}` : ''}`.trim();
+    const okConfirm = (() => {
+      try {
+        return window.confirm(`Supprimer définitivement la proposition « ${label} » ?`);
+      } catch {
+        return true;
+      }
+    })();
+    if (!okConfirm) return;
+
     this.saving.set(true);
     try {
-      const ok = await this.musiqueService.delete(id);
+      const ok = await this.musiqueService.delete(m.id);
       if (ok) {
         this.snack.open('Proposition retirée', undefined, { duration: 2000 });
         await this.load();
