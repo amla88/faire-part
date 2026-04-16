@@ -66,6 +66,8 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
     window.addEventListener('resize', this.resizeHandler);
     window.addEventListener('fp-game-show-map', this.mapEventHandler as any);
     window.addEventListener('fp-game-progress-updated', this.progressUpdatedHandler as any);
+    // Démarrer Phaser tout de suite pour que les clics sur "Commencer" /
+    // "Recommencer" puissent agir immédiatement, sans attendre le réseau.
     void this.bootstrapGame();
     // Certains navigateurs n'autorisent le fullscreen qu'après un geste utilisateur.
     // On mémorise le premier pointerdown dans la zone du jeu.
@@ -80,8 +82,17 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
     } catch {}
   }
 
-  /** Charge la sauvegarde locale + progression serveur avant de démarrer Phaser (évite course async / perso absent). */
+  /**
+   * Crée le jeu Phaser immédiatement, puis charge la sauvegarde + progression serveur
+   * en arrière-plan. Cela évite qu'un clic rapide sur "Commencer/Recommencer"
+   * se produise alors que `this.game` est encore nul.
+   */
   private async bootstrapGame(): Promise<void> {
+    // Créer le jeu en premier : synchronisé avec le DOM, sans attendre le réseau.
+    if (!this.game) {
+      this.game = createGame(this.gameHost.nativeElement);
+    }
+
     try {
       gameState.load();
     } catch {}
@@ -91,7 +102,6 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
       this.applyRemoteGameProgress(remote);
       this.syncProgressSignalsFromGameState();
     } catch {}
-    this.game = createGame(this.gameHost.nativeElement);
   }
 
   private applyRemoteGameProgress(remote: Record<string, unknown>): void {
