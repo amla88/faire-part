@@ -2,11 +2,17 @@
   <mat-card-content>
     <mat-card-title>Liste des familles</mat-card-title>
 
-    <div class="m-b-12 d-flex align-center gap-16">
+    <div class="m-b-12 d-flex align-center gap-16 flex-wrap">
       <mat-form-field appearance="outline" class="w-50">
         <mat-label>Rechercher familles / personnes</mat-label>
         <input matInput placeholder="Nom, id ou personne..." (input)="filter.set($any($event.target).value)" />
       </mat-form-field>
+      <mat-checkbox
+        [checked]="onlyNotSentInvitations()"
+        (change)="onlyNotSentInvitations.set($event.checked)"
+      >
+        Non envoyés uniquement
+      </mat-checkbox>
       <a mat-flat-button color="primary" routerLink="/admin/export-invitations">
         <mat-icon>save_alt</mat-icon>
         Export
@@ -59,6 +65,17 @@
                 </button>
               </mat-chip>
             </mat-chip-set>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="invitation_envoyee">
+          <th mat-header-cell *matHeaderCellDef class="f-w-600 f-s-14">Invitation envoyée</th>
+          <td mat-cell *matCellDef="let element">
+            <mat-checkbox
+              [checked]="!!element.invitation_envoyee"
+              (change)="toggleInvitationEnvoyee(element, $event.checked)"
+              aria-label="Invitation envoyée à cette famille"
+            />
           </td>
         </ng-container>
 

@@ -43,6 +43,7 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image('act0-carrosse', `${G}/backgrounds/acte0-carrosse.png`);
     this.load.image('act0-parallax-lointain', `${G}/backgrounds/acte0-parallax-lointain.png`);
     this.load.image('act0-parallax-proche', `${G}/backgrounds/acte0-parallax-proche.png`);
+    this.load.image('act1-courtyard', `${G}/backgrounds/acte1-courtyard.png`);
   }
 
   create(): void {

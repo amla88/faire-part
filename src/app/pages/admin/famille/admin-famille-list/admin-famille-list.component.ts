@@ -13,13 +13,14 @@ import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { Router, RouterModule } from '@angular/router';
 import { AvatarMacaronComponent } from 'src/app/shared/avatar-macaron/avatar-macaron.component';
 
 @Component({
   selector: 'app-admin-famille-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, MatCardModule, MatTableModule, MatChipsModule, MatIconModule, MatButtonModule, MatProgressSpinnerModule, MatSnackBarModule, MatFormFieldModule, MatInputModule, MatTooltipModule, AvatarMacaronComponent],
+  imports: [CommonModule, RouterModule, MatCardModule, MatTableModule, MatChipsModule, MatIconModule, MatButtonModule, MatProgressSpinnerModule, MatSnackBarModule, MatFormFieldModule, MatInputModule, MatTooltipModule, MatCheckboxModule, AvatarMacaronComponent],
   templateUrl: './admin-famille-list.component.html',
   styleUrls: ['./admin-famille-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -29,14 +30,21 @@ export class AdminFamilleListComponent implements OnInit {
   familles = signal<any[]>([]);
   loading = signal(false);
 
-  displayedColumns = ['name', 'persons', 'actions'];
+  displayedColumns = ['name', 'persons', 'invitation_envoyee', 'actions'];
 
   // simple client-side filter
   filter = signal('');
+  /** N'afficher que les familles dont l'invitation n'a pas encore été marquée comme envoyée */
+  onlyNotSentInvitations = signal(false);
+
   filteredFamilles = computed(() => {
+    let list = this.familles();
+    if (this.onlyNotSentInvitations()) {
+      list = list.filter((f: any) => !f.invitation_envoyee);
+    }
     const q = (this.filter() || '').toLowerCase().trim();
-    if (!q) return this.familles();
-    return this.familles().filter((f: any) => {
+    if (!q) return list;
+    return list.filter((f: any) => {
       const familyName = this.getFamilyDisplayName(f);
       if (familyName.toLowerCase().includes(q)) return true;
       if ((f.id + '').includes(q)) return true;
@@ -58,22 +66,43 @@ export class AdminFamilleListComponent implements OnInit {
   // Fonction helper pour obtenir le nom d'affichage de la famille
   getFamilyDisplayName(famille: any): string {
     if (!famille) return 'Famille';
-    
-    const principaleId = famille.personne_principale;
-    if (principaleId && Array.isArray(famille.personnes)) {
-      const principale = famille.personnes.find((p: any) => p.id === principaleId);
-      if (principale) {
-        return `Famille ${principale.prenom} ${principale.nom}`;
-      }
+
+    const principale = this.getPersonnePrincipale(famille);
+    if (principale) {
+      return `Famille ${principale.prenom} ${principale.nom}`;
     }
-    
-    // Fallback : utiliser la première personne ou l'ID
+
     if (Array.isArray(famille.personnes) && famille.personnes.length > 0) {
       const first = famille.personnes[0];
       return `Famille ${first.prenom} ${first.nom}`;
     }
-    
+
     return `Famille #${famille.id}`;
+  }
+
+  /** Personne principale pour affichage / tri (nom de famille pour le tri). */
+  private getPersonnePrincipale(famille: any): any | null {
+    if (!famille || !Array.isArray(famille.personnes)) return null;
+    const principaleId = famille.personne_principale;
+    if (principaleId != null) {
+      const p = famille.personnes.find((x: any) => Number(x.id) === Number(principaleId));
+      if (p) return p;
+    }
+    return famille.personnes[0] ?? null;
+  }
+
+  private sortKeyNomPrincipale(famille: any): string {
+    const p = this.getPersonnePrincipale(famille);
+    const raw = (p?.nom || '').trim();
+    return raw.toLocaleLowerCase('fr');
+  }
+
+  private sortFamillesByPrincipalNom(rows: any[]): any[] {
+    return [...rows].sort((a, b) => {
+      const cmp = this.sortKeyNomPrincipale(a).localeCompare(this.sortKeyNomPrincipale(b), 'fr', { sensitivity: 'base' });
+      if (cmp !== 0) return cmp;
+      return Number(a.id) - Number(b.id);
+    });
   }
 
   constructor(private ngSupabase: NgSupabaseService, private router: Router, private confirmDialog: ConfirmDialogService, private snackBar: MatSnackBar) {}
@@ -93,7 +122,7 @@ export class AdminFamilleListComponent implements OnInit {
       if (res.error) throw res.error;
       // Normaliser la réponse
       const rows = Array.isArray(res.data) ? res.data : [];
-      this.familles.set(rows as any[]);
+      this.familles.set(this.sortFamillesByPrincipalNom(rows as any[]));
     } catch (err) {
       console.error('Erreur chargement familles', err);
       this.familles.set([]);
@@ -196,6 +225,26 @@ export class AdminFamilleListComponent implements OnInit {
               }
             : famille
         )
+      );
+    }
+  }
+
+  async toggleInvitationEnvoyee(famille: any, checked: boolean) {
+    const familleId = famille.id;
+    const previous = !!famille.invitation_envoyee;
+
+    this.familles.update((current) =>
+      current.map((f) => (f.id === familleId ? { ...f, invitation_envoyee: checked } : f))
+    );
+
+    try {
+      const { error } = await this.ngSupabase.getClient().from('familles').update({ invitation_envoyee: checked }).eq('id', familleId);
+      if (error) throw error;
+    } catch (err) {
+      console.error('Erreur mise à jour invitation envoyée', err);
+      this.snackBar.open("Erreur : le statut « invitation envoyée » n'a pas pu être enregistré.", 'Fermer', { duration: 5000 });
+      this.familles.update((current) =>
+        current.map((f) => (f.id === familleId ? { ...f, invitation_envoyee: previous } : f))
       );
     }
   }

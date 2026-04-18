@@ -42,10 +42,7 @@ export class Act1CourScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(GAME_BACKGROUND_COLOR);
 
     const TILE_SCALE = 2;
-    this.add
-      .tileSprite(0, 0, width, height, 'tile-courtyard')
-      .setOrigin(0, 0)
-      .setTileScale(TILE_SCALE);
+    this.add.image(width / 2, height / 2, 'act1-courtyard').setDisplaySize(width, height);
 
     this.add
       .rectangle(width / 2, height / 2, width * 0.92, height * 0.78, 0x000000, 0)
