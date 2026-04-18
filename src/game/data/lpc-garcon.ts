@@ -37,7 +37,7 @@ const COLS = 13;
 const SPELL_ROWS = 4;
 const THRUST_ROWS = 4;
 const WALK_FRAMES_PER_ROW = 9;
-const WALK_LOOP_COL_FIRST = 1;
+const WALK_LOOP_COL_FIRST = 0;
 
 const WALK_FIRST_ROW_INDEX = SPELL_ROWS + THRUST_ROWS;
 
@@ -57,6 +57,17 @@ export const LPC_PLAYER_WALK_FIRST_FRAMES = {
   walkLeft: walkRowStartFrame(1),
   walkDown: walkRowStartFrame(2),
   walkRight: walkRowStartFrame(3),
+};
+
+/**
+ * Première frame **utile** du cycle walk par direction (colonne `WALK_LOOP_COL_FIRST`),
+ * alignée sur l’anim `walk` — pour afficher le PNJ en « pose marche » sans idle.
+ */
+export const LPC_PLAYER_WALK_FIRST_CYCLE_FRAMES: Record<LpcFacing, number> = {
+  up: sheetFrameAt(WALK_FIRST_ROW_INDEX + 0, WALK_LOOP_COL_FIRST),
+  left: sheetFrameAt(WALK_FIRST_ROW_INDEX + 1, WALK_LOOP_COL_FIRST),
+  down: sheetFrameAt(WALK_FIRST_ROW_INDEX + 2, WALK_LOOP_COL_FIRST),
+  right: sheetFrameAt(WALK_FIRST_ROW_INDEX + 3, WALK_LOOP_COL_FIRST),
 };
 
 /** @deprecated Utiliser `LPC_PLAYER_WALK_FIRST_FRAMES`. */
@@ -149,6 +160,15 @@ export function registerLpcPlayerIdleAnimsAll(scene: Phaser.Scene): void {
   }
 }
 
+/** Feuille Universal LPC (M. de La Plume) — même grille 64×64 que les joueurs. */
+export const LPC_DE_LA_PLUME_TEXTURE_KEY = 'lpc-de-la-plume';
+
+/** Marche + idle pour toute feuille « Universal LPC » au même format que les sprites joueur. */
+export function registerLpcUniversalSheetWalkAndIdle(scene: Phaser.Scene, textureKey: string): void {
+  registerWalkAnimsForTexture(scene, textureKey);
+  registerIdleAnimsForTexture(scene, textureKey);
+}
+
 /** @deprecated Utiliser `registerLpcPlayerWalkAnimsAll`. */
 export function registerLpcGarconWalkAnims(scene: Phaser.Scene): void {
   registerLpcPlayerWalkAnimsAll(scene);
@@ -165,6 +185,12 @@ export function playLpcPlayerWalk(scene: Phaser.Scene, sprite: Phaser.GameObject
   if (scene.anims.exists(anim)) {
     sprite.anims.play(anim, true);
   }
+}
+
+/** Pose fixe : 1re frame du cycle walk (pas l’idle), pour PNJ ou previews. */
+export function setLpcWalkFirstCycleFrame(sprite: Phaser.GameObjects.Sprite, facing: LpcFacing): void {
+  sprite.anims.stop();
+  sprite.setFrame(LPC_PLAYER_WALK_FIRST_CYCLE_FRAMES[facing]);
 }
 
 export function playLpcPlayerIdle(scene: Phaser.Scene, sprite: Phaser.GameObjects.Sprite, facing: LpcFacing): void {

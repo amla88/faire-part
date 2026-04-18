@@ -76,13 +76,13 @@ export class Act0CarrosseScene extends Phaser.Scene {
     this.add.text(18, 14, 'ACTE 0 — Le carrosse', {
       fontFamily: 'monospace',
       fontSize: '20px',
-      color: '#f3ebe4',
+      color: '#f4dfbf',
     });
 
     this.add.text(width / 2, height * 0.90, 'Choisissez votre personnage', {
       fontFamily: 'monospace',
       fontSize: '30px',
-      color: '#f3ebe4',
+      color: '#f4dfbf',
     }).setOrigin(0.5);
 
     const spriteScale = 2;
