@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { NgSupabaseService } from './ng-supabase.service';
 import { AvatarService } from './avatar.service';
+import { isCountdownWindowActive } from './countdown-window';
 
 /** Après un login réussi : le tableau de bord affiche une fois l’accueil jeu / classique. */
 export const SESSION_POST_LOGIN_ONBOARDING_KEY = 'faire-part-post-login-onboarding';
@@ -41,6 +42,12 @@ export class AuthService {
       const res = await this.loginWithTokenSilent(token);
 
       if (!res.success) return res;
+
+      // Fenêtre temporaire : après connexion, tomber sur le décompte uniquement.
+      if (isCountdownWindowActive()) {
+        this.router.navigate(['/decompte']);
+        return res;
+      }
 
       // Perform navigation according to personnes count (preserve previous behaviour)
       const user = res.user!;

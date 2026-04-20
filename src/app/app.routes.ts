@@ -12,68 +12,6 @@ export const routes: Routes = [
   },
   {
     path: '',
-    component: FullComponent,
-    canActivateChild: [AuthGuard],
-    children: [
-      {
-        path: '',
-        redirectTo: '/dashboard',
-        pathMatch: 'full',
-      },
-      {
-        path: 'dashboard',
-        loadComponent: () =>
-          import('./pages/dashboard/dashboard.component').then((m) => m.DashboardComponent),
-      },
-      {
-        path: 'rsvp',
-        loadComponent: () =>
-          import('./pages/rsvp/rsvp.component').then((m) => m.RsvpComponent),
-      },
-      {
-        path: 'anecdotes',
-        loadComponent: () =>
-          import('./pages/anecdotes/anecdotes.component').then((m) => m.AnecdotesComponent),
-      },
-      {
-        path: 'idees',
-        loadComponent: () =>
-          import('./pages/boite-idees/boite-idees.component').then((m) => m.BoiteIdeesComponent),
-      },
-      {
-        path: 'musiques',
-        loadComponent: () =>
-          import('./pages/musiques/musiques.component').then((m) => m.MusiquesComponent),
-      },
-      {
-        path: 'jeu',
-        loadComponent: () =>
-          import('./pages/jeu/jeu.component').then((m) => m.JeuComponent),
-      },
-      {
-        path: 'profile',
-        loadComponent: () =>
-          import('./pages/profile/profile.component').then((m) => m.ProfileComponent),
-      },
-      {
-        path: 'avatar',
-        loadComponent: () => import('./pages/avatar/avatar-editor.component').then((m) => m.AvatarEditorComponent),
-        canActivate: [AuthGuard],
-      },
-      {
-        path: 'photos/upload',
-        loadComponent: () => import('./pages/photos/upload/photo-upload.component').then((m) => m.PhotoUploadComponent),
-        canActivate: [AuthGuard],
-      },
-      {
-        path: 'photos/album',
-        loadComponent: () => import('./pages/photos/album/photo-album.component').then((m) => m.PhotoAlbumComponent),
-        canActivate: [AuthGuard],
-      },
-    ],
-  },
-  {
-    path: '',
     component: BlankComponent,
     children: [
       {
@@ -83,10 +21,78 @@ export const routes: Routes = [
             (m) => m.AuthenticationRoutes
           ),
       },
+    ],
+  },
+  {
+    path: '',
+    component: BlankComponent,
+    canActivateChild: [AuthGuard],
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./pages/landing/landing.component').then((m) => m.LandingComponent),
+        pathMatch: 'full',
+      },
+      {
+        path: 'decompte',
+        loadComponent: () => import('./pages/decompte/decompte.component').then((m) => m.DecompteComponent),
+      },
       {
         path: 'person',
         loadComponent: () => import('./pages/person/person.component').then((m) => m.PersonComponent),
-        canActivate: [AuthGuard],
+      },
+      {
+        path: '',
+        component: FullComponent,
+        children: [
+          {
+            path: 'dashboard',
+            loadComponent: () =>
+              import('./pages/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+          },
+          {
+            path: 'rsvp',
+            loadComponent: () =>
+              import('./pages/rsvp/rsvp.component').then((m) => m.RsvpComponent),
+          },
+          {
+            path: 'anecdotes',
+            loadComponent: () =>
+              import('./pages/anecdotes/anecdotes.component').then((m) => m.AnecdotesComponent),
+          },
+          {
+            path: 'idees',
+            loadComponent: () =>
+              import('./pages/boite-idees/boite-idees.component').then((m) => m.BoiteIdeesComponent),
+          },
+          {
+            path: 'musiques',
+            loadComponent: () =>
+              import('./pages/musiques/musiques.component').then((m) => m.MusiquesComponent),
+          },
+          {
+            path: 'jeu',
+            loadComponent: () =>
+              import('./pages/jeu/jeu.component').then((m) => m.JeuComponent),
+          },
+          {
+            path: 'profile',
+            loadComponent: () =>
+              import('./pages/profile/profile.component').then((m) => m.ProfileComponent),
+          },
+          {
+            path: 'avatar',
+            loadComponent: () => import('./pages/avatar/avatar-editor.component').then((m) => m.AvatarEditorComponent),
+          },
+          {
+            path: 'photos/upload',
+            loadComponent: () => import('./pages/photos/upload/photo-upload.component').then((m) => m.PhotoUploadComponent),
+          },
+          {
+            path: 'photos/album',
+            loadComponent: () => import('./pages/photos/album/photo-album.component').then((m) => m.PhotoAlbumComponent),
+          },
+        ],
       },
     ],
   },
