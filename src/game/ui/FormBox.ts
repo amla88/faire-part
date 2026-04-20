@@ -4,13 +4,19 @@ import { resetVirtualInputState } from '../core/input-state';
 
 export type ToggleOption = { key: string; label: string; value: boolean };
 
+/** Au-dessus des textes UI de scène (souvent ~100000) pour éviter qu’ils recouvrent le formulaire. */
+const FORM_UI_DEPTH = 100_520;
+
 export class FormBox {
   private shadow: Phaser.GameObjects.Graphics;
   private bg: Phaser.GameObjects.Graphics;
   private titleText: Phaser.GameObjects.Text;
-  private linesText: Phaser.GameObjects.Text[] = [];
+  /** Lignes / décor du mode bascules (rectangles, textes, etc.). */
+  private toggleLayer: Phaser.GameObjects.GameObject[] = [];
   private hintText: Phaser.GameObjects.Text;
-  private submitText: Phaser.GameObjects.Text | null = null;
+  private submitBg: Phaser.GameObjects.Graphics | null = null;
+  private submitHit: Phaser.GameObjects.Rectangle | null = null;
+  private submitLabel: Phaser.GameObjects.Text | null = null;
 
   private domElement: Phaser.GameObjects.DOMElement | null = null;
   private domKeydownHandler: ((e: KeyboardEvent) => void) | null = null;
@@ -35,20 +41,30 @@ export class FormBox {
     this.centerY = Math.floor(height / 2);
 
     const g = createCardGraphics(scene, this.centerX, this.centerY, this.boxW, this.boxH);
-    this.shadow = g.shadow;
-    this.bg = g.card;
+    this.shadow = g.shadow.setDepth(FORM_UI_DEPTH) as Phaser.GameObjects.Graphics;
+    this.bg = g.card.setDepth(FORM_UI_DEPTH + 1) as Phaser.GameObjects.Graphics;
 
-    this.titleText = scene.add.text(this.centerX - this.boxW / 2 + 18, this.centerY - this.boxH / 2 + 14, '', {
-      fontFamily: 'monospace',
-      fontSize: '14px',
-      color: '#2c2433',
-    });
+    this.titleText = scene.add
+      .text(this.centerX - this.boxW / 2 + 18, this.centerY - this.boxH / 2 + 16, '', {
+        fontFamily: 'monospace',
+        fontSize: '17px',
+        color: '#2c2433',
+        fontStyle: 'bold',
+        wordWrap: { width: Math.max(120, this.boxW - 36) },
+        lineSpacing: 4,
+      })
+      .setDepth(FORM_UI_DEPTH + 12);
+    this.titleText.setShadow(0, 1, '#ffffff', 0.45, false, true);
 
-    this.hintText = scene.add.text(this.centerX - this.boxW / 2 + 18, this.centerY + this.boxH / 2 - 26, '', {
-      fontFamily: 'monospace',
-      fontSize: '12px',
-      color: '#2c2433',
-    });
+    this.hintText = scene.add
+      .text(this.centerX - this.boxW / 2 + 18, this.centerY + this.boxH / 2 - 56, '', {
+        fontFamily: 'monospace',
+        fontSize: '13px',
+        color: '#3a2f3d',
+        wordWrap: { width: Math.max(120, this.boxW - 36) },
+        lineSpacing: 5,
+      })
+      .setDepth(FORM_UI_DEPTH + 12);
 
     this.hide();
   }
@@ -59,8 +75,8 @@ export class FormBox {
     onSubmit: (values: Record<string, boolean>) => void;
   }): void {
     this.cleanupDom();
-    this.clearLines();
-    this.setBoxSize(Math.floor(this.scene.scale.width * 0.78), Math.floor(this.scene.scale.height * 0.34));
+    this.clearToggleLayer();
+    this.setBoxSize(Math.floor(this.scene.scale.width * 0.84), Math.floor(this.scene.scale.height * 0.46));
     this.titleText.setText(args.title);
     this.toggles = args.toggles.map((t) => ({ ...t }));
     this.onSubmitToggles = args.onSubmit;
@@ -71,7 +87,9 @@ export class FormBox {
     this.renderToggles();
     this.hintEnabled = true;
     this.hintText.setVisible(true);
-    this.hintText.setText('Touchez une ligne pour activer/désactiver • Espace/Enter ou bouton tactile pour valider');
+    this.hintText.setText(
+      'Flèches haut / bas : choisir une ligne • Flèches gauche / droite : Non / Oui • Espace : valider',
+    );
   }
 
   /** Retourne true si l'input a été consommé. */
@@ -112,7 +130,8 @@ export class FormBox {
     defaults?: Record<string, string>;
     onSubmit: (values: Record<string, string>) => void;
   }): void {
-    this.clearLines();
+    this.cleanupSubmit();
+    this.clearToggleLayer();
     this.cleanupDom();
     // Plus haut pour éviter tout débordement (labels + 2 textareas + boutons).
     this.setBoxSize(Math.floor(this.scene.scale.width * 0.82), Math.floor(this.scene.scale.height * 0.56));
@@ -205,7 +224,7 @@ export class FormBox {
 
     // Centrer le formulaire dans la card (et laisser de l'air sous le titre)
     this.domElement = this.scene.add.dom(this.centerX, this.centerY + 26, wrap);
-    this.domElement.setDepth(1000);
+    this.domElement.setDepth(FORM_UI_DEPTH + 20);
 
     // IMPORTANT: pendant la saisie, on désactive le clavier Phaser sinon il capture
     // Z/Q/S/D/Espace (preventDefault) et empêche d'écrire dans les champs.
@@ -258,7 +277,7 @@ export class FormBox {
     this.active = false;
     this.toggles = [];
     this.onSubmitToggles = undefined;
-    this.clearLines();
+    this.clearToggleLayer();
     this.cleanupDom();
     this.cleanupSubmit();
     // Réactiver le hint par défaut
@@ -314,63 +333,124 @@ export class FormBox {
     this.centerX = Math.floor(this.scene.scale.width / 2);
     this.centerY = Math.floor(this.scene.scale.height / 2);
     drawCardGraphics(this.shadow, this.bg, this.centerX, this.centerY, this.boxW, this.boxH);
-    this.titleText.setPosition(this.centerX - this.boxW / 2 + 18, this.centerY - this.boxH / 2 + 14);
-    this.hintText.setPosition(this.centerX - this.boxW / 2 + 18, this.centerY + this.boxH / 2 - 26);
+    this.titleText.setPosition(this.centerX - this.boxW / 2 + 18, this.centerY - this.boxH / 2 + 16);
+    this.titleText.setStyle({ wordWrap: { width: Math.max(120, this.boxW - 36) } });
+    this.hintText.setPosition(this.centerX - this.boxW / 2 + 18, this.centerY + this.boxH / 2 - 62);
+    this.hintText.setStyle({ wordWrap: { width: Math.max(120, this.boxW - 36) } });
   }
 
   private renderToggles(): void {
-    this.clearLines();
+    this.clearToggleLayer();
     this.cleanupSubmit();
-    const x0 = Math.floor(this.centerX - this.boxW / 2 + 18);
-    const y0 = Math.floor(this.centerY - this.boxH / 2 + 44);
 
-    this.linesText = this.toggles.map((t, i) => {
+    const padX = 18;
+    const rowW = this.boxW - padX * 2;
+    const rowH = 48;
+    const rowGap = 10;
+    const contentTop = this.centerY - this.boxH / 2 + 56;
+    const footerY = this.centerY + this.boxH / 2 - 40;
+
+    this.toggles.forEach((t, i) => {
       const isSelected = i === this.cursor;
-      const valTag = t.value ? '[ OUI ]' : '[ NON ]';
-      const label = (t.label || '').padEnd(12, ' ');
-      const line = this.scene.add.text(x0, y0 + i * 28, `${label} ${valTag}`, {
-        fontFamily: 'monospace',
-        fontSize: '14px',
-        color: '#2c2433',
-      });
-      line.setPadding(10, 6, 10, 6);
-      // Gros feedback visuel (mobile): ligne "bouton" + état.
-      if (t.value) {
-        line.setBackgroundColor(isSelected ? 'rgba(171,188,166,0.55)' : 'rgba(171,188,166,0.35)');
-      } else {
-        line.setBackgroundColor(isSelected ? 'rgba(44,36,51,0.10)' : 'rgba(44,36,51,0.06)');
-      }
-      line.setInteractive({ useHandCursor: true });
-      line.on('pointerdown', () => {
+      const yTop = contentTop + i * (rowH + rowGap);
+      const cy = yTop + rowH / 2;
+
+      const fill = t.value ? 0xabbca6 : 0xfaf6f1;
+      const fillAlpha = t.value ? 0.42 : 0.72;
+      const strokeW = isSelected ? 2 : 1;
+      const strokeA = isSelected ? 0.75 : 0.32;
+
+      const rowBg = this.scene.add
+        .rectangle(this.centerX, cy, rowW, rowH, fill, fillAlpha)
+        .setStrokeStyle(strokeW, 0xb8956a, strokeA)
+        .setDepth(FORM_UI_DEPTH + 4);
+
+      rowBg.setInteractive({ useHandCursor: true });
+      rowBg.on('pointerdown', () => {
         if (!this.active) return;
         this.cursor = i;
         const tt = this.toggles[this.cursor];
         if (tt) tt.value = !tt.value;
         this.renderToggles();
       });
-      return line;
+
+      const label = this.scene.add
+        .text(this.centerX - rowW / 2 + 16, cy, t.label, {
+          fontFamily: 'monospace',
+          fontSize: '15px',
+          color: '#2c2433',
+          fontStyle: 'bold',
+        })
+        .setOrigin(0, 0.5)
+        .setDepth(FORM_UI_DEPTH + 5);
+      label.setShadow(0, 1, '#ffffff', 0.35, false, true);
+
+      const chipBg = t.value ? 'rgba(171,188,166,0.55)' : 'rgba(44,36,51,0.10)';
+      const chipFg = t.value ? '#1f3a24' : '#4a3f3a';
+      const chip = this.scene.add
+        .text(this.centerX + rowW / 2 - 16, cy, t.value ? 'Oui' : 'Non', {
+          fontFamily: 'monospace',
+          fontSize: '13px',
+          color: chipFg,
+          fontStyle: 'bold',
+          backgroundColor: chipBg,
+          padding: { x: 12, y: 7 },
+        })
+        .setOrigin(1, 0.5)
+        .setDepth(FORM_UI_DEPTH + 5);
+
+      this.toggleLayer.push(rowBg, label, chip);
     });
 
-    const submit = this.scene.add.text(x0 + this.boxW - 130, y0 + this.boxH - 72, '[ Valider ]', {
-      fontFamily: 'monospace',
-      fontSize: '13px',
-      color: '#2c2433',
-    });
-    submit.setInteractive({ useHandCursor: true });
-    submit.on('pointerdown', () => {
+    const btnW = 168;
+    const btnH = 40;
+    const submitX = this.centerX;
+    const submitY = footerY;
+
+    const gfx = this.scene.add.graphics().setDepth(FORM_UI_DEPTH + 8);
+    const drawBtn = (hover: boolean) => {
+      gfx.clear();
+      gfx.fillStyle(hover ? 0xc4a77d : 0x9e7d55, 0.92);
+      gfx.fillRoundedRect(submitX - btnW / 2, submitY - btnH / 2, btnW, btnH, 8);
+      gfx.lineStyle(1, 0xf2dfc3, 0.65);
+      gfx.strokeRoundedRect(submitX - btnW / 2, submitY - btnH / 2, btnW, btnH, 8);
+    };
+    drawBtn(false);
+
+    const lbl = this.scene.add
+      .text(submitX, submitY, 'Valider', {
+        fontFamily: 'monospace',
+        fontSize: '14px',
+        color: '#f2dfc3',
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
+      .setDepth(FORM_UI_DEPTH + 9);
+
+    const hit = this.scene.add
+      .rectangle(submitX, submitY, btnW, btnH, 0x000000, 0)
+      .setDepth(FORM_UI_DEPTH + 10)
+      .setInteractive({ useHandCursor: true });
+
+    hit.on('pointerover', () => drawBtn(true));
+    hit.on('pointerout', () => drawBtn(false));
+    hit.on('pointerdown', () => {
       if (!this.active) return;
       const values: Record<string, boolean> = {};
-      for (const t of this.toggles) values[t.key] = !!t.value;
+      for (const tt of this.toggles) values[tt.key] = !!tt.value;
       const cb = this.onSubmitToggles;
       this.stop();
       cb?.(values);
     });
-    this.submitText = submit;
+
+    this.submitBg = gfx;
+    this.submitHit = hit;
+    this.submitLabel = lbl;
   }
 
-  private clearLines(): void {
-    for (const t of this.linesText) t.destroy();
-    this.linesText = [];
+  private clearToggleLayer(): void {
+    for (const o of this.toggleLayer) o.destroy();
+    this.toggleLayer = [];
   }
 
   private cleanupDom(): void {
@@ -408,9 +488,17 @@ export class FormBox {
   }
 
   private cleanupSubmit(): void {
-    if (this.submitText) {
-      this.submitText.destroy();
-      this.submitText = null;
+    if (this.submitHit) {
+      this.submitHit.destroy();
+      this.submitHit = null;
+    }
+    if (this.submitLabel) {
+      this.submitLabel.destroy();
+      this.submitLabel = null;
+    }
+    if (this.submitBg) {
+      this.submitBg.destroy();
+      this.submitBg = null;
     }
   }
 
@@ -419,6 +507,9 @@ export class FormBox {
     this.bg.setVisible(true);
     this.titleText.setVisible(true);
     this.hintText.setVisible(this.hintEnabled);
+    this.submitBg?.setVisible(true);
+    this.submitHit?.setVisible(true);
+    this.submitLabel?.setVisible(true);
   }
 
   private hide(): void {
@@ -426,6 +517,8 @@ export class FormBox {
     this.bg.setVisible(false);
     this.titleText.setVisible(false);
     this.hintText.setVisible(false);
+    this.submitBg?.setVisible(false);
+    this.submitHit?.setVisible(false);
+    this.submitLabel?.setVisible(false);
   }
 }
-

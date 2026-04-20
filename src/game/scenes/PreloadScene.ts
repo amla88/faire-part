@@ -45,6 +45,7 @@ export class PreloadScene extends Phaser.Scene {
     });
     this.load.image('portrait-generic', `${G}/portraits/portrait-generic.png`);
     this.load.image('portrait-majordome', `${G}/portraits/portrait-majordome.png`);
+    this.load.image('portrait-de-la-plume', `${G}/portraits/portrait-de-la-plume.png`);
     this.load.image('portrait-cocher', `${G}/portraits/portrait-cocher.png`);
     this.load.image('archetype-lady', `${G}/sprites/archetype-lady.png`);
     this.load.image('archetype-gentleman', `${G}/sprites/archetype-gentleman.png`);
