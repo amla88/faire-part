@@ -71,7 +71,9 @@ export class Act5GlorietteScene extends Phaser.Scene {
     if (act) {
       if (!this.spoken) {
         this.spoken = true;
-        this.dialogueBox.start(getDialogue('act5.glorietteIntro'), () => this.openIdeaForm());
+        this.dialogueBox.start(getDialogue('act5.glorietteIntro'), () => this.openIdeaForm(), {
+          hideSceneHud: [this.info],
+        });
       } else {
         this.openIdeaForm();
       }
@@ -83,6 +85,7 @@ export class Act5GlorietteScene extends Phaser.Scene {
   private openIdeaForm(): void {
     if (this.formBox.active) return;
     this.formBox.startTextFields({
+      hideSceneHud: [this.info],
       title: 'Boîte à idées (Acte 5)',
       fields: [
         {

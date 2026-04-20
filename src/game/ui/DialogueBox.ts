@@ -1,5 +1,10 @@
 import Phaser from 'phaser';
+import {
+  popGameModalTouchOverlayBlock,
+  pushGameModalTouchOverlayBlock,
+} from '../core/modal-touch-overlay-bridge';
 import { createCardGraphics } from './BridgertonCard';
+import { sceneHudMaskPop, sceneHudMaskPush } from './scene-hud-mask';
 
 export interface DialogueStep {
   speaker: string;
@@ -8,7 +13,7 @@ export interface DialogueStep {
   portraitColor?: number;
   /** Texture préchargée (ex. `portrait-majordome`). Sinon silhouette générique + tint. */
   portraitTexture?: string;
-  /** Taille d'affichage du portrait (en px). Par défaut: 46x46. */
+  /** Taille d'affichage du portrait (en px). Par défaut: silhouettes 72×72. */
   portraitDisplaySize?: { width: number; height: number };
 }
 
@@ -25,7 +30,12 @@ const DEPTH_BTN     = 521;
 const BTN_W = 72;
 const BTN_H = 36;
 const BTN_MARGIN_RIGHT = 14;
-const DEFAULT_PORTRAIT_SIZE = { width: 46, height: 46 };
+/** Silhouette `portrait-generic` sans taille dédiée dans le catalogue. */
+const DEFAULT_PORTRAIT_SIZE = { width: 72, height: 72 };
+const PORTRAIT_PAD_LEFT = 12;
+const TEXT_GAP_AFTER_PORTRAIT = 12;
+/** Le bas du portrait dépasse légèrement sous la carte (effet « buste » classique). */
+const PORTRAIT_BOTTOM_BLEED = 10;
 
 export class DialogueBox {
   private overlay: Phaser.GameObjects.Rectangle;
@@ -40,10 +50,18 @@ export class DialogueBox {
 
   private readonly btnX: number;
   private readonly btnY: number;
+  private readonly boxX: number;
+  private readonly boxY: number;
+  private readonly boxW: number;
+  private readonly boxH: number;
 
   private steps: DialogueStep[] = [];
   private index = 0;
   private onDone?: () => void;
+  /** Si défini, un `pop` est attendu à la fin du dialogue (après `onDone`). */
+  private hudMaskPushed = false;
+  /** True tant qu’on a poussé le blocage overlay tactile (évite double push / pop). */
+  private touchOverlayBlocked = false;
 
   public active = false;
 
@@ -56,6 +74,10 @@ export class DialogueBox {
 
     this.btnX = x + Math.floor(boxW / 2) - BTN_MARGIN_RIGHT - Math.floor(BTN_W / 2);
     this.btnY = y;
+    this.boxX = x;
+    this.boxY = y;
+    this.boxW = boxW;
+    this.boxH = boxH;
 
     // Voile plein écran semi-transparent
     this.overlay = scene.add
@@ -67,32 +89,34 @@ export class DialogueBox {
     this.shadow = g.shadow.setDepth(DEPTH_BOX) as Phaser.GameObjects.Graphics;
     this.bg     = g.card  .setDepth(DEPTH_BOX) as Phaser.GameObjects.Graphics;
 
-    // Portrait pixel
+    // Portrait : ancrage bas-centre, position recalculée à chaque ligne (taille variable).
     this.portrait = scene.add
-      .image(x - boxW / 2 + 28, y, 'portrait-generic')
-      .setDisplaySize(DEFAULT_PORTRAIT_SIZE.width, DEFAULT_PORTRAIT_SIZE.height)
+      .image(0, 0, 'portrait-generic')
+      .setOrigin(0.5, 1)
       .setAlpha(0.95)
       .setDepth(DEPTH_CONTENT);
 
     this.speakerText = scene.add
-      .text(x - boxW / 2 + 88, y - boxH / 2 + 16, '', {
+      .text(0, y - boxH / 2 + 16, '', {
         fontFamily: 'monospace',
         fontSize: '15px',
         color: '#2c2433',
       })
+      .setOrigin(0, 0)
       .setDepth(DEPTH_CONTENT);
 
-    // La largeur du corps laisse de la place pour le bouton à droite
-    const bodyMaxW = boxW - 88 - 18 - BTN_W - BTN_MARGIN_RIGHT - 8;
     this.bodyText = scene.add
-      .text(x - boxW / 2 + 88, y - boxH / 2 + 34, '', {
+      .text(0, y - boxH / 2 + 34, '', {
         fontFamily: 'monospace',
         fontSize: '15px',
         color: '#2c2433',
-        wordWrap: { width: bodyMaxW },
+        wordWrap: { width: 400 },
         lineSpacing: 5,
       })
+      .setOrigin(0, 0)
       .setDepth(DEPTH_CONTENT);
+
+    this.layoutPortraitAndText(DEFAULT_PORTRAIT_SIZE);
 
     // Bouton "Suite ›"
     this.nextBtnBg = scene.add.graphics().setDepth(DEPTH_BTN);
@@ -138,13 +162,27 @@ export class DialogueBox {
     );
   }
 
-  start(dialogue: DialogueData, onDone?: () => void): void {
+  start(
+    dialogue: DialogueData,
+    onDone?: () => void,
+    options?: { hideSceneHud?: Phaser.GameObjects.GameObject[] },
+  ): void {
     this.steps = dialogue.steps || [];
     this.index = 0;
     this.onDone = onDone;
     this.active = this.steps.length > 0;
+    this.hudMaskPushed = false;
 
     if (this.active) {
+      const hud = options?.hideSceneHud;
+      if (hud?.length) {
+        sceneHudMaskPush(this.scene, hud);
+        this.hudMaskPushed = true;
+      }
+      if (!this.touchOverlayBlocked) {
+        pushGameModalTouchOverlayBlock();
+        this.touchOverlayBlocked = true;
+      }
       this.show();
       this.renderStep();
     } else {
@@ -159,7 +197,13 @@ export class DialogueBox {
     if (this.index >= this.steps.length) {
       this.active = false;
       this.hide();
-      this.onDone?.();
+      const cb = this.onDone;
+      this.onDone = undefined;
+      cb?.();
+      if (this.hudMaskPushed) {
+        sceneHudMaskPop(this.scene);
+        this.hudMaskPushed = false;
+      }
       return;
     }
     this.renderStep();
@@ -172,7 +216,7 @@ export class DialogueBox {
 
     const tex = step.portraitTexture?.trim();
     const portraitSize = step.portraitDisplaySize ?? DEFAULT_PORTRAIT_SIZE;
-    this.portrait.setDisplaySize(portraitSize.width, portraitSize.height);
+    // `setTexture` peut réinitialiser la taille d’affichage : toujours fixer la taille après la texture.
     if (tex && this.scene.textures.exists(tex)) {
       this.portrait.setTexture(tex);
       this.portrait.clearTint();
@@ -180,8 +224,30 @@ export class DialogueBox {
       this.portrait.setTexture('portrait-generic');
       this.portrait.setTint(step.portraitColor ?? 0xabbca6);
     }
+    this.portrait.setDisplaySize(portraitSize.width, portraitSize.height);
+    this.layoutPortraitAndText(portraitSize);
 
     this.bodyText.setText(step.text || '');
+  }
+
+  /** Portrait à gauche, bas aligné sous la carte ; texte repoussé selon la largeur du portrait. */
+  private layoutPortraitAndText(portraitSize: { width: number; height: number }): void {
+    const innerLeft = this.boxX - this.boxW / 2;
+    const portraitLeft = innerLeft + PORTRAIT_PAD_LEFT;
+    const portraitCenterX = portraitLeft + portraitSize.width / 2;
+    const portraitBottomY = this.boxY + this.boxH / 2 + PORTRAIT_BOTTOM_BLEED;
+    this.portrait.setPosition(portraitCenterX, portraitBottomY);
+
+    const textX = portraitLeft + portraitSize.width + TEXT_GAP_AFTER_PORTRAIT;
+    this.speakerText.setPosition(textX, this.boxY - this.boxH / 2 + 16);
+    this.bodyText.setPosition(textX, this.boxY - this.boxH / 2 + 34);
+
+    const innerRight = this.boxX + this.boxW / 2;
+    const wrap = Math.max(
+      80,
+      innerRight - textX - 18 - BTN_W - BTN_MARGIN_RIGHT - 8,
+    );
+    this.bodyText.setWordWrapWidth(wrap, true);
   }
 
   private show(): void {
@@ -198,6 +264,10 @@ export class DialogueBox {
   }
 
   private hide(): void {
+    if (this.touchOverlayBlocked) {
+      popGameModalTouchOverlayBlock();
+      this.touchOverlayBlocked = false;
+    }
     this.overlay.setVisible(false);
     this.shadow.setVisible(false);
     this.bg.setVisible(false);

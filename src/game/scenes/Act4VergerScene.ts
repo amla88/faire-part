@@ -8,6 +8,7 @@ import { getDialogue } from '../data/dialogues.catalog';
 import { gameBackend } from '../services/GameBackendBridge';
 import { quests, QuestFlags } from '../systems/QuestSystem';
 import { PhotoUploadBox } from '../ui/PhotoUploadBox';
+import { sceneHudMaskPop, sceneHudMaskPush } from '../ui/scene-hud-mask';
 
 export class Act4VergerScene extends Phaser.Scene {
   private inputState!: SceneInput;
@@ -79,7 +80,9 @@ export class Act4VergerScene extends Phaser.Scene {
     if (act) {
       if (!this.spoken) {
         this.spoken = true;
-        this.dialogueBox.start(getDialogue('act4.vergerIntro'), () => this.openVergerMenu());
+        this.dialogueBox.start(getDialogue('act4.vergerIntro'), () => this.openVergerMenu(), {
+          hideSceneHud: [this.info],
+        });
       } else {
         this.openVergerMenu();
       }
@@ -91,6 +94,7 @@ export class Act4VergerScene extends Phaser.Scene {
   private openAnecdoteForm(): void {
     if (this.formBox.active) return;
     this.formBox.startTextFields({
+      hideSceneHud: [this.info],
       title: 'Anecdote (Acte 4)',
       fields: [
         {
@@ -135,6 +139,7 @@ export class Act4VergerScene extends Phaser.Scene {
   private openVergerMenu(): void {
     if (this.formBox.active || this.photoBox.active) return;
     this.formBox.startToggles({
+      hideSceneHud: [this.info],
       title: 'Le coffret entre deux pommiers',
       toggles: [
         { key: 'photo', label: 'Déposer une photo', value: false },
@@ -152,6 +157,7 @@ export class Act4VergerScene extends Phaser.Scene {
 
   private openPhotoUpload(): void {
     if (this.photoBox.active) return;
+    sceneHudMaskPush(this, [this.info]);
     this.photoBox.start({
       title: 'Déposer un cliché (Acte 4)',
       onSubmit: async (file) => {
@@ -167,6 +173,7 @@ export class Act4VergerScene extends Phaser.Scene {
         } catch {}
         this.info.setText('Photo déposée. Merci !');
       },
+      onClose: () => sceneHudMaskPop(this),
     });
   }
 }

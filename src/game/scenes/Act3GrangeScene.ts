@@ -106,19 +106,24 @@ export class Act3GrangeScene extends Phaser.Scene {
                   void gameBackend.upsertGameProgressForSelected(gameState.snapshot.flags);
                 } catch {}
                 this.info.setText('Acte 3 validé.');
-                this.dialogueBox.start(getDialogue('act3.mapUnlock'), () => {
-                  try {
-                    window.dispatchEvent(new CustomEvent('fp-game-show-map'));
-                  } catch {}
-                  try {
-                    gameState.setAct('hub');
-                    this.scene.start('HubOpenWorldScene');
-                  } catch {
-                    // Si la scène hub n'existe pas encore, on reste ici.
-                  }
-                });
+                this.dialogueBox.start(
+                  getDialogue('act3.mapUnlock'),
+                  () => {
+                    try {
+                      window.dispatchEvent(new CustomEvent('fp-game-show-map'));
+                    } catch {}
+                    try {
+                      gameState.setAct('hub');
+                      this.scene.start('HubOpenWorldScene');
+                    } catch {
+                      // Si la scène hub n'existe pas encore, on reste ici.
+                    }
+                  },
+                  { hideSceneHud: [this.info] },
+                );
               });
-            }
+            },
+            { hideSceneHud: [this.info] },
           );
         })
         .catch((e) => {

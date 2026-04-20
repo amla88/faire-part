@@ -47,6 +47,7 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image('portrait-majordome', `${G}/portraits/portrait-majordome.png`);
     this.load.image('portrait-de-la-plume', `${G}/portraits/portrait-de-la-plume.png`);
     this.load.image('portrait-cocher', `${G}/portraits/portrait-cocher.png`);
+    this.load.image('portrait-chef', `${G}/portraits/portrait-chef.png`);
     this.load.image('archetype-lady', `${G}/sprites/archetype-lady.png`);
     this.load.image('archetype-gentleman', `${G}/sprites/archetype-gentleman.png`);
     this.load.image('archetype-reine', `${G}/sprites/archetype-reine.png`);
@@ -55,6 +56,11 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image('act0-parallax-lointain', `${G}/backgrounds/acte0-parallax-lointain.png`);
     this.load.image('act0-parallax-proche', `${G}/backgrounds/acte0-parallax-proche.png`);
     this.load.image('act1-courtyard', `${G}/backgrounds/acte1-courtyard.png`);
+    this.load.image('act2-cuisine', `${G}/backgrounds/acte2-cuisine.png`);
+    this.load.image('act2-table-1', `${G}/sprites/cuisine-tables-1.png`);
+    this.load.image('act2-table-2', `${G}/sprites/cuisine-tables-2.png`);
+    this.load.image('act2-table-centre-1', `${G}/sprites/cuisine-tables-centre-1.png`);
+    this.load.image('act2-table-centre-2', `${G}/sprites/cuisine-tables-centre-2.png`);
     this.load.image('act1-carosse', `${G}/sprites/carosse.png`);
   }
 

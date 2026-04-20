@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { GAME_BACKGROUND_COLOR } from '../core/game-colors';
 import { DialogueBox } from '../ui/DialogueBox';
-import { FormBox } from '../ui/FormBox';
+import { FormBox, type ToggleOption } from '../ui/FormBox';
 import { quests, QuestFlags } from '../systems/QuestSystem';
 import { SceneInput } from '../systems/SceneInput';
 import { getDialogue } from '../data/dialogues.catalog';
@@ -174,7 +174,7 @@ export class Act1CourScene extends Phaser.Scene {
     this.formBox = new FormBox(this);
     this.inputState = new SceneInput(this);
 
-    this.hintText = this.add.text(width / 2, height - 450, 'Approchez de M. de la Plume\npuis appuyez sur Espace / Parler', {
+    this.hintText = this.add.text(width / 2, height - 450, 'Parlez à M. de la Plume', {
       fontFamily: 'monospace',
       fontSize: '30px',
       color: '#f4dfbf',
@@ -397,6 +397,10 @@ export class Act1CourScene extends Phaser.Scene {
                   present_reception: row.present_reception === true,
                   present_repas: row.present_repas === true,
                   present_soiree: row.present_soiree === true,
+                  decline_invitation: row.decline_invitation === true,
+                  invite_reception: row.invite_reception === true,
+                  invite_repas: row.invite_repas === true,
+                  invite_soiree: row.invite_soiree === true,
                 }
               : undefined;
 
@@ -407,22 +411,28 @@ export class Act1CourScene extends Phaser.Scene {
               (row.present_reception === true ||
                 row.present_repas === true ||
                 row.present_soiree === true ||
+                row.decline_invitation === true ||
                 String(row.allergenes_alimentaires || '').trim().length > 0 ||
                 String(row.regimes_remarques || '').trim().length > 0);
 
             const dlg = alreadyHasAnything ? getDialogue('act1.already') : getDialogue('act1.register');
-            this.dialogueBox.start(dlg, () => {
-              if (alreadyHasAnything) {
-                this.questText.setText('Registre déjà rempli (modifiable).');
-                this.hintText.setText('Vous pouvez confirmer ou ajuster.');
-              }
-              this.openRegisterChoices(defaults);
-            });
+            const hud = this.act1HudForOverlay();
+            this.dialogueBox.start(
+              dlg,
+              () => {
+                if (alreadyHasAnything) {
+                  this.questText.setText('Registre déjà rempli (modifiable).');
+                  this.hintText.setText('Vous pouvez confirmer ou ajuster.');
+                }
+                this.openRegisterChoices(defaults);
+              },
+              { hideSceneHud: hud },
+            );
           })
           .catch(() => {
             this.choicesText.setText('');
-            this.dialogueBox.start(getDialogue('act1.register'), () => {
-              this.openRegisterChoices();
+            this.dialogueBox.start(getDialogue('act1.register'), () => this.openRegisterChoices(), {
+              hideSceneHud: this.act1HudForOverlay(),
             });
           });
       }
@@ -436,23 +446,44 @@ export class Act1CourScene extends Phaser.Scene {
     present_reception?: boolean;
     present_repas?: boolean;
     present_soiree?: boolean;
+    decline_invitation?: boolean;
+    invite_reception?: boolean;
+    invite_repas?: boolean;
+    invite_soiree?: boolean;
   }): void {
+    const declined = defaults?.decline_invitation === true;
+    const invR = defaults?.invite_reception !== false;
+    const invP = defaults?.invite_repas !== false;
+    const invS = defaults?.invite_soiree !== false;
+    const pr = declined ? false : defaults?.present_reception === true;
+    const pp = declined ? false : defaults?.present_repas === true;
+    const ps = declined ? false : defaults?.present_soiree === true;
+
+    const toggles: ToggleOption[] = [];
+    if (invR) toggles.push({ key: 'present_reception', label: 'Réception', value: pr });
+    if (invP) toggles.push({ key: 'present_repas', label: 'Repas', value: pp });
+    if (invS) toggles.push({ key: 'present_soiree', label: 'Soirée', value: ps });
+    toggles.push({
+      key: 'decline_invitation',
+      label: 'Ne participe pas (refus)',
+      value: declined,
+    });
+
     this.formBox.startToggles({
+      hideSceneHud: this.act1HudForOverlay(),
       title: 'Présence au domaine',
-      toggles: [
-        { key: 'present_reception', label: 'Réception', value: defaults?.present_reception ?? false },
-        { key: 'present_repas', label: 'Repas', value: defaults?.present_repas ?? false },
-        { key: 'present_soiree', label: 'Soirée', value: defaults?.present_soiree ?? false },
-      ],
+      toggles,
       onSubmit: (values) => {
         if (this.saving) return;
         this.saving = true;
         this.choicesText.setText('Enregistrement en cours…');
+        const decline = !!values['decline_invitation'];
         gameBackend
           .recordRsvpForSelected({
-            present_reception: !!values['present_reception'],
-            present_repas: !!values['present_repas'],
-            present_soiree: !!values['present_soiree'],
+            decline_invitation: decline,
+            present_reception: decline || !invR ? false : !!values['present_reception'],
+            present_repas: decline || !invP ? false : !!values['present_repas'],
+            present_soiree: decline || !invS ? false : !!values['present_soiree'],
           })
           .then(() => {
             quests.done(QuestFlags.act1RegisterDone);
@@ -479,12 +510,20 @@ export class Act1CourScene extends Phaser.Scene {
   private playToChefThenGoAct2(): void {
     if (this.toChefQueued) return;
     this.toChefQueued = true;
-    this.dialogueBox.start(getDialogue('act1.toChef'), () => {
-      this.time.delayedCall(200, () => {
-        gameState.setAct('act2');
-        this.scene.start('Act2OfficeScene');
-      });
-    });
+    this.dialogueBox.start(
+      getDialogue('act1.toChef'),
+      () => {
+        this.time.delayedCall(200, () => {
+          gameState.setAct('act2');
+          this.scene.start('Act2OfficeScene');
+        });
+      },
+      { hideSceneHud: this.act1HudForOverlay() },
+    );
+  }
+
+  private act1HudForOverlay(): Phaser.GameObjects.GameObject[] {
+    return [this.hintText, this.questText, this.choicesText];
   }
 }
 

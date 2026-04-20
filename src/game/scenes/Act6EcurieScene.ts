@@ -71,7 +71,9 @@ export class Act6EcurieScene extends Phaser.Scene {
     if (act) {
       if (!this.spoken) {
         this.spoken = true;
-        this.dialogueBox.start(getDialogue('act6.ecurieIntro'), () => this.openMusicForm());
+        this.dialogueBox.start(getDialogue('act6.ecurieIntro'), () => this.openMusicForm(), {
+          hideSceneHud: [this.info],
+        });
       } else {
         this.openMusicForm();
       }
@@ -83,6 +85,7 @@ export class Act6EcurieScene extends Phaser.Scene {
   private openMusicForm(): void {
     if (this.formBox.active) return;
     this.formBox.startTextFields({
+      hideSceneHud: [this.info],
       title: 'Air du bal (Acte 6)',
       fields: [
         { name: 'titre', label: 'Titre', placeholder: 'Ex: Dancing Queen', multiline: false, maxLength: 200 },

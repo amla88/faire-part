@@ -12,6 +12,7 @@ export class PhotoUploadBox {
   private prevGlobalCaptureDisabled: boolean | null = null;
 
   public active = false;
+  private onCloseCallback: (() => void) | null = null;
   private centerX: number;
   private centerY: number;
   private boxW: number;
@@ -41,8 +42,11 @@ export class PhotoUploadBox {
     title: string;
     onSubmit: (file: File) => Promise<void>;
     onDone?: () => void;
+    /** Appelé à chaque fermeture (annulation, erreur après tentative, ou après succès + onDone). */
+    onClose?: () => void;
   }): void {
     this.cleanup();
+    this.onCloseCallback = args.onClose ?? null;
     this.setBoxSize(Math.floor(this.scene.scale.width * 0.86), Math.floor(this.scene.scale.height * 0.72));
     this.titleText.setText(args.title);
     this.active = true;
@@ -195,6 +199,9 @@ export class PhotoUploadBox {
     this.active = false;
     this.cleanup();
     this.hide();
+    const oc = this.onCloseCallback;
+    this.onCloseCallback = null;
+    oc?.();
     this.refocusGameCanvas();
   }
 

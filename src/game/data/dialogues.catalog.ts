@@ -17,7 +17,7 @@ export const dialoguesCatalog: Record<DialogueId, DialogueData> = {
       {
         speaker: 'Le Cocher',
         portraitTexture: 'portrait-cocher',
-        portraitDisplaySize: { width: 90, height: 90 },
+        portraitDisplaySize: { width: 188, height: 190 },
         portraitColor: 0xc9a55c,
         text:
           "La route est encore longue jusqu'à la ferme. Ajustez votre tenue, cher invité, car le monde entier aura les yeux rivés sur vous à notre arrivée.",
@@ -29,7 +29,7 @@ export const dialoguesCatalog: Record<DialogueId, DialogueData> = {
       {
         speaker: 'Monsieur de La Plume',
         portraitTexture: 'portrait-de-la-plume',
-        portraitDisplaySize: { width: 90, height: 90 },
+        portraitDisplaySize: { width: 188, height: 190 },
         portraitColor: 0xc9a55c,
         text:
           "Votre nom, s'il vous plaît ? Le protocole du banquet est une science exacte. Je dois savoir si vous honorerez notre table pour le souper ou si vous nous rejoindrez pour les festivités nocturnes.",
@@ -41,7 +41,7 @@ export const dialoguesCatalog: Record<DialogueId, DialogueData> = {
       {
         speaker: 'Monsieur de La Plume',
         portraitTexture: 'portrait-de-la-plume',
-        portraitDisplaySize: { width: 90, height: 90 },
+        portraitDisplaySize: { width: 188, height: 190 },
         portraitColor: 0xc9a55c,
         text:
           "Ah ! Votre nom brille déjà dans nos colonnes comme une promesse de fête. Entrez, la cour trépigne de vous voir !",
@@ -53,20 +53,21 @@ export const dialoguesCatalog: Record<DialogueId, DialogueData> = {
       {
         speaker: 'Monsieur de La Plume',
         portraitTexture: 'portrait-de-la-plume',
-        portraitDisplaySize: { width: 90, height: 90 },
+        portraitDisplaySize: { width: 188, height: 190 },
         portraitColor: 0xc9a55c,
         text:
-          "Parfait. Un dernier détail — et non des moindres. L’Intendant des Cuisines a réclamé votre attention avec l’urgence d’un patch en production : il veut vous parler… près des fourneaux. Je vous déconseille de le faire patienter — il manie la louche comme d’autres manient la satire.",
+          "Parfait. Un dernier détail et non des moindres. L’Intendant des Cuisines a réclamé votre attention avec l’urgence d’un patch en production : il veut vous parler… près des fourneaux. Je vous déconseille de le faire patienter. Il manie la louche comme d’autres manient la satire.",
       },
     ],
   },
   'act2.chefIntro': {
     steps: [
       {
-        speaker: "L'Intendant des Cuisines",
-        portraitColor: 0xabbca6,
+        speaker: "Le chef des Cuisines",
+        portraitTexture: 'portrait-chef',
+        portraitDisplaySize: { width: 188, height: 190 },
         text:
-          "Doucement, voyageur ! Ma cuisine est un temple de délices, mais je refuserais de vous empoisonner par mégarde. Y a-t-il des noix, du gluten ou d’autres maléfices que votre estomac ne saurait tolérer ? Confiez-moi vos interdits — et si vous préférez le ton technique : j’ai aussi des casseroles, des timings… et des invités. Un invité malheureux, c’est un bug critique.",
+          "Doucement, voyageur! Ma cuisine est un temple de délices, mais je refuserais de vous empoisonner par mégarde. Y a-t-il des noix, du gluten ou d’autres maléfices que votre estomac ne saurait tolérer ? Confiez-moi vos interdits.",
       },
     ],
   },
@@ -118,7 +119,7 @@ export const dialoguesCatalog: Record<DialogueId, DialogueData> = {
         speaker: 'Le Maestro Polyphonique',
         portraitColor: 0xabbca6,
         text:
-          "La piste de danse est un système vivant : il lui faut des entrées, des sorties… et le bon tempo. Donnez-moi une chanson — titre, auteur, lien — et je l’ajouterai à la partition.",
+          "La piste de danse est un système vivant : il lui faut des entrées, des sorties… et le bon tempo. Donnez-moi une chanson (titre, auteur, lien) et je l’ajouterai à la partition.",
       },
     ],
   },
