@@ -93,6 +93,11 @@ export class GameState {
   setAct(act: ActId): void {
     this.state.act = act;
     this.save();
+    try {
+      window.dispatchEvent(new CustomEvent('fp-game-act-changed', { detail: { act } }));
+    } catch {
+      // ignore
+    }
   }
 
   setPlayer(player: PlayerArchetype): void {

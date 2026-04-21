@@ -105,7 +105,7 @@
       </div>
     }
 
-    @if (showControls() && !isPortrait() && !gameModalBlocksTouchOverlay()) {
+    @if (showControls() && !isPortrait() && !gameModalBlocksTouchOverlay() && currentAct() !== 'act3') {
       <div class="touch-controls">
         <button
           class="ctl up"

@@ -18,7 +18,7 @@ import {
   GAME_TOUCH_OVERLAY_UNBLOCK_EVENT,
   resetGameModalTouchOverlayBlockDepth,
 } from 'src/game/core/modal-touch-overlay-bridge';
-import { gameState, isPlayerArchetype, REMOTE_PROGRESS_PLAYER_KEY } from 'src/game/core/game-state';
+import { gameState, isPlayerArchetype, REMOTE_PROGRESS_PLAYER_KEY, type ActId } from 'src/game/core/game-state';
 import { gameBackend } from 'src/game/services/GameBackendBridge';
 
 @Component({
@@ -44,6 +44,8 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
   readonly progressFlags = signal<Record<string, boolean>>({});
   /** Masque les contrôles tactiles Angular pendant dialogue / formulaire Phaser. */
   readonly gameModalBlocksTouchOverlay = signal(false);
+  /** Acte courant (Phaser `gameState.setAct`) — l’acte 3 n’affiche pas le pad directionnel / Parler. */
+  readonly currentAct = signal<ActId>(gameState.snapshot.act);
 
   private game: import('phaser').Game | null = null;
   private resizeHandler = () => this.computeOrientation();
@@ -62,6 +64,11 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
 
   private touchOverlayUnblockHandler = () => {
     this.gameModalBlocksTouchOverlay.set(false);
+  };
+
+  private actChangedHandler = (e: Event) => {
+    const d = (e as CustomEvent<{ act: ActId }>).detail;
+    if (d?.act) this.currentAct.set(d.act);
   };
 
   private progressUpdatedHandler = () => {
@@ -84,6 +91,7 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
     window.addEventListener('fp-game-progress-updated', this.progressUpdatedHandler as any);
     window.addEventListener(GAME_TOUCH_OVERLAY_BLOCK_EVENT, this.touchOverlayBlockHandler as any);
     window.addEventListener(GAME_TOUCH_OVERLAY_UNBLOCK_EVENT, this.touchOverlayUnblockHandler as any);
+    window.addEventListener('fp-game-act-changed', this.actChangedHandler);
     // Démarrer Phaser tout de suite pour que les clics sur "Commencer" /
     // "Recommencer" puissent agir immédiatement, sans attendre le réseau.
     void this.bootstrapGame();
@@ -138,6 +146,7 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
     this.progressFlags.set({ ...flags });
     this.mapUnlocked.set(flags['hub.map_unlocked'] === true);
     this.hasSave.set(gameState.hasSave());
+    this.currentAct.set(gameState.snapshot.act);
   }
 
   ngOnDestroy(): void {
@@ -146,6 +155,7 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
     window.removeEventListener('fp-game-progress-updated', this.progressUpdatedHandler as any);
     window.removeEventListener(GAME_TOUCH_OVERLAY_BLOCK_EVENT, this.touchOverlayBlockHandler as any);
     window.removeEventListener(GAME_TOUCH_OVERLAY_UNBLOCK_EVENT, this.touchOverlayUnblockHandler as any);
+    window.removeEventListener('fp-game-act-changed', this.actChangedHandler);
     resetGameModalTouchOverlayBlockDepth();
     this.gameModalBlocksTouchOverlay.set(false);
     resetVirtualInputState();
@@ -170,6 +180,7 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
 
   restartGame(): void {
     gameState.reset();
+    this.currentAct.set(gameState.snapshot.act);
     try {
       void gameBackend.resetGameProgressForSelected();
     } catch {}

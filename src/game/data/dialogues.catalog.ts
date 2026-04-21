@@ -75,19 +75,22 @@ export const dialoguesCatalog: Record<DialogueId, DialogueData> = {
     steps: [
       {
         speaker: 'Madame Chromatique',
-        portraitColor: 0xabbca6,
+        portraitTexture: 'portrait-modiste',
+        portraitDisplaySize: { width: 188, height: 190 },
         text:
           "Splendide. Votre effigie est désormais gravée avec la précision d’un hexadécimal… et l’élégance d’un bal à la Cour.",
       },
       {
         speaker: 'Madame Chromatique',
-        portraitColor: 0xabbca6,
+        portraitTexture: 'portrait-modiste',
+        portraitDisplaySize: { width: 188, height: 190 },
         text:
           "Mais prenez garde, cher invité : le Domaine est vaste, capricieux, et semé de couloirs où l’on se perd plus vite que dans un changelog mal tenu.",
       },
       {
         speaker: 'Madame Chromatique',
-        portraitColor: 0xabbca6,
+        portraitTexture: 'portrait-modiste',
+        portraitDisplaySize: { width: 188, height: 190 },
         text:
           "Tenez. Une carte. Elle vous évitera de tourner en rond comme un curseur sans focus. Désormais, libre à vous d’errer : revenir au Registre, saluer l’Intendant des Cuisines… ou courir vers de nouvelles scènes.",
       },

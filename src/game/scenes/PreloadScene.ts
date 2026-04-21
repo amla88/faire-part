@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { MODISTE_TEXTURE_KEY, registerModisteAnims } from '../data/act3-modiste';
 import {
   ACT2_CHEF_TEXTURE_KEY,
   ACT2_CUISINIER_TEXTURE_KEY,
@@ -57,6 +58,13 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image('act0-parallax-proche', `${G}/backgrounds/acte0-parallax-proche.png`);
     this.load.image('act1-courtyard', `${G}/backgrounds/acte1-courtyard.png`);
     this.load.image('act2-cuisine', `${G}/backgrounds/acte2-cuisine.png`);
+    this.load.image('acte3-grange', `${G}/backgrounds/acte3-grange.png`);
+    this.load.spritesheet(MODISTE_TEXTURE_KEY, `${G}/sprites/modiste.png`, {
+      frameWidth: 64,
+      frameHeight: 64,
+    });
+    this.load.image('portrait-modiste', `${G}/portraits/portrait-modiste.png`);
+    this.load.image('portrait-modiste-grand', `${G}/portraits/portrait-modiste-grand.png`);
     this.load.image('act2-table-1', `${G}/sprites/cuisine-tables-1.png`);
     this.load.image('act2-table-2', `${G}/sprites/cuisine-tables-2.png`);
     this.load.image('act2-table-centre-1', `${G}/sprites/cuisine-tables-centre-1.png`);
@@ -69,6 +77,7 @@ export class PreloadScene extends Phaser.Scene {
     registerLpcPlayerIdleAnimsAll(this);
     registerLpcUniversalSheetWalkAndIdle(this, LPC_DE_LA_PLUME_TEXTURE_KEY);
     registerAct2KitchenNpcAnims(this);
+    registerModisteAnims(this);
     this.scene.start('BootScene');
   }
 }
