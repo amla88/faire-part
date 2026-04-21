@@ -116,6 +116,10 @@ export class Act5GlorietteScene extends Phaser.Scene {
               window.dispatchEvent(new CustomEvent('fp-game-progress-updated'));
             } catch {}
             this.info.setText('Idée déposée. Merci !');
+            this.time.delayedCall(650, () => {
+              gameState.setAct('hub');
+              this.scene.start('HubOpenWorldScene');
+            });
           })
           .catch((e) => {
             this.info.setText('Erreur: ' + String(e?.message || e));

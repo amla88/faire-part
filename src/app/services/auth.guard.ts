@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import {
   CanActivate,
   CanActivateChild,
@@ -6,8 +6,31 @@ import {
   RouterStateSnapshot,
   Router,
   UrlTree,
+  CanMatchFn,
 } from '@angular/router';
 import { AuthService } from './auth.service';
+import { isCountdownWindowActive } from './countdown-window';
+
+/**
+ * Route `/` : redirige sans rendre de composant.
+ * - déconnecté -> login
+ * - connecté + fenêtre décompte active -> `/decompte`
+ * - connecté sinon -> `/dashboard`
+ */
+export const landingRedirectGuard: CanMatchFn = () => {
+  const router = inject(Router);
+  const auth = inject(AuthService);
+
+  if (!auth.isLoggedIn()) {
+    return router.parseUrl('/authentication/login');
+  }
+
+  if (isCountdownWindowActive()) {
+    return router.parseUrl('/decompte');
+  }
+
+  return router.parseUrl('/dashboard');
+};
 
 @Injectable({ providedIn: 'root' })
 export class AuthGuard implements CanActivate, CanActivateChild {

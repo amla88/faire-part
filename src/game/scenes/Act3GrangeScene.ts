@@ -181,9 +181,6 @@ export class Act3GrangeScene extends Phaser.Scene {
             getDialogue('act3.mapUnlock'),
             () => {
               try {
-                window.dispatchEvent(new CustomEvent('fp-game-show-map'));
-              } catch {}
-              try {
                 gameState.setAct('hub');
                 this.scene.start('HubOpenWorldScene');
               } catch {

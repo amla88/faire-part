@@ -65,9 +65,29 @@
   position: relative;
 }
 
-.map-btn.done {
-  border-color: color-mix(in srgb, var(--bridgerton-sage) 60%, var(--bridgerton-gold-border-soft));
-  background: color-mix(in srgb, var(--bridgerton-sage) 14%, rgba(255, 255, 255, 0.98));
+.map-zone.mat-mdc-outlined-button,
+.map-zone.mat-mdc-button {
+  border-width: 2px;
+}
+
+/* Carte: vert = complété, bleu = accessible non complété, rouge translucide = verrouillé */
+.map-zone.map-zone--todo:not(:disabled) {
+  border-color: rgba(25, 118, 210, 0.85) !important;
+  background: rgb(25, 118, 210) !important;
+  color: #ffffff !important;
+}
+
+.map-zone.map-zone--done:not(:disabled) {
+  border-color: rgba(46, 125, 50, 0.9) !important;
+  background: rgb(46, 125, 50) !important;
+  color: #ffffff !important;
+}
+
+.map-zone.map-zone--locked:disabled {
+  border-color: rgba(211, 47, 47, 0.55) !important;
+  background: rgba(211, 47, 47, 0.18) !important;
+  color: rgba(44, 36, 51, 0.55) !important;
+  opacity: 1 !important; /* évite le "gris Material" qui masque le rouge */
 }
 
 .map-btn .badge {

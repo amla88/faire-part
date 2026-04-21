@@ -11,6 +11,8 @@ import { PhotoUploadBox } from '../ui/PhotoUploadBox';
 import { sceneHudMaskPop, sceneHudMaskPush } from '../ui/scene-hud-mask';
 
 export class Act4VergerScene extends Phaser.Scene {
+  private bg!: Phaser.GameObjects.Image;
+  private veil!: Phaser.GameObjects.Rectangle;
   private inputState!: SceneInput;
   private dialogueBox!: DialogueBox;
   private formBox!: FormBox;
@@ -38,13 +40,16 @@ export class Act4VergerScene extends Phaser.Scene {
     this.formBox = new FormBox(this);
     this.photoBox = new PhotoUploadBox(this);
 
-    // Décor léger
-    this.add.rectangle(width / 2, height / 2, width * 0.92, height * 0.78, 0xffffff, 0.12);
-    this.add.rectangle(width / 2, height / 2, width * 0.92, height * 0.78, 0x000000, 0.04).setStrokeStyle(
-      2,
-      0xabbca6,
-      0.25
-    );
+    this.bg = this.add.image(0, 0, 'act4-verger').setOrigin(0, 0).setDepth(-20);
+    this.layoutBackground(width, height);
+    this.scale.on('resize', this.onResize, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.scale.off('resize', this.onResize, this);
+    });
+
+    // Voile léger pour garder le texte lisible sur certaines zones de l'illustration.
+    this.veil = this.add.rectangle(width / 2, height / 2, width, height, 0x0f0a12, 0.18).setDepth(-10);
+
     this.add.text(width / 2, height * 0.28, 'Le Verger des confidences', {
       fontFamily: 'monospace',
       fontSize: '13px',
@@ -57,6 +62,25 @@ export class Act4VergerScene extends Phaser.Scene {
       color: '#2c2433',
       align: 'center',
     }).setOrigin(0.5);
+  }
+
+  private onResize = (gameSize: Phaser.Structs.Size): void => {
+    this.layoutBackground(gameSize.width, gameSize.height);
+  };
+
+  private layoutBackground(width: number, height: number): void {
+    if (!this.bg) return;
+    const tex = this.textures.get('act4-verger').getSourceImage() as HTMLImageElement;
+    const srcW = Math.max(1, tex?.width || 1);
+    const srcH = Math.max(1, tex?.height || 1);
+    const scale = Math.max(width / srcW, height / srcH);
+    this.bg.setScale(scale);
+    this.bg.setPosition((width - srcW * scale) / 2, (height - srcH * scale) / 2);
+
+    if (this.veil) {
+      this.veil.setPosition(width / 2, height / 2);
+      this.veil.setSize(width, height);
+    }
   }
 
   override update(): void {
@@ -125,6 +149,10 @@ export class Act4VergerScene extends Phaser.Scene {
               window.dispatchEvent(new CustomEvent('fp-game-progress-updated'));
             } catch {}
             this.info.setText('Anecdote déposée. Merci !');
+            this.time.delayedCall(650, () => {
+              gameState.setAct('hub');
+              this.scene.start('HubOpenWorldScene');
+            });
           })
           .catch((e) => {
             this.info.setText('Erreur: ' + String(e?.message || e));
@@ -172,6 +200,10 @@ export class Act4VergerScene extends Phaser.Scene {
           window.dispatchEvent(new CustomEvent('fp-game-progress-updated'));
         } catch {}
         this.info.setText('Photo déposée. Merci !');
+        this.time.delayedCall(650, () => {
+          gameState.setAct('hub');
+          this.scene.start('HubOpenWorldScene');
+        });
       },
       onClose: () => sceneHudMaskPop(this),
     });

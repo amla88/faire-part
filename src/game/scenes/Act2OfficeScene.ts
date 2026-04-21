@@ -684,6 +684,11 @@ export class Act2OfficeScene extends Phaser.Scene {
                 } catch {}
                 this.info.setText('Acte 2 validé. Passage à l’Acte 3…');
                 this.time.delayedCall(600, () => {
+                  if (quests.isDone(QuestFlags.hubMapUnlocked)) {
+                    gameState.setAct('hub');
+                    this.scene.start('HubOpenWorldScene');
+                    return;
+                  }
                   gameState.setAct('act3');
                   this.scene.start('Act3GrangeScene');
                 });
@@ -722,6 +727,11 @@ export class Act2OfficeScene extends Phaser.Scene {
                 } catch {}
                 this.info.setText('Acte 2 validé. Passage à l’Acte 3…');
                 this.time.delayedCall(600, () => {
+                  if (quests.isDone(QuestFlags.hubMapUnlocked)) {
+                    gameState.setAct('hub');
+                    this.scene.start('HubOpenWorldScene');
+                    return;
+                  }
                   gameState.setAct('act3');
                   this.scene.start('Act3GrangeScene');
                 });

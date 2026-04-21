@@ -118,6 +118,10 @@ export class Act6EcurieScene extends Phaser.Scene {
               window.dispatchEvent(new CustomEvent('fp-game-progress-updated'));
             } catch {}
             this.info.setText('Proposition envoyée. Merci ! (max 3)');
+            this.time.delayedCall(650, () => {
+              gameState.setAct('hub');
+              this.scene.start('HubOpenWorldScene');
+            });
           })
           .catch((e) => {
             this.info.setText('Erreur: ' + String(e?.message || e));

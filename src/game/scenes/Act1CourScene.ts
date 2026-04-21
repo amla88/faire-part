@@ -514,6 +514,11 @@ export class Act1CourScene extends Phaser.Scene {
       getDialogue('act1.toChef'),
       () => {
         this.time.delayedCall(200, () => {
+          if (quests.isDone(QuestFlags.hubMapUnlocked)) {
+            gameState.setAct('hub');
+            this.scene.start('HubOpenWorldScene');
+            return;
+          }
           gameState.setAct('act2');
           this.scene.start('Act2OfficeScene');
         });

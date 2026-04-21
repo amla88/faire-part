@@ -2,11 +2,15 @@ import Phaser from 'phaser';
 import { GAME_BACKGROUND_COLOR } from '../core/game-colors';
 import { gameState } from '../core/game-state';
 import { gameBackend } from '../services/GameBackendBridge';
+import { quests, QuestFlags } from '../systems/QuestSystem';
 
 export class Act7FinalGazetteScene extends Phaser.Scene {
   private countdownText!: Phaser.GameObjects.Text;
   private thanksText!: Phaser.GameObjects.Text;
   private target: Date | null = null;
+  private keySpace!: Phaser.Input.Keyboard.Key;
+  private keyEnter!: Phaser.Input.Keyboard.Key;
+  private keyEsc!: Phaser.Input.Keyboard.Key;
 
   constructor() {
     super('Act7FinalGazetteScene');
@@ -69,6 +73,31 @@ export class Act7FinalGazetteScene extends Phaser.Scene {
 
     // Remerciements personnalisés (best-effort)
     this.loadThanks();
+
+    // Marque le final comme “vu” pour la progression / hub (best-effort).
+    try {
+      quests.done(QuestFlags.finalSeen);
+      void gameBackend.upsertGameProgressForSelected(gameState.snapshot.flags);
+    } catch {}
+
+    const kb = this.input.keyboard;
+    if (kb) {
+      this.keySpace = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+      this.keyEnter = kb.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+      this.keyEsc = kb.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+    }
+  }
+
+  override update(): void {
+    if (!this.keySpace) return;
+    const back =
+      Phaser.Input.Keyboard.JustDown(this.keySpace) ||
+      Phaser.Input.Keyboard.JustDown(this.keyEnter) ||
+      Phaser.Input.Keyboard.JustDown(this.keyEsc);
+    if (!back) return;
+
+    gameState.setAct('hub');
+    this.scene.start('HubOpenWorldScene');
   }
 
   private loadThanks(): void {

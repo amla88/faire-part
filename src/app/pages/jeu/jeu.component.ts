@@ -48,7 +48,11 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
   readonly currentAct = signal<ActId>(gameState.snapshot.act);
 
   private game: import('phaser').Game | null = null;
-  private resizeHandler = () => this.computeOrientation();
+  private hostResizeObserver: ResizeObserver | null = null;
+  private resizeHandler = () => {
+    this.computeOrientation();
+    this.refreshPhaserScale();
+  };
   readonly hasSave = signal(false);
   private userInteracted = false;
   private mapEventHandler = () => {
@@ -117,6 +121,13 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
     // Créer le jeu en premier : synchronisé avec le DOM, sans attendre le réseau.
     if (!this.game) {
       this.game = createGame(this.gameHost.nativeElement);
+      this.attachHostResizeObserver();
+      // La topbar ajuste `--topstrip-offset` après layout/fonts sans forcément déclencher `resize`.
+      // On force un recalcul Phaser sur les prochains frames.
+      requestAnimationFrame(() => this.refreshPhaserScale());
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => this.refreshPhaserScale());
+      });
     }
 
     try {
@@ -127,6 +138,7 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
       const remote = await gameBackend.getGameProgressForSelected();
       this.applyRemoteGameProgress(remote);
       this.syncProgressSignalsFromGameState();
+      requestAnimationFrame(() => this.refreshPhaserScale());
     } catch {}
   }
 
@@ -163,6 +175,7 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
       this.game.destroy(true);
       this.game = null;
     }
+    this.detachHostResizeObserver();
   }
 
   startGame(): void {
@@ -176,6 +189,7 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
       // relancer le boot pour reprendre à l'acte sauvegardé
       this.game?.scene.start('BootScene');
     } catch {}
+    requestAnimationFrame(() => this.refreshPhaserScale());
   }
 
   restartGame(): void {
@@ -206,6 +220,7 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
       // Redémarrer depuis l'acte 0
       game.scene.start('Act0CarrosseScene');
     } catch {}
+    requestAnimationFrame(() => this.refreshPhaserScale());
   }
 
   toggleControls(): void {
@@ -217,6 +232,16 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
 
   toggleMap(): void {
     this.refreshProgress();
+    if (this.currentAct() === 'hub') {
+      // Sur la carte du domaine, l'UI Angular est masquée : le bouton renvoie vers Phaser.
+      this.showMap.set(false);
+      resetVirtualInputState();
+      try {
+        this.game?.scene.start('HubOpenWorldScene');
+      } catch {}
+      requestAnimationFrame(() => this.refreshPhaserScale());
+      return;
+    }
     this.showMap.set(!this.showMap());
     if (!this.showMap()) resetVirtualInputState();
   }
@@ -232,6 +257,38 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
 
   isDone(flagKey: string): boolean {
     return this.progressFlags()?.[flagKey] === true;
+  }
+
+  mapHubUnlocked(): boolean {
+    return this.isDone('hub.map_unlocked');
+  }
+
+  mapAct1Locked(): boolean {
+    return !this.isDone('act0.intro_seen');
+  }
+
+  mapAct2Locked(): boolean {
+    return !this.isDone('act1.register_done');
+  }
+
+  mapAct3Locked(): boolean {
+    return !this.isDone('act2.allergens_done');
+  }
+
+  mapAct4Locked(): boolean {
+    return !this.isDone('act3.avatar_done');
+  }
+
+  mapAct5Locked(): boolean {
+    return !this.isDone('act3.avatar_done');
+  }
+
+  mapAct6Locked(): boolean {
+    return !this.isDone('act3.avatar_done');
+  }
+
+  mapAct7Locked(): boolean {
+    return !this.allStepsDone();
   }
 
   /** Règles détaillées : docs/Scénario.md (section « Progression technique »). */
@@ -267,11 +324,11 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
     const el = this.gameShell?.nativeElement ?? this.gameHost?.nativeElement;
     if (!document.fullscreenElement && el?.requestFullscreen) {
       await el.requestFullscreen();
-      return;
-    }
-    if (document.fullscreenElement) {
+    } else if (document.fullscreenElement) {
       await document.exitFullscreen();
     }
+
+    requestAnimationFrame(() => this.refreshPhaserScale());
   }
 
   pressDir(dir: 'up' | 'down' | 'left' | 'right', pressed: boolean): void {
@@ -296,6 +353,48 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
       try {
         void this.toggleFullscreen();
       } catch {}
+    }
+
+    this.refreshPhaserScale();
+  }
+
+  private attachHostResizeObserver(): void {
+    this.detachHostResizeObserver();
+    if (typeof ResizeObserver === 'undefined') return;
+    // Observer le shell plutôt que le host : la topbar / le layout peuvent
+    // décaler le contenu sans changer la bbox du host (height en vh fixe).
+    const el = this.gameShell?.nativeElement ?? this.gameHost?.nativeElement;
+    if (!el) return;
+
+    this.hostResizeObserver = new ResizeObserver(() => {
+      requestAnimationFrame(() => this.refreshPhaserScale());
+    });
+    try {
+      this.hostResizeObserver.observe(el);
+    } catch {
+      this.hostResizeObserver.disconnect();
+      this.hostResizeObserver = null;
+    }
+  }
+
+  private detachHostResizeObserver(): void {
+    try {
+      this.hostResizeObserver?.disconnect();
+    } catch {
+      // ignore
+    }
+    this.hostResizeObserver = null;
+  }
+
+  private refreshPhaserScale(): void {
+    const game = this.game;
+    if (!game) return;
+    try {
+      // Phaser FIT dépend de la taille parent au boot; un relayout (topbar, sidenav, fonts)
+      // peut changer la bbox sans `window.resize`.
+      game.scale.refresh();
+    } catch {
+      // ignore
     }
   }
 }

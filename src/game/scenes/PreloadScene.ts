@@ -55,10 +55,11 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image('archetype-duc', `${G}/sprites/archetype-duc.png`);
     this.load.image('act0-carrosse', `${G}/backgrounds/acte0-carrosse.png`);
     this.load.image('act0-parallax-lointain', `${G}/backgrounds/acte0-parallax-lointain.png`);
-    this.load.image('act0-parallax-proche', `${G}/backgrounds/acte0-parallax-proche.png`);
     this.load.image('act1-courtyard', `${G}/backgrounds/acte1-courtyard.png`);
     this.load.image('act2-cuisine', `${G}/backgrounds/acte2-cuisine.png`);
     this.load.image('acte3-grange', `${G}/backgrounds/acte3-grange.png`);
+    this.load.image('act4-verger', `${G}/backgrounds/acte4-verger.png`);
+    this.load.image('hub-domain-map', `${G}/backgrounds/map.png`);
     this.load.spritesheet(MODISTE_TEXTURE_KEY, `${G}/sprites/modiste.png`, {
       frameWidth: 64,
       frameHeight: 64,
