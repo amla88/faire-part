@@ -25,9 +25,9 @@ function computeRemaining(now: Date): Remaining {
       <div class="wrap">
         <div class="hero">
           <div class="badge">Accès temporairement restreint</div>
-          <h1>Vous pourrez vous enregistrer à partir de mercredi 12h00</h1>
+          <h1>Vous pourrez vous enregistrer à partir de samedi 12h00</h1>
           <p class="sub">
-            En attendant, retrouvez ici le compte à rebours.
+            Désolé pour le retard, mais mes journées ne font malheureusement que 24h...
           </p>
 
           <div class="grid" aria-label="Compte à rebours">
@@ -50,7 +50,7 @@ function computeRemaining(now: Date): Remaining {
           </div>
 
           <div class="fine">
-            <span>Le site refonctionnera automatiquement à l’heure indiquée.</span>
+            <span>Le site refonctionnera automatiquement à l’heure indiquée. (Pour de vrais!)</span>
           </div>
         </div>
       </div>
