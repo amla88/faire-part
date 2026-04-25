@@ -1,0 +1,114 @@
+<mat-card class="cardWithShadow">
+  <mat-card-content>
+    <mat-card-title>Suivi présences &amp; jeu</mat-card-title>
+    <p class="f-s-13 text-muted m-t-8 m-b-16">
+      Familles triées par dernière connexion (les plus récentes en premier). Cochez les moments pour afficher les colonnes et limiter la liste aux familles invitées sur au moins un de ces moments.
+    </p>
+
+    <div class="toolbar m-b-16 d-flex flex-wrap align-center gap-16">
+      <span class="f-w-600 f-s-13">Moments :</span>
+      <mat-checkbox [checked]="filterSoiree()" (change)="filterSoiree.set($event.checked)">Soirée</mat-checkbox>
+      <mat-checkbox [checked]="filterRepas()" (change)="filterRepas.set($event.checked)">Repas</mat-checkbox>
+      <mat-checkbox [checked]="filterReception()" (change)="filterReception.set($event.checked)">Réception</mat-checkbox>
+      <button mat-stroked-button type="button" (click)="load()" [disabled]="loading()">
+        <mat-icon>refresh</mat-icon>
+        Actualiser
+      </button>
+    </div>
+
+    <div class="f-s-13 text-muted m-b-12">
+      {{ filteredFamilles().length }} famille(s)
+    </div>
+
+    @if (loading()) {
+      <div class="d-flex justify-center p-24">
+        <mat-progress-spinner mode="indeterminate" diameter="40" />
+      </div>
+    } @else {
+      @for (fam of filteredFamilles(); track trackByFamilleId($index, fam)) {
+        <section class="famille-block m-b-24">
+          <div class="famille-header d-flex flex-wrap justify-between align-center gap-8 m-b-8">
+            <div>
+              <h3 class="f-s-16 f-w-600 m-0">{{ getFamilyDisplayName(fam) }}</h3>
+              <div class="f-s-12 text-muted">Dernière connexion : {{ formatConnexion(fam.connexion) }}</div>
+            </div>
+            <a mat-stroked-button color="primary" [routerLink]="['/admin/famille', fam.id]">
+              <mat-icon>open_in_new</mat-icon>
+              Fiche famille
+            </a>
+          </div>
+
+          <div class="table-scroll">
+            <table class="suivi-table w-100">
+              <thead>
+                <tr>
+                  <th>Membre</th>
+                  @if (showMoment('reception')) {
+                    <th>Réception</th>
+                  }
+                  @if (showMoment('repas')) {
+                    <th>Repas</th>
+                  }
+                  @if (showMoment('soiree')) {
+                    <th>Soirée</th>
+                  }
+                  <th>Jeu</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of fam.personnes || []; track trackByPersonneId($index, p)) {
+                  <tr [class.row-game-finished]="gameFinished(p.id)">
+                    <td class="cell-name">{{ p.prenom }} {{ p.nom }}</td>
+                    @if (showMoment('reception')) {
+                      <td>
+                        <span class="presence-pill" [ngClass]="presenceClass(p, 'reception')">{{ presenceLabel(p, 'reception') }}</span>
+                      </td>
+                    }
+                    @if (showMoment('repas')) {
+                      <td>
+                        <span class="presence-pill" [ngClass]="presenceClass(p, 'repas')">{{ presenceLabel(p, 'repas') }}</span>
+                      </td>
+                    }
+                    @if (showMoment('soiree')) {
+                      <td>
+                        <span class="presence-pill" [ngClass]="presenceClass(p, 'soiree')">{{ presenceLabel(p, 'soiree') }}</span>
+                      </td>
+                    }
+                    <td class="cell-jeu">
+                      @if (gameFinished(p.id)) {
+                        <mat-chip-set>
+                          <mat-chip highlighted class="chip-finished" matTooltip="La scène finale du jeu a été vue (progression enregistrée).">
+                            <mat-icon matChipAvatar>emoji_events</mat-icon>
+                            Jeu terminé
+                          </mat-chip>
+                        </mat-chip-set>
+                        @if (gameUpdated(p.id); as ju) {
+                          <div class="f-s-11 text-muted m-t-4">{{ ju }}</div>
+                        }
+                      } @else if (gameParticipated(p.id)) {
+                        <mat-chip-set>
+                          <mat-chip matTooltip="Progression enregistrée, parcours non terminé.">
+                            En cours
+                          </mat-chip>
+                        </mat-chip-set>
+                        @if (gameUpdated(p.id); as ju) {
+                          <div class="f-s-11 text-muted m-t-4">{{ ju }}</div>
+                        }
+                      } @else {
+                        <span class="text-muted">Pas encore</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+      }
+
+      @if (filteredFamilles().length === 0) {
+        <p class="text-muted">Aucune famille ne correspond aux filtres sélectionnés.</p>
+      }
+    }
+  </mat-card-content>
+</mat-card>

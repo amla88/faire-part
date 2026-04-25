@@ -8,6 +8,7 @@ export const navItemsAdmin: NavItem[] = [
     route: '/admin',
   },
   { navCap: 'Gestion' },
+  { displayName: 'Suivi présences & jeu', iconName: 'clipboard-list', route: '/admin/suivi-presences-jeux' },
   { displayName: 'Liste familles', iconName: 'users', route: '/admin/familles' },
   { displayName: 'Ajouter famille', iconName: 'user-plus', route: '/admin/famille' },
   { displayName: 'Plan de table', iconName: 'picnic-table', route: '/admin/plan-de-table' },
