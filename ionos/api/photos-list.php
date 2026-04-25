@@ -108,7 +108,7 @@ if (is_array($files)) {
     }
     $items[] = [
       'key' => $key,
-      'name' => $name,
+      'name' => (string) $name,
       'url' => $url,
       'size' => (int)$size,
       'lastModified' => $lastModified,
@@ -116,14 +116,46 @@ if (is_array($files)) {
   }
 }
 
-// Sort by lastModified desc when possible
-usort($items, function ($a, $b) {
-  $ta = isset($a['lastModified']) && is_string($a['lastModified']) ? strtotime($a['lastModified']) : 0;
-  $tb = isset($b['lastModified']) && is_string($b['lastModified']) ? strtotime($b['lastModified']) : 0;
-  return $tb <=> $ta;
-});
+// Sort by lastModified desc (timestamps entiers, évite erreurs de tri PHP 8+ avec false)
+usort(
+  $items,
+  static function (array $a, array $b): int {
+    $ta = 0;
+    $tb = 0;
+    if (isset($a['lastModified']) && is_string($a['lastModified'])) {
+      $s = strtotime($a['lastModified']);
+      if ($s !== false) {
+        $ta = $s;
+      }
+    }
+    if (isset($b['lastModified']) && is_string($b['lastModified'])) {
+      $s = strtotime($b['lastModified']);
+      if ($s !== false) {
+        $tb = $s;
+      }
+    }
+    return $tb <=> $ta;
+  },
+);
 
-echo json_encode(['items' => $items]);
+$jsonFlags = JSON_UNESCAPED_SLASHES;
+if (defined('JSON_INVALID_UTF8_SUBSTITUTE')) {
+  $jsonFlags |= constant('JSON_INVALID_UTF8_SUBSTITUTE');
+}
+$out = json_encode(['items' => $items], $jsonFlags);
+if (!is_string($out) || $out === '') {
+  http_response_code(500);
+  $fallback = json_encode(
+    ['error' => 'Impossible de sérialiser la liste', 'items' => []],
+    $jsonFlags,
+  );
+  echo is_string($fallback) ? $fallback : '{"error":"json_encode failed","items":[]}';
+  exit;
+}
+
+http_response_code(200);
+header('access-control-allow-origin: ' . allowedOrigin());
+echo $out;
 
 function publicBaseUrl(): string {
   $host = $_SERVER['HTTP_HOST'] ?? '';

@@ -3,7 +3,9 @@ import { GAME_BACKGROUND_COLOR } from '../core/game-colors';
 import { SceneInput } from '../systems/SceneInput';
 import { quests, QuestFlags } from '../systems/QuestSystem';
 import { gameBackend } from '../services/GameBackendBridge';
+import { isHubFreeRoamUnlocked } from '../core/act-routing';
 import { gameState } from '../core/game-state';
+import { registerRequestDomainMapListener } from '../core/open-domain-map';
 import { DialogueBox } from '../ui/DialogueBox';
 import { AvatarEditorBox } from '../ui/AvatarEditorBox';
 import { getDialogue } from '../data/dialogues.catalog';
@@ -92,9 +94,25 @@ export class Act3GrangeScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(ACT3_UI_DEPTH);
 
+    registerRequestDomainMapListener(this, () => {
+      this.opening = false;
+      this.dialogueBox.forceAbort();
+      this.avatarEditorBox.stop();
+    });
+
     if (quests.isDone(QuestFlags.act3AvatarDone)) {
       this.introSequenceComplete = true;
-      this.info.setText('Acte 3 déjà validé. Merci !');
+      this.modiste = this.add
+        .sprite(width * ACT3_MODISTE_POS.xFrac, height * ACT3_MODISTE_POS.yFrac, MODISTE_TEXTURE_KEY, 0)
+        .setScale(ACT3_TILE_SCALE);
+      setModisteIdleFrame(this.modiste, 'left');
+      this.info.setText(
+        isHubFreeRoamUnlocked()
+          ? 'Espace auprès de Madame Chromatique : retoucher le portrait, ou « Carte du domaine » pour revenir sur la carte.'
+          : 'Acte 3 déjà validé. Merci !',
+      );
+      this.info.setPosition(width / 2, height * 0.2);
+      this.info.setVisible(true);
       return;
     }
 
@@ -156,6 +174,7 @@ export class Act3GrangeScene extends Phaser.Scene {
 
   private beginAvatarEditorFlow(): void {
     if (this.opening) return;
+    const wasAct3CompleteAtOpen = quests.isDone(QuestFlags.act3AvatarDone);
     this.opening = true;
     this.info.setText('Préparation du miroir…');
     this.info.setVisible(true);
@@ -170,11 +189,24 @@ export class Act3GrangeScene extends Phaser.Scene {
             this.info.setVisible(true);
             return;
           }
-          quests.done(QuestFlags.act3AvatarDone);
-          quests.done(QuestFlags.hubMapUnlocked);
           try {
             void gameBackend.upsertGameProgressForSelected(gameState.snapshot.flags);
           } catch {}
+          if (wasAct3CompleteAtOpen) {
+            this.info.setText('Portrait enregistré. Retour au domaine…');
+            this.info.setVisible(true);
+            this.time.delayedCall(800, () => {
+              try {
+                gameState.setAct('hub');
+                this.scene.start('HubOpenWorldScene');
+              } catch {
+                // scène indisponible
+              }
+            });
+            return;
+          }
+          quests.done(QuestFlags.act3AvatarDone);
+          quests.done(QuestFlags.hubMapUnlocked);
           this.info.setText('Acte 3 validé.');
           this.info.setVisible(true);
           this.dialogueBox.start(
@@ -242,6 +274,9 @@ export class Act3GrangeScene extends Phaser.Scene {
     }
 
     if (quests.isDone(QuestFlags.act3AvatarDone)) {
+      if (act && !this.opening) {
+        this.startChromatiqueDialogue();
+      }
       this.inputState.commit();
       return;
     }

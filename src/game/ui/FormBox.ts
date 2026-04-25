@@ -9,6 +9,9 @@ import { sceneHudMaskPop, sceneHudMaskPush } from './scene-hud-mask';
 
 export type ToggleOption = { key: string; label: string; value: boolean };
 
+/** Ligne d’un menu type « Acte 4 » : un clic = action (pas de bascule). */
+export type ChoiceMenuAction = { label: string; onSelect: () => void };
+
 /** Au-dessus des textes UI de scène (souvent ~100000) pour éviter qu’ils recouvrent le formulaire. */
 const FORM_UI_DEPTH = 100_520;
 
@@ -113,9 +116,16 @@ export class FormBox {
   private cursor = 0;
   private toggles: ToggleOption[] = [];
   private onSubmitToggles?: (values: Record<string, boolean>) => void;
+  /** Mode menu à boutons (Acte 4 : photo / anecdote + Terminer). */
+  private choiceMenuMode = false;
+  private choiceMenuActions: ChoiceMenuAction[] = [];
+  private onChoiceMenuTerminer?: () => void;
+  private choiceMenuCursor = 0;
   private hintEnabled = true;
   private sceneHudMaskApplied = false;
   private touchOverlayBlocked = false;
+  /** Sauvegarde `canvas.style.pointerEvents` pendant un formulaire DOM (clics sinon captés par le canvas). */
+  private canvasPointerEventsRestore: string | null = null;
   private centerX: number;
   private centerY: number;
   private boxW: number;
@@ -164,6 +174,9 @@ export class FormBox {
     onSubmit: (values: Record<string, boolean>) => void;
     hideSceneHud?: Phaser.GameObjects.GameObject[];
   }): void {
+    this.choiceMenuMode = false;
+    this.choiceMenuActions = [];
+    this.onChoiceMenuTerminer = undefined;
     this.cleanupDom();
     this.clearToggleLayer();
     const n = args.toggles.length;
@@ -193,6 +206,186 @@ export class FormBox {
         ? '↑↓ ligne • ←→ Non / Oui • « Ne participe pas » = refus total (événements affichés) • Espace : valider'
         : '↑↓ ligne • ←→ Non / Oui • Espace : valider',
     );
+  }
+
+  /**
+   * Menu à actions directes (pas de bascules) + bouton « Terminer ».
+   * Chaque ligne s’ouvre d’un clic / Espace ; pas de bouton « Valider » intermédiaire.
+   */
+  startChoiceMenu(args: {
+    title: string;
+    actions: ChoiceMenuAction[];
+    onTerminer: () => void;
+    hideSceneHud?: Phaser.GameObjects.GameObject[];
+  }): void {
+    this.choiceMenuMode = true;
+    this.choiceMenuActions = args.actions.map((a) => ({ label: a.label, onSelect: a.onSelect }));
+    this.onChoiceMenuTerminer = args.onTerminer;
+    this.choiceMenuCursor = 0;
+    this.toggles = [];
+    this.onSubmitToggles = undefined;
+    this.cleanupDom();
+    this.clearToggleLayer();
+    this.cleanupSubmit();
+    this.titleText.setText(args.title);
+    this.titleText.setVisible(true);
+
+    const n = this.choiceMenuActions.length;
+    const sh = this.scene.scale.height;
+    const minH = minToggleBoxHeight(n);
+    const h = Math.min(Math.floor(sh * 0.9), Math.max(minH, Math.floor(sh * 0.34)));
+    this.setBoxSize(Math.floor(this.scene.scale.width * 0.84), h);
+
+    this.applySceneHudMask(args.hideSceneHud);
+    this.active = true;
+    if (!this.touchOverlayBlocked) {
+      pushGameModalTouchOverlayBlock();
+      this.touchOverlayBlocked = true;
+    }
+    this.hintEnabled = true;
+    this.hintText.setVisible(true);
+    this.hintText.setText('↑↓ : parcourir • Espace : activer l’action ou terminer l’acte');
+    this.show();
+    this.renderChoiceMenu();
+    resetVirtualInputState();
+  }
+
+  /** Clavier (gamepad) pour `startChoiceMenu` uniquement. */
+  handleChoiceMenuInput(input: { up: boolean; down: boolean; action: boolean }): boolean {
+    if (!this.active || !this.choiceMenuMode) return false;
+    const n = this.choiceMenuActions.length;
+    if (n === 0) return false;
+    const lastIdx = n; // index du bouton « Terminer »
+    if (input.up) {
+      this.choiceMenuCursor = (this.choiceMenuCursor + (lastIdx + 1) - 1) % (lastIdx + 1);
+      this.renderChoiceMenu();
+      return true;
+    }
+    if (input.down) {
+      this.choiceMenuCursor = (this.choiceMenuCursor + 1) % (lastIdx + 1);
+      this.renderChoiceMenu();
+      return true;
+    }
+    if (input.action) {
+      const afterStop = (fn: () => void) => {
+        this.stop();
+        this.scene.time.delayedCall(0, fn);
+      };
+      if (this.choiceMenuCursor < n) {
+        const a = this.choiceMenuActions[this.choiceMenuCursor];
+        if (a) afterStop(a.onSelect);
+      } else {
+        const fn = this.onChoiceMenuTerminer;
+        if (fn) afterStop(fn);
+      }
+      return true;
+    }
+    return false;
+  }
+
+  private renderChoiceMenu(): void {
+    this.clearToggleLayer();
+    this.cleanupSubmit();
+
+    const n = this.choiceMenuActions.length;
+    const padX = 18;
+    const rowW = this.boxW - padX * 2;
+    const rowH = TOGGLE_ROW_H;
+    const rowGap = TOGGLE_ROW_GAP;
+    const contentTop = this.centerY - this.boxH / 2 + TOGGLE_TITLE_TOP;
+    const submitY = this.centerY + this.boxH / 2 - TOGGLE_FOOT_PAD - TOGGLE_BTN_H / 2;
+    const hintBottomY = submitY - TOGGLE_BTN_H / 2 - 8;
+    this.hintText.setPosition(this.centerX - this.boxW / 2 + padX, hintBottomY);
+
+    const runAfterStop = (fn: () => void) => {
+      this.stop();
+      this.scene.time.delayedCall(0, fn);
+    };
+
+    for (let i = 0; i < n; i++) {
+      const t = this.choiceMenuActions[i];
+      if (!t) continue;
+      const yTop = contentTop + i * (rowH + rowGap);
+      const cy = yTop + rowH / 2;
+      const isSelected = this.choiceMenuCursor === i;
+      const fill = 0xfaf6f1;
+      const fillAlpha = 0.72;
+      const strokeW = isSelected ? 2 : 1;
+      const strokeA = isSelected ? 0.75 : 0.32;
+
+      const rowBg = this.scene.add
+        .rectangle(this.centerX, cy, rowW, rowH, fill, fillAlpha)
+        .setStrokeStyle(strokeW, 0xb8956a, strokeA)
+        .setDepth(FORM_UI_DEPTH + 4)
+        .setInteractive({ useHandCursor: true });
+
+      rowBg.on('pointerover', () => {
+        if (!this.active) return;
+        this.choiceMenuCursor = i;
+        this.renderChoiceMenu();
+      });
+      rowBg.on('pointerdown', () => {
+        if (!this.active) return;
+        runAfterStop(t.onSelect);
+      });
+
+      const label = this.scene.add
+        .text(this.centerX, cy, t.label, {
+          fontFamily: 'monospace',
+          fontSize: '15px',
+          color: '#2c2433',
+          fontStyle: 'bold',
+        })
+        .setOrigin(0.5, 0.5)
+        .setDepth(FORM_UI_DEPTH + 5);
+      label.setShadow(0, 1, '#ffffff', 0.35, false, true);
+      this.toggleLayer.push(rowBg, label);
+    }
+
+    const btnW = 188;
+    const btnH = TOGGLE_BTN_H;
+    const terminerIdx = n;
+    const termSelected = this.choiceMenuCursor === terminerIdx;
+    const submitX = this.centerX;
+
+    const gfx = this.scene.add.graphics().setDepth(FORM_UI_DEPTH + 8);
+    const drawTermBtn = (hover: boolean) => {
+      gfx.clear();
+      const hov = hover || termSelected;
+      gfx.fillStyle(hov ? 0xc4a77d : 0x9e7d55, 0.92);
+      gfx.fillRoundedRect(submitX - btnW / 2, submitY - btnH / 2, btnW, btnH, 8);
+      gfx.lineStyle(1, 0xf2dfc3, 0.65);
+      gfx.strokeRoundedRect(submitX - btnW / 2, submitY - btnH / 2, btnW, btnH, 8);
+    };
+    drawTermBtn(false);
+
+    const lbl = this.scene.add
+      .text(submitX, submitY, 'Terminer', {
+        fontFamily: 'monospace',
+        fontSize: '14px',
+        color: '#f2dfc3',
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
+      .setDepth(FORM_UI_DEPTH + 9);
+
+    const hit = this.scene.add
+      .rectangle(submitX, submitY, btnW, btnH, 0x000000, 0)
+      .setDepth(FORM_UI_DEPTH + 10)
+      .setInteractive({ useHandCursor: true });
+    hit.on('pointerover', () => {
+      this.choiceMenuCursor = terminerIdx;
+      this.renderChoiceMenu();
+    });
+    hit.on('pointerdown', () => {
+      if (!this.active) return;
+      const fn = this.onChoiceMenuTerminer;
+      if (fn) runAfterStop(fn);
+    });
+
+    this.submitBg = gfx;
+    this.submitHit = hit;
+    this.submitLabel = lbl;
   }
 
   /** Retourne true si l'input a été consommé. */
@@ -234,18 +427,65 @@ export class FormBox {
     title: string;
     /** Sous-titre discret sous le titre (aligné avec la carte). */
     subtitle?: string;
+    /** Acte 4 : anecdotes déjà enregistrées, avec suppression possible. */
+    existingAnecdotes?: { id: number; contenu: string; created_at: string }[];
+    onDeleteAnecdote?: (id: number) => Promise<void>;
+    /** Acte 5 : idées déjà enregistrées, avec suppression possible. */
+    existingIdees?: { id: number; contenu: string; created_at: string }[];
+    onDeleteIdee?: (id: number) => Promise<void>;
+    /**
+     * Acte 6 : trois emplacements (titres déjà proposés + places vides en filigrane).
+     * `items` : ordre chronologique (plus ancien → premier emplacement).
+     */
+    musiqueSlots?: {
+      items: Array<{ id: number; titre: string; auteur: string; status: string; created_at?: string }>;
+      max: number;
+      onDelete?: (id: number) => Promise<void>;
+    };
+    /** Après `stop()` (bouton Annuler) — ex. revenir au menu. */
+    onCancel?: () => void;
+    /**
+     * Si retour d’une chaîne, le formulaire reste ouvert (pas de `stop` avant enregistrement).
+     * Utile p.ex. anectode vide.
+     */
+    validateBeforeSubmit?: (values: Record<string, string>) => string | null;
     fields: Array<{ name: string; label: string; placeholder?: string; multiline?: boolean; maxLength?: number }>;
     defaults?: Record<string, string>;
     onSubmit: (values: Record<string, string>) => void;
+    /**
+     * Par défaut `true` : le bouton Enregistrer ferme le panneau puis appelle `onSubmit`.
+     * `false` : n’appelle que `onSubmit` (l’acte 5 ferme/rouvre pour rafraîchir la liste, ou gère l’UI).
+     */
+    closeOnSubmit?: boolean;
+    /**
+     * Bouton « Terminer » : ferme si le retour n’est ni `false` ni une chaîne non vide.
+     * Retourner une chaîne affiche l’erreur dans le formulaire (DOM) sans fermer.
+     */
+    onTerminer?: () => boolean | string | void | Promise<boolean | string | void>;
     hideSceneHud?: Phaser.GameObjects.GameObject[];
   }): void {
+    this.choiceMenuMode = false;
+    this.choiceMenuActions = [];
+    this.onChoiceMenuTerminer = undefined;
     this.cleanupSubmit();
     this.clearToggleLayer();
     this.cleanupDom();
     const sw = this.scene.scale.width;
     const sh = this.scene.scale.height;
+    const nFields = args.fields.length;
+    const hasMultiline = args.fields.some((f) => f.multiline);
+    const hasListBlock = !!(args.existingIdees?.length || args.existingAnecdotes?.length);
+    const hasMusiqueSlots = args.musiqueSlots != null;
+    const tallTextForm = args.onTerminer != null || hasListBlock || hasMusiqueSlots;
+    /** Plusieurs champs / zone texte : besoin de plus de hauteur pour garder Annuler / Enregistrer accessibles. */
+    const richFieldsForm = nFields >= 3 || hasMultiline || hasMusiqueSlots;
+    let heightFrac: number;
+    if (tallTextForm) heightFrac = 0.9;
+    else if (richFieldsForm) heightFrac = 0.88;
+    else heightFrac = 0.76;
+    const boxWFrac = richFieldsForm || tallTextForm ? 0.84 : 0.78;
     // Carte Phaser = cadre blanc : doit couvrir titre + sous-titre + champs + boutons (DOM calé dedans).
-    this.setBoxSize(Math.floor(sw * 0.78), Math.floor(sh * 0.75));
+    this.setBoxSize(Math.floor(sw * boxWFrac), Math.floor(sh * heightFrac));
     this.titleText.setText('');
     this.applySceneHudMask(args.hideSceneHud);
     this.active = true;
@@ -281,15 +521,26 @@ export class FormBox {
     wrap.style.background = 'transparent';
     wrap.style.border = 'none';
     wrap.style.minHeight = '0';
-    // Évite que le flex dépasse la hauteur fixe : sinon les boutons se retrouvent sous le Graphics Phaser.
-    wrap.style.overflow = 'hidden';
+    // Défilement de secours si l’écran est bas ; le pied (boutons) reste dans `#fp-form-text-footer`.
+    wrap.style.overflowX = 'hidden';
+    wrap.style.overflowY = 'auto';
 
     const phStyle = document.createElement('style');
     phStyle.textContent =
       `#fp-form-text-inner input::placeholder, #fp-form-text-inner textarea::placeholder { color: ${FORM_TEXT_DOM.inkMuted}; opacity: 0.9; }` +
       `#fp-form-text-inner input, #fp-form-text-inner textarea { image-rendering: auto; }` +
-      `#fp-form-text-scroll::-webkit-scrollbar { width: 8px; }` +
-      `#fp-form-text-scroll::-webkit-scrollbar-thumb { background: rgba(44,36,51,0.22); border-radius: 4px; }`;
+      `#fp-form-text-inner #fp-form-actions-row button { touch-action: manipulation; }` +
+      `#fp-musique-layout { display: flex; gap: 12px; }` +
+      `#fp-musique-left { flex: 1 1 33%; }` +
+      `#fp-musique-right { flex: 2 1 67%; }` +
+      `@media (max-width: 640px) { #fp-musique-layout { flex-direction: column; } #fp-musique-left { max-height: none !important; } }` +
+      `#fp-musique-slots .fp-m-slot { position: relative; min-height: 76px; border-radius: 8px; margin-bottom: 8px; overflow: hidden; }` +
+      `#fp-musique-slots .fp-m-slot-empty { border: 2px dashed rgba(171,188,166,0.65); background: rgba(250,246,241,0.55); }` +
+      `#fp-musique-slots .fp-m-slot-filled { border: 1px solid ${FORM_TEXT_DOM.borderSage}; background: rgba(250,246,241,0.98); }` +
+      `#fp-musique-slots .fp-m-note { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-58%); font-size: 52px; line-height: 1; opacity: 0.14; color: #2c2433; pointer-events: none; user-select: none; font-family: Georgia, 'Times New Roman', serif; }` +
+      `#fp-musique-slots .fp-m-free { position: absolute; left: 0; right: 0; bottom: 6px; text-align: center; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: ${FORM_TEXT_DOM.inkMuted}; opacity: 0.45; pointer-events: none; }` +
+      `#fp-form-text-scroll::-webkit-scrollbar, #fp-form-text-list::-webkit-scrollbar { width: 8px; }` +
+      `#fp-form-text-scroll::-webkit-scrollbar-thumb, #fp-form-text-list::-webkit-scrollbar-thumb { background: rgba(44,36,51,0.22); border-radius: 4px; }`;
 
     const titleEl = document.createElement('div');
     titleEl.setAttribute('role', 'heading');
@@ -321,29 +572,193 @@ export class FormBox {
       sub.style.textAlign = 'center';
       sub.style.color = FORM_TEXT_DOM.inkMuted;
       sub.style.wordBreak = 'break-word';
-      sub.style.flexShrink = '0';
+      sub.style.flexShrink = '1';
+      sub.style.maxHeight = '96px';
+      sub.style.overflowY = 'auto';
       wrap.appendChild(sub);
     }
 
     const scrollArea = document.createElement('div');
     scrollArea.id = 'fp-form-text-scroll';
-    // base 0 : la zone scroll prend l’espace *restant* sans pousser le pied hors du cadre
-    scrollArea.style.flex = '1 1 0';
+    scrollArea.style.display = 'flex';
+    scrollArea.style.flexDirection = 'column';
+    scrollArea.style.flex = '1 1 0%';
     scrollArea.style.minHeight = '0';
-    scrollArea.style.overflowY = 'auto';
+    // Si liste + champs dépassent l’espace entre titre et boutons, cette zone défile (les boutons restent visibles).
     scrollArea.style.overflowX = 'hidden';
+    scrollArea.style.overflowY = 'auto';
     scrollArea.style.padding = '2px 2px 0';
+
+    const listHost = document.createElement('div');
+    listHost.id = 'fp-form-text-list';
+    listHost.style.flexGrow = '0';
+    listHost.style.flexShrink = '1';
+    listHost.style.flexBasis = 'auto';
+    listHost.style.minHeight = '0';
+    // Hauteur max stricte : ascenseur sur la liste seule, sans pousser les champs / boutons hors cadre.
+    listHost.style.maxHeight = 'min(190px, 14vh)';
+    listHost.style.overflowY = 'auto';
+    listHost.style.overflowX = 'hidden';
+
+    const fieldHost = document.createElement('div');
+    fieldHost.style.flexGrow = '0';
+    fieldHost.style.flexShrink = '0';
+
+    if (args.existingAnecdotes?.length) {
+      const secHead = document.createElement('div');
+      secHead.textContent = 'Déjà envoyées';
+      secHead.style.fontSize = '12px';
+      secHead.style.fontWeight = '700';
+      secHead.style.margin = '0 0 6px';
+      secHead.style.color = FORM_TEXT_DOM.inkMuted;
+      listHost.appendChild(secHead);
+
+      const errSlot = document.createElement('div');
+      errSlot.style.fontSize = '12px';
+      errSlot.style.color = '#8b2942';
+      errSlot.style.marginBottom = '6px';
+      listHost.appendChild(errSlot);
+
+      for (const an of args.existingAnecdotes) {
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.alignItems = 'flex-start';
+        row.style.gap = '8px';
+        row.style.padding = '8px 10px';
+        row.style.marginBottom = '6px';
+        row.style.background = 'rgba(250,246,241,0.98)';
+        row.style.border = `1px solid ${FORM_TEXT_DOM.borderSage}`;
+        row.style.borderRadius = '6px';
+
+        const te = document.createElement('div');
+        const text = an.contenu.length > 400 ? an.contenu.slice(0, 400) + '…' : an.contenu;
+        te.textContent = text;
+        te.style.flex = '1';
+        te.style.fontSize = '12px';
+        te.style.lineHeight = '1.45';
+        te.style.wordBreak = 'break-word';
+        te.style.maxHeight = '70px';
+        te.style.overflow = 'auto';
+        row.appendChild(te);
+
+        if (args.onDeleteAnecdote) {
+          const del = document.createElement('button');
+          del.type = 'button';
+          del.setAttribute('aria-label', 'Supprimer cette anecdote');
+          del.textContent = '×';
+          del.style.flexShrink = '0';
+          del.style.width = '30px';
+          del.style.height = '30px';
+          del.style.lineHeight = '1';
+          del.style.fontSize = '20px';
+          del.style.fontWeight = '700';
+          del.style.borderRadius = '5px';
+          del.style.cursor = 'pointer';
+          del.style.border = `1px solid ${FORM_TEXT_DOM.borderGoldStrong}`;
+          del.style.background = 'rgba(200, 120, 120, 0.2)';
+          del.style.color = FORM_TEXT_DOM.ink;
+          const id = an.id;
+          del.onclick = async () => {
+            errSlot.textContent = '';
+            if (!args.onDeleteAnecdote) return;
+            del.disabled = true;
+            try {
+              await args.onDeleteAnecdote(id);
+            } catch (e: unknown) {
+              del.disabled = false;
+              errSlot.textContent = 'Suppression impossible : ' + String((e as Error)?.message || e);
+            }
+          };
+          row.appendChild(del);
+        }
+        listHost.appendChild(row);
+      }
+    }
+
+    if (args.existingIdees?.length) {
+      const secHead = document.createElement('div');
+      secHead.textContent = 'Déjà proposées';
+      secHead.style.fontSize = '12px';
+      secHead.style.fontWeight = '700';
+      secHead.style.margin = '0 0 6px';
+      secHead.style.color = FORM_TEXT_DOM.inkMuted;
+      listHost.appendChild(secHead);
+
+      const errSlotIdee = document.createElement('div');
+      errSlotIdee.style.fontSize = '12px';
+      errSlotIdee.style.color = '#8b2942';
+      errSlotIdee.style.marginBottom = '6px';
+      listHost.appendChild(errSlotIdee);
+
+      for (const an of args.existingIdees) {
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.alignItems = 'flex-start';
+        row.style.gap = '8px';
+        row.style.padding = '8px 10px';
+        row.style.marginBottom = '6px';
+        row.style.background = 'rgba(250,246,241,0.98)';
+        row.style.border = `1px solid ${FORM_TEXT_DOM.borderSage}`;
+        row.style.borderRadius = '6px';
+
+        const te = document.createElement('div');
+        const text = an.contenu.length > 400 ? an.contenu.slice(0, 400) + '…' : an.contenu;
+        te.textContent = text;
+        te.style.flex = '1';
+        te.style.fontSize = '12px';
+        te.style.lineHeight = '1.45';
+        te.style.wordBreak = 'break-word';
+        te.style.maxHeight = '70px';
+        te.style.overflow = 'auto';
+        row.appendChild(te);
+
+        if (args.onDeleteIdee) {
+          const del = document.createElement('button');
+          del.type = 'button';
+          del.setAttribute('aria-label', 'Supprimer cette idée');
+          del.textContent = '×';
+          del.style.flexShrink = '0';
+          del.style.width = '30px';
+          del.style.height = '30px';
+          del.style.lineHeight = '1';
+          del.style.fontSize = '20px';
+          del.style.fontWeight = '700';
+          del.style.borderRadius = '5px';
+          del.style.cursor = 'pointer';
+          del.style.border = `1px solid ${FORM_TEXT_DOM.borderGoldStrong}`;
+          del.style.background = 'rgba(200, 120, 120, 0.2)';
+          del.style.color = FORM_TEXT_DOM.ink;
+          const id = an.id;
+          del.onclick = async () => {
+            errSlotIdee.textContent = '';
+            if (!args.onDeleteIdee) return;
+            del.disabled = true;
+            try {
+              await args.onDeleteIdee(id);
+            } catch (e: unknown) {
+              del.disabled = false;
+              errSlotIdee.textContent = 'Suppression impossible : ' + String((e as Error)?.message || e);
+            }
+          };
+          row.appendChild(del);
+        }
+        listHost.appendChild(row);
+      }
+    }
 
     for (const [fi, f] of args.fields.entries()) {
       const label = document.createElement('div');
       label.textContent = f.label;
-      label.style.margin = fi === 0 ? '4px 0 6px' : '10px 0 6px';
+      label.style.margin =
+        fi === 0 && !args.existingAnecdotes?.length && !args.existingIdees?.length && !args.musiqueSlots
+          ? '4px 0 6px'
+          : '10px 0 6px';
       label.style.fontFamily = 'monospace, ui-monospace, monospace';
       label.style.fontSize = '13px';
       label.style.fontWeight = '700';
       label.style.color = FORM_TEXT_DOM.ink;
       label.style.letterSpacing = '0.03em';
-      scrollArea.appendChild(label);
+      fieldHost.appendChild(label);
 
       const el = f.multiline ? document.createElement('textarea') : document.createElement('input');
       (el as any).name = f.name;
@@ -367,10 +782,172 @@ export class FormBox {
         (el as HTMLTextAreaElement).style.resize = 'none';
       }
       styleTextField(el as HTMLInputElement | HTMLTextAreaElement);
-      scrollArea.appendChild(el);
+      fieldHost.appendChild(el);
     }
 
+    let musiqueSlotsHost: HTMLElement | null = null;
+    if (args.musiqueSlots) {
+      const ms = args.musiqueSlots;
+      const maxSlots = Math.min(3, Math.max(1, Math.floor(ms.max)));
+      const itemsChrono = [...ms.items].sort(
+        (a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime(),
+      );
+      const slotRows: Array<(typeof ms.items)[number] | null> = [];
+      for (let i = 0; i < maxSlots; i++) {
+        slotRows.push(itemsChrono[i] ?? null);
+      }
+
+      const musHost = document.createElement('div');
+      musHost.id = 'fp-musique-slots';
+      musHost.style.flexShrink = '0';
+
+      const secHeadM = document.createElement('div');
+      secHeadM.textContent = `Vos airs au programme (${itemsChrono.length} / ${maxSlots})`;
+      secHeadM.style.fontSize = '12px';
+      secHeadM.style.fontWeight = '700';
+      secHeadM.style.margin = '0 0 8px';
+      secHeadM.style.color = FORM_TEXT_DOM.inkMuted;
+      musHost.appendChild(secHeadM);
+
+      const errMus = document.createElement('div');
+      errMus.style.fontSize = '12px';
+      errMus.style.color = '#8b2942';
+      errMus.style.marginBottom = '6px';
+      musHost.appendChild(errMus);
+
+      const statusLabel = (s: string) => {
+        if (s === 'approved') return 'Retenu';
+        if (s === 'rejected') return 'Refusé';
+        return 'En attente';
+      };
+
+      for (let i = 0; i < maxSlots; i++) {
+        const row = slotRows[i];
+        const slot = document.createElement('div');
+        slot.className = 'fp-m-slot ' + (row ? 'fp-m-slot-filled' : 'fp-m-slot-empty');
+
+        if (!row) {
+          const note = document.createElement('div');
+          note.className = 'fp-m-note';
+          note.textContent = '♪';
+          slot.appendChild(note);
+          const free = document.createElement('div');
+          free.className = 'fp-m-free';
+          free.textContent = 'Place libre';
+          slot.appendChild(free);
+        } else {
+          const inner = document.createElement('div');
+          inner.style.padding = '10px 12px';
+          inner.style.display = 'flex';
+          inner.style.alignItems = 'flex-start';
+          inner.style.gap = '10px';
+          const col = document.createElement('div');
+          col.style.flex = '1';
+          col.style.minWidth = '0';
+          const t = document.createElement('div');
+          t.textContent = row.titre?.trim() || 'Sans titre';
+          t.style.fontWeight = '700';
+          t.style.fontSize = '13px';
+          t.style.wordBreak = 'break-word';
+          t.style.lineHeight = '1.35';
+          const a = document.createElement('div');
+          a.textContent = (row.auteur || '').trim();
+          a.style.fontSize = '12px';
+          a.style.color = FORM_TEXT_DOM.inkMuted;
+          a.style.marginTop = '4px';
+          const st = document.createElement('div');
+          st.textContent = statusLabel(String(row.status));
+          st.style.marginTop = '6px';
+          st.style.fontSize = '11px';
+          st.style.fontWeight = '600';
+          st.style.color =
+            row.status === 'approved' ? '#2d6a4f' : row.status === 'rejected' ? '#8b2942' : '#6a5f66';
+          col.appendChild(t);
+          col.appendChild(a);
+          col.appendChild(st);
+          inner.appendChild(col);
+          const canDel = ms.onDelete && (row.status === 'pending' || row.status === 'rejected');
+          if (canDel && ms.onDelete) {
+            const del = document.createElement('button');
+            del.type = 'button';
+            del.setAttribute('aria-label', 'Retirer cette proposition');
+            del.textContent = '×';
+            del.style.flexShrink = '0';
+            del.style.width = '30px';
+            del.style.height = '30px';
+            del.style.lineHeight = '1';
+            del.style.fontSize = '20px';
+            del.style.fontWeight = '700';
+            del.style.borderRadius = '5px';
+            del.style.cursor = 'pointer';
+            del.style.border = `1px solid ${FORM_TEXT_DOM.borderGoldStrong}`;
+            del.style.background = 'rgba(200, 120, 120, 0.2)';
+            del.style.color = FORM_TEXT_DOM.ink;
+            const id = row.id;
+            const onDel = ms.onDelete;
+            del.onclick = async () => {
+              errMus.textContent = '';
+              del.disabled = true;
+              try {
+                await onDel(id);
+              } catch (e: unknown) {
+                del.disabled = false;
+                errMus.textContent = 'Suppression impossible : ' + String((e as Error)?.message || e);
+              }
+            };
+            inner.appendChild(del);
+          }
+          slot.appendChild(inner);
+        }
+        musHost.appendChild(slot);
+      }
+      musiqueSlotsHost = musHost;
+    }
+
+    if (hasListBlock) {
+      scrollArea.appendChild(listHost);
+    }
+    if (musiqueSlotsHost) {
+      const layout = document.createElement('div');
+      layout.id = 'fp-musique-layout';
+      layout.style.display = 'flex';
+      layout.style.gap = '12px';
+      layout.style.alignItems = 'stretch';
+      layout.style.width = '100%';
+      layout.style.minHeight = '0';
+      layout.style.marginTop = hasListBlock ? '12px' : '6px';
+
+      const left = document.createElement('div');
+      left.id = 'fp-musique-left';
+      left.style.flex = '1 1 33%';
+      left.style.minWidth = '0';
+      left.style.minHeight = '0';
+      left.style.maxHeight = 'min(360px, 42vh)';
+      left.style.overflowY = 'auto';
+      left.style.overflowX = 'hidden';
+      left.appendChild(musiqueSlotsHost);
+
+      const right = document.createElement('div');
+      right.id = 'fp-musique-right';
+      right.style.flex = '2 1 67%';
+      right.style.minWidth = '0';
+      right.style.minHeight = '0';
+      right.appendChild(fieldHost);
+
+      layout.appendChild(left);
+      layout.appendChild(right);
+      scrollArea.appendChild(layout);
+    } else {
+      scrollArea.appendChild(fieldHost);
+    }
     wrap.appendChild(scrollArea);
+
+    const submitError = document.createElement('div');
+    submitError.style.fontSize = '12px';
+    submitError.style.color = '#8b2942';
+    submitError.style.minHeight = '16px';
+    submitError.style.flexShrink = '0';
+    submitError.style.flexGrow = '0';
 
     // Même « carte » crème que le titre (fond Phaser) : pas de second encadré HTML.
     const actions = document.createElement('div');
@@ -378,14 +955,18 @@ export class FormBox {
     actions.style.boxSizing = 'border-box';
     actions.style.width = '100%';
     actions.style.flexShrink = '0';
+    actions.style.flexGrow = '0';
     actions.style.display = 'flex';
     actions.style.justifyContent = 'flex-end';
     actions.style.alignItems = 'center';
     actions.style.flexWrap = 'wrap';
     actions.style.gap = '10px';
-    actions.style.marginTop = '4px';
-    actions.style.paddingTop = '12px';
+    actions.style.marginTop = '2px';
+    actions.style.paddingTop = '10px';
     actions.style.borderTop = `1px solid ${FORM_TEXT_DOM.borderGold}`;
+
+    const twoStepFooter = args.onTerminer != null;
+    const closeOnSubmit = args.closeOnSubmit !== false;
 
     const cancel = document.createElement('button');
     cancel.type = 'button';
@@ -393,32 +974,95 @@ export class FormBox {
     styleFormButton(cancel, 'ghost');
     cancel.onclick = () => {
       this.stop();
-      this.refocusGameCanvas();
+      args.onCancel?.();
     };
 
     const submit = document.createElement('button');
     submit.type = 'button';
     submit.textContent = 'Enregistrer';
-    styleFormButton(submit, 'primary');
+    styleFormButton(submit, twoStepFooter ? 'ghost' : 'primary');
     submit.onclick = () => {
       const values: Record<string, string> = {};
       for (const f of args.fields) {
         const node = wrap.querySelector(`[name="${f.name}"]`) as HTMLInputElement | HTMLTextAreaElement | null;
         values[f.name] = (node?.value ?? '').trim();
       }
-      this.stop();
+      const ve = args.validateBeforeSubmit?.(values) ?? null;
+      if (ve) {
+        submitError.textContent = ve;
+        return;
+      }
+      submitError.textContent = '';
+      if (closeOnSubmit) {
+        this.stop();
+      }
       args.onSubmit(values);
     };
 
     actions.appendChild(cancel);
     actions.appendChild(submit);
-    wrap.appendChild(actions);
+
+    if (twoStepFooter) {
+      const terminer = document.createElement('button');
+      terminer.type = 'button';
+      terminer.textContent = 'Terminer';
+      styleFormButton(terminer, 'primary');
+      terminer.onclick = async () => {
+        if (!args.onTerminer) return;
+        const result = await Promise.resolve(args.onTerminer());
+        if (result === false) return;
+        if (typeof result === 'string') {
+          const msg = result.trim();
+          submitError.textContent = msg || 'Action impossible pour le moment.';
+          return;
+        }
+        submitError.textContent = '';
+        this.stop();
+      };
+      actions.appendChild(terminer);
+    }
+
+    const footer = document.createElement('div');
+    footer.id = 'fp-form-text-footer';
+    footer.style.flexShrink = '0';
+    footer.style.flexGrow = '0';
+    footer.style.background = FORM_TEXT_DOM.creamPaper;
+    footer.style.paddingTop = '6px';
+    footer.style.marginTop = 'auto';
+    footer.style.boxShadow = '0 -10px 24px rgba(250,246,241,0.97)';
+    footer.appendChild(submitError);
+    footer.appendChild(actions);
+    wrap.appendChild(footer);
 
     const domX = this.centerX - this.boxW / 2 + padX;
     const domY = this.centerY - this.boxH / 2 + padY;
     this.domElement = this.scene.add.dom(domX, domY, wrap);
     this.domElement.setOrigin(0, 0);
     this.domElement.setDepth(FORM_UI_DEPTH + 20);
+    try {
+      (this.domElement as unknown as { setPointerEnabled?: (v: boolean) => void }).setPointerEnabled?.(true);
+    } catch {
+      // ignore
+    }
+    try {
+      const node = this.domElement.node as HTMLElement | undefined;
+      if (node) {
+        node.style.pointerEvents = 'auto';
+        node.style.touchAction = 'manipulation';
+      }
+    } catch {
+      // ignore
+    }
+
+    try {
+      const canvas = this.scene.game?.canvas as HTMLCanvasElement | undefined;
+      if (canvas && this.canvasPointerEventsRestore === null) {
+        this.canvasPointerEventsRestore = canvas.style.pointerEvents;
+        canvas.style.pointerEvents = 'none';
+      }
+    } catch {
+      // ignore
+    }
 
     // IMPORTANT: pendant la saisie, on désactive le clavier Phaser sinon il capture
     // Z/Q/S/D/Espace (preventDefault) et empêche d'écrire dans les champs.
@@ -474,6 +1118,9 @@ export class FormBox {
     this.releaseSceneHudMaskIfAny();
     this.blurActiveElement();
     this.active = false;
+    this.choiceMenuMode = false;
+    this.choiceMenuActions = [];
+    this.onChoiceMenuTerminer = undefined;
     this.toggles = [];
     this.onSubmitToggles = undefined;
     this.clearToggleLayer();
@@ -740,6 +1387,15 @@ export class FormBox {
     if (this.domElement) {
       this.domElement.destroy();
       this.domElement = null;
+    }
+    try {
+      const canvas = this.scene.game?.canvas as HTMLCanvasElement | undefined;
+      if (canvas && this.canvasPointerEventsRestore !== null) {
+        canvas.style.pointerEvents = this.canvasPointerEventsRestore;
+        this.canvasPointerEventsRestore = null;
+      }
+    } catch {
+      // ignore
     }
   }
 

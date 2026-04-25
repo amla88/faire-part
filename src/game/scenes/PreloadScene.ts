@@ -5,12 +5,24 @@ import {
   ACT2_CUISINIER_TEXTURE_KEY,
   registerAct2KitchenNpcAnims,
 } from '../data/act2-kitchen-npcs';
+import { VICOMTE_DES_MURMURES_TEXTURE_KEY } from '../data/act4-vicomte';
+import { ACT5_BARONNE_TEXTURE_KEY } from '../data/act5-baronne';
+import {
+  ACT4_CHICKEN_EAT_KEY,
+  ACT4_CHICKEN_FRAME,
+  ACT4_CHICKEN_WALK_KEY,
+  ACT4_SHEEP_EAT_KEY,
+  ACT4_SHEEP_FRAME,
+  ACT4_SHEEP_WALK_KEY,
+} from '../data/act4-farm-animals';
+import { ACT6_MAESTRO_TEXTURE_KEY, registerAct6MaestroRoutineAnims } from '../data/act6-ecurie';
 import {
   LPC_DE_LA_PLUME_TEXTURE_KEY,
   LPC_PLAYER_SHEET_LOADS,
   registerLpcPlayerIdleAnimsAll,
   registerLpcPlayerWalkAnimsAll,
   registerLpcUniversalSheetWalkAndIdle,
+  registerLpcUniversalSheetWalkOnly,
 } from '../data/lpc-garcon';
 
 /** Chemins relatifs au dossier `src/assets` servi par Angular sous `/assets/`. */
@@ -34,8 +46,6 @@ export class PreloadScene extends Phaser.Scene {
       frameWidth: 64,
       frameHeight: 64,
     });
-    this.load.image('player-top', `${G}/sprites/player-top.png`);
-    this.load.image('npc-majordome-top', `${G}/sprites/npc-majordome-top.png`);
     this.load.spritesheet(ACT2_CHEF_TEXTURE_KEY, `${G}/sprites/cuisinier_chef.png`, {
       frameWidth: 64,
       frameHeight: 64,
@@ -49,16 +59,50 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image('portrait-de-la-plume', `${G}/portraits/portrait-de-la-plume.png`);
     this.load.image('portrait-cocher', `${G}/portraits/portrait-cocher.png`);
     this.load.image('portrait-chef', `${G}/portraits/portrait-chef.png`);
-    this.load.image('archetype-lady', `${G}/sprites/archetype-lady.png`);
-    this.load.image('archetype-gentleman', `${G}/sprites/archetype-gentleman.png`);
-    this.load.image('archetype-reine', `${G}/sprites/archetype-reine.png`);
-    this.load.image('archetype-duc', `${G}/sprites/archetype-duc.png`);
+    this.load.image('portrait-vicomte', `${G}/portraits/portrait-vicomte.png`);
+    this.load.image('portrait-baronne', `${G}/portraits/portrait-baronne.png`);
     this.load.image('act0-carrosse', `${G}/backgrounds/acte0-carrosse.png`);
     this.load.image('act0-parallax-lointain', `${G}/backgrounds/acte0-parallax-lointain.png`);
     this.load.image('act1-courtyard', `${G}/backgrounds/acte1-courtyard.png`);
     this.load.image('act2-cuisine', `${G}/backgrounds/acte2-cuisine.png`);
     this.load.image('acte3-grange', `${G}/backgrounds/acte3-grange.png`);
     this.load.image('act4-verger', `${G}/backgrounds/acte4-verger.png`);
+    this.load.image('act4-pont-haut', `${G}/sprites/pont-haut.png`);
+    this.load.image('act4-pont-bas', `${G}/sprites/pont-bas.png`);
+    this.load.image('act4-arbre-prunes', `${G}/sprites/arbre-prunes.png`);
+    this.load.image('act4-arbre-pommes', `${G}/sprites/arbre-pommes.png`);
+    this.load.image('act4-banc', `${G}/sprites/banc.png`);
+    this.load.spritesheet(ACT4_SHEEP_WALK_KEY, `${G}/sprites/sheep_walk.png`, {
+      frameWidth: ACT4_SHEEP_FRAME.w,
+      frameHeight: ACT4_SHEEP_FRAME.h,
+    });
+    this.load.spritesheet(ACT4_SHEEP_EAT_KEY, `${G}/sprites/sheep_eat.png`, {
+      frameWidth: ACT4_SHEEP_FRAME.w,
+      frameHeight: ACT4_SHEEP_FRAME.h,
+    });
+    this.load.spritesheet(ACT4_CHICKEN_WALK_KEY, `${G}/sprites/chicken_walk.png`, {
+      frameWidth: ACT4_CHICKEN_FRAME.w,
+      frameHeight: ACT4_CHICKEN_FRAME.h,
+    });
+    this.load.spritesheet(ACT4_CHICKEN_EAT_KEY, `${G}/sprites/chicken_eat.png`, {
+      frameWidth: ACT4_CHICKEN_FRAME.w,
+      frameHeight: ACT4_CHICKEN_FRAME.h,
+    });
+    this.load.spritesheet(VICOMTE_DES_MURMURES_TEXTURE_KEY, `${G}/sprites/Vicomte-des-Murmures.png`, {
+      frameWidth: 64,
+      frameHeight: 64,
+    });
+    this.load.image('act5-gloriette', `${G}/backgrounds/acte5-gloriette.png`);
+    this.load.image('act6-ecurie', `${G}/backgrounds/acte6-ecurie.png`);
+    this.load.image('act7-gazette', `${G}/backgrounds/acte7-gazette.png`);
+    this.load.spritesheet(ACT6_MAESTRO_TEXTURE_KEY, `${G}/sprites/chef-orchestre.png`, {
+      frameWidth: 64,
+      frameHeight: 64,
+    });
+    this.load.spritesheet(ACT5_BARONNE_TEXTURE_KEY, `${G}/sprites/baronne-inspiration.png`, {
+      frameWidth: 64,
+      frameHeight: 64,
+    });
     this.load.image('hub-domain-map', `${G}/backgrounds/map.png`);
     this.load.spritesheet(MODISTE_TEXTURE_KEY, `${G}/sprites/modiste.png`, {
       frameWidth: 64,
@@ -77,6 +121,10 @@ export class PreloadScene extends Phaser.Scene {
     registerLpcPlayerWalkAnimsAll(this);
     registerLpcPlayerIdleAnimsAll(this);
     registerLpcUniversalSheetWalkAndIdle(this, LPC_DE_LA_PLUME_TEXTURE_KEY);
+    registerLpcUniversalSheetWalkAndIdle(this, VICOMTE_DES_MURMURES_TEXTURE_KEY);
+    registerLpcUniversalSheetWalkAndIdle(this, ACT5_BARONNE_TEXTURE_KEY);
+    registerLpcUniversalSheetWalkOnly(this, ACT6_MAESTRO_TEXTURE_KEY);
+    registerAct6MaestroRoutineAnims(this, ACT6_MAESTRO_TEXTURE_KEY);
     registerAct2KitchenNpcAnims(this);
     registerModisteAnims(this);
     this.scene.start('BootScene');

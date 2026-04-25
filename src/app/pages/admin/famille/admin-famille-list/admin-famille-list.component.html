@@ -17,6 +17,10 @@
         <mat-icon>save_alt</mat-icon>
         Export
       </a>
+      <button mat-flat-button color="accent" (click)="exportAdressesPdf()" [disabled]="loading()">
+        <mat-icon>picture_as_pdf</mat-icon>
+        Export adresses
+      </button>
     </div>
     <div class="f-s-13 text-muted m-t-8">
   Résultats : {{ filteredFamilles().length }} familles ({{ totalPersonnes() }} personnes)

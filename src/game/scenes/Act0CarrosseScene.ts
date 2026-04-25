@@ -4,6 +4,8 @@ import { DialogueBox } from '../ui/DialogueBox';
 import { gameState, PlayerArchetype } from '../core/game-state';
 import { quests, QuestFlags } from '../systems/QuestSystem';
 import { SceneInput } from '../systems/SceneInput';
+import { isHubFreeRoamUnlocked } from '../core/act-routing';
+import { registerRequestDomainMapListener } from '../core/open-domain-map';
 import { getDialogue } from '../data/dialogues.catalog';
 import { gameBackend } from '../services/GameBackendBridge';
 import {
@@ -57,6 +59,7 @@ export class Act0CarrosseScene extends Phaser.Scene {
   }
 
   create(): void {
+    gameState.setAct('act0');
     // La même instance de Scene peut être réutilisée par Phaser : on reset l'état.
     this.selectionLocked = false;
     this.currentIndex = 0;
@@ -148,6 +151,10 @@ export class Act0CarrosseScene extends Phaser.Scene {
     this.dialogueBox = new DialogueBox(this);
     this.inputState = new SceneInput(this);
 
+    registerRequestDomainMapListener(this, () => {
+      this.dialogueBox.forceAbort();
+    });
+
     this.updateHighlight();
   }
 
@@ -219,8 +226,13 @@ export class Act0CarrosseScene extends Phaser.Scene {
         void gameBackend.upsertGameProgressForSelected(gameState.snapshot.flags);
       } catch {}
       this.time.delayedCall(50, () => {
-        gameState.setAct('act1');
-        this.scene.start('Act1CourScene');
+        if (isHubFreeRoamUnlocked()) {
+          gameState.setAct('hub');
+          this.scene.start('HubOpenWorldScene');
+        } else {
+          gameState.setAct('act1');
+          this.scene.start('Act1CourScene');
+        }
       });
     });
   }

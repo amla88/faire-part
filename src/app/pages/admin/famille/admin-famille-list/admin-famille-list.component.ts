@@ -16,6 +16,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { Router, RouterModule } from '@angular/router';
 import { AvatarMacaronComponent } from 'src/app/shared/avatar-macaron/avatar-macaron.component';
+import { jsPDF } from 'jspdf';
 
 @Component({
   selector: 'app-admin-famille-list',
@@ -97,10 +98,18 @@ export class AdminFamilleListComponent implements OnInit {
     return raw.toLocaleLowerCase('fr');
   }
 
+  private sortKeyPrenomPrincipale(famille: any): string {
+    const p = this.getPersonnePrincipale(famille);
+    const raw = (p?.prenom || '').trim();
+    return raw.toLocaleLowerCase('fr');
+  }
+
   private sortFamillesByPrincipalNom(rows: any[]): any[] {
     return [...rows].sort((a, b) => {
       const cmp = this.sortKeyNomPrincipale(a).localeCompare(this.sortKeyNomPrincipale(b), 'fr', { sensitivity: 'base' });
       if (cmp !== 0) return cmp;
+      const cmpPrenom = this.sortKeyPrenomPrincipale(a).localeCompare(this.sortKeyPrenomPrincipale(b), 'fr', { sensitivity: 'base' });
+      if (cmpPrenom !== 0) return cmpPrenom;
       return Number(a.id) - Number(b.id);
     });
   }
@@ -246,6 +255,183 @@ export class AdminFamilleListComponent implements OnInit {
       this.familles.update((current) =>
         current.map((f) => (f.id === familleId ? { ...f, invitation_envoyee: previous } : f))
       );
+    }
+  }
+
+  private formatAdresseFamille(famille: any): string {
+    if (!famille) return '';
+    const rue = String(famille.rue ?? '').trim();
+    const numero = String(famille.numero ?? '').trim();
+    const boite = String(famille.boite ?? '').trim();
+    const cp = String(famille.cp ?? '').trim();
+    const ville = String(famille.ville ?? '').trim();
+    const pays = String(famille.pays ?? '').trim();
+
+    const line1Parts = [rue, numero].filter(Boolean);
+    const line1 = line1Parts.join(' ').trim();
+    const line1WithBoite = [line1, boite ? `boîte ${boite}` : ''].filter(Boolean).join(', ').trim();
+
+    const line2 = [cp, ville].filter(Boolean).join(' ').trim();
+    const lines = [line1WithBoite, line2, pays].filter((x) => x && x.length > 0);
+    return lines.join('\n');
+  }
+
+  private formatMembresFamille(famille: any): string {
+    const personnes = Array.isArray(famille?.personnes) ? famille.personnes : [];
+    return personnes
+      .map((p: any) => `${String(p?.prenom ?? '').trim()} ${String(p?.nom ?? '').trim()}`.trim())
+      .filter((x: string) => x.length > 0)
+      .join('\n');
+  }
+
+  exportAdressesPdf(): void {
+    try {
+      const familles = this.sortFamillesByPrincipalNom(this.filteredFamilles());
+      const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const marginX = 12;
+      const marginY = 14;
+      const bottomSafe = 14;
+
+      const tableX = marginX;
+      const tableW = pageW - marginX * 2;
+
+      // Column widths (mm)
+      const colSent = 10; // checkbox
+      const colFamille = 38;
+      const colMembres = 60;
+      const colAdresse = tableW - (colSent + colFamille + colMembres);
+
+      const headerH = 9;
+      const cellPadX = 2;
+      const cellPadY = 2.2;
+      const lineH = 4.4;
+
+      const drawHeader = (y: number): number => {
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(11);
+        pdf.text('Export adresses', tableX, y);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(9);
+        pdf.text(new Date().toLocaleDateString('fr-FR'), pageW - marginX, y, { align: 'right' });
+        y += 6;
+
+        pdf.setDrawColor(40);
+        pdf.setLineWidth(0.2);
+        pdf.setFillColor(245, 245, 245);
+        pdf.rect(tableX, y, tableW, headerH, 'FD');
+
+        pdf.setTextColor(0);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9.5);
+
+        const yText = y + 6.2;
+        let x = tableX;
+        pdf.text('Env.', x + 2, yText);
+        x += colSent;
+        pdf.text('Famille', x + cellPadX, yText);
+        x += colFamille;
+        pdf.text('Membres', x + cellPadX, yText);
+        x += colMembres;
+        pdf.text('Adresse', x + cellPadX, yText);
+
+        return y + headerH;
+      };
+
+      const drawRow = (y: number, f: any): number => {
+        const familleLabel = this.getFamilyDisplayName(f);
+        const membres = this.formatMembresFamille(f);
+        const adresse = this.formatAdresseFamille(f);
+        const sent = !!f?.invitation_envoyee;
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(9.2);
+        pdf.setTextColor(0);
+
+        const familleLines = pdf.splitTextToSize(familleLabel || '', colFamille - 2 * cellPadX) as string[];
+        const membresLines = pdf.splitTextToSize(membres || '', colMembres - 2 * cellPadX) as string[];
+        const adresseLines = pdf.splitTextToSize(adresse || '', colAdresse - 2 * cellPadX) as string[];
+
+        const linesCount = Math.max(1, familleLines.length, membresLines.length, adresseLines.length);
+        const rowH = cellPadY * 2 + linesCount * lineH;
+
+        // row background + borders
+        pdf.setDrawColor(120);
+        pdf.setLineWidth(0.1);
+        pdf.rect(tableX, y, tableW, rowH, 'S');
+
+        // vertical separators
+        let x = tableX + colSent;
+        pdf.line(x, y, x, y + rowH);
+        x += colFamille;
+        pdf.line(x, y, x, y + rowH);
+        x += colMembres;
+        pdf.line(x, y, x, y + rowH);
+
+        // checkbox
+        const cbSize = 4.2;
+        const cbX = tableX + (colSent - cbSize) / 2;
+        const cbY = y + (rowH - cbSize) / 2;
+        pdf.rect(cbX, cbY, cbSize, cbSize, 'S');
+        if (sent) {
+          pdf.setLineWidth(0.4);
+          pdf.line(cbX + 0.8, cbY + 0.8, cbX + cbSize - 0.8, cbY + cbSize - 0.8);
+          pdf.line(cbX + cbSize - 0.8, cbY + 0.8, cbX + 0.8, cbY + cbSize - 0.8);
+          pdf.setLineWidth(0.1);
+        }
+
+        // text cells
+        const baseY = y + cellPadY + 3.2; // baseline tweak
+        // famille
+        let tx = tableX + colSent + cellPadX;
+        for (let i = 0; i < familleLines.length; i++) {
+          pdf.text(familleLines[i], tx, baseY + i * lineH);
+        }
+        // membres
+        tx += colFamille;
+        for (let i = 0; i < membresLines.length; i++) {
+          pdf.text(membresLines[i], tx, baseY + i * lineH);
+        }
+        // adresse
+        tx += colMembres;
+        for (let i = 0; i < adresseLines.length; i++) {
+          pdf.text(adresseLines[i], tx, baseY + i * lineH);
+        }
+
+        return y + rowH;
+      };
+
+      let y = marginY;
+      y = drawHeader(y);
+
+      for (const f of familles) {
+        const neededSpaceEstimate = 14; // minimum row size + breathing room
+        if (y + neededSpaceEstimate > pageH - bottomSafe) {
+          pdf.addPage('a4', 'portrait');
+          y = marginY;
+          y = drawHeader(y);
+        }
+        const yAfter = drawRow(y, f);
+        if (yAfter > pageH - bottomSafe) {
+          // If it overflowed due to long wrapped cells, re-render row on next page.
+          pdf.addPage('a4', 'portrait');
+          y = marginY;
+          y = drawHeader(y);
+          y = drawRow(y, f);
+        } else {
+          y = yAfter;
+        }
+      }
+
+      const stamp = new Date();
+      const pad2 = (n: number) => String(n).padStart(2, '0');
+      const fileName = `export-adresses-${stamp.getFullYear()}${pad2(stamp.getMonth() + 1)}${pad2(stamp.getDate())}.pdf`;
+      pdf.save(fileName);
+    } catch (err) {
+      console.error('Erreur export adresses PDF', err);
+      this.snackBar.open("Erreur lors de la génération du PDF d'adresses.", 'Fermer', { duration: 5000 });
     }
   }
 }

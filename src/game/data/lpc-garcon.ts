@@ -169,6 +169,11 @@ export function registerLpcUniversalSheetWalkAndIdle(scene: Phaser.Scene, textur
   registerIdleAnimsForTexture(scene, textureKey);
 }
 
+/** Marche seule (feuilles courtes sans les lignes idle 22–25 du format complet). */
+export function registerLpcUniversalSheetWalkOnly(scene: Phaser.Scene, textureKey: string): void {
+  registerWalkAnimsForTexture(scene, textureKey);
+}
+
 /** @deprecated Utiliser `registerLpcPlayerWalkAnimsAll`. */
 export function registerLpcGarconWalkAnims(scene: Phaser.Scene): void {
   registerLpcPlayerWalkAnimsAll(scene);

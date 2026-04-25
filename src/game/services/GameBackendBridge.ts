@@ -3,6 +3,37 @@ import { gameState, isPlayerArchetype, REMOTE_PROGRESS_PLAYER_KEY } from '../cor
 
 type RpcResult<T> = { data: T | null; error: any };
 
+export interface GamePersonneAnecdote {
+  id: number;
+  contenu: string;
+  created_at: string;
+}
+
+export interface GamePersonneIdee {
+  id: number;
+  contenu: string;
+  created_at: string;
+}
+
+export interface GamePersonneMusique {
+  id: number;
+  created_at: string;
+  titre: string;
+  auteur: string;
+  lien: string;
+  commentaire: string;
+  status: 'pending' | 'approved' | 'rejected' | string;
+}
+
+/** Photo album (même forme que `src/app/services/photo.service` — liste PHP). */
+export interface GameFamilyPhoto {
+  key: string;
+  name: string;
+  url: string;
+  size: number;
+  lastModified: string | null;
+}
+
 export class GameBackendBridge {
   private client: SupabaseClient | null = null;
 
@@ -126,6 +157,62 @@ export class GameBackendBridge {
     return res.data != null ? Number(res.data) : null;
   }
 
+  async listAnecdotesForSelected(): Promise<GamePersonneAnecdote[]> {
+    const token = this.getToken();
+    if (!token) return [];
+    const personneId = this.getSelectedPersonneId();
+    if (!personneId) return [];
+    const res = await this.rpc<GamePersonneAnecdote[]>('list_anecdotes_for_token', {
+      p_token: token,
+      p_personne_id: personneId,
+    });
+    if (res.error) return [];
+    const rows = (res.data || []) as GamePersonneAnecdote[];
+    return rows.map((r) => ({
+      id: Number(r.id),
+      contenu: String(r.contenu ?? ''),
+      created_at: String(r.created_at ?? ''),
+    }));
+  }
+
+  async deleteAnecdoteForSelected(anecdoteId: number): Promise<void> {
+    const token = this.getToken();
+    if (!token) throw new Error("Jeton d'invitation introuvable.");
+    const res = await this.rpc<boolean>('delete_anecdote_for_token', {
+      p_token: token,
+      p_anecdote_id: anecdoteId,
+    });
+    if (res.error) throw res.error;
+  }
+
+  async listIdeesForSelected(): Promise<GamePersonneIdee[]> {
+    const token = this.getToken();
+    if (!token) return [];
+    const personneId = this.getSelectedPersonneId();
+    if (!personneId) return [];
+    const res = await this.rpc<GamePersonneIdee[]>('list_idees_for_token', {
+      p_token: token,
+      p_personne_id: personneId,
+    });
+    if (res.error) return [];
+    const rows = (res.data || []) as GamePersonneIdee[];
+    return rows.map((r) => ({
+      id: Number(r.id),
+      contenu: String(r.contenu ?? ''),
+      created_at: String(r.created_at ?? ''),
+    }));
+  }
+
+  async deleteIdeeForSelected(ideeId: number): Promise<void> {
+    const token = this.getToken();
+    if (!token) throw new Error("Jeton d'invitation introuvable.");
+    const res = await this.rpc<boolean>('delete_idee_for_token', {
+      p_token: token,
+      p_idee_id: ideeId,
+    });
+    if (res.error) throw res.error;
+  }
+
   async insertIdeeForSelected(contenu: string): Promise<number | null> {
     const token = this.getToken();
     if (!token) throw new Error("Jeton d'invitation introuvable.");
@@ -170,6 +257,38 @@ export class GameBackendBridge {
     return res.data != null ? Number(res.data) : null;
   }
 
+  async listMusiquesForSelected(): Promise<GamePersonneMusique[]> {
+    const token = this.getToken();
+    if (!token) return [];
+    const personneId = this.getSelectedPersonneId();
+    if (!personneId) return [];
+    const res = await this.rpc<Record<string, unknown>[]>('list_musiques_for_token', {
+      p_token: token,
+      p_personne_id: personneId,
+    });
+    if (res.error) return [];
+    const rows = (res.data || []) as Record<string, unknown>[];
+    return rows.map((r) => ({
+      id: Number(r['id']),
+      created_at: String(r['created_at'] ?? ''),
+      titre: String(r['titre'] ?? ''),
+      auteur: String(r['auteur'] ?? ''),
+      lien: String(r['lien'] ?? ''),
+      commentaire: String(r['commentaire'] ?? ''),
+      status: String(r['status'] ?? 'pending'),
+    }));
+  }
+
+  async deleteMusiqueForSelected(musiqueId: number): Promise<void> {
+    const token = this.getToken();
+    if (!token) throw new Error("Jeton d'invitation introuvable.");
+    const res = await this.rpc<boolean>('delete_musique_for_token', {
+      p_token: token,
+      p_musique_id: musiqueId,
+    });
+    if (res.error) throw res.error;
+  }
+
   async uploadPhotoForSelected(file: File): Promise<{ path?: string; publicUrl?: string } | null> {
     if (!file) throw new Error('Aucun fichier fourni');
     const token = this.getToken();
@@ -200,6 +319,135 @@ export class GameBackendBridge {
       throw new Error(msg);
     }
     return data as any;
+  }
+
+  private normalizeFamilyPhotoRow(row: Record<string, unknown>): GameFamilyPhoto | null {
+    if (!row) return null;
+    const key =
+      typeof row['key'] === 'string' ? (row['key'] as string) : typeof row['path'] === 'string' ? (row['path'] as string) : null;
+    if (!key) return null;
+    const nameCandidate =
+      typeof row['name'] === 'string' && (row['name'] as string)
+        ? (row['name'] as string)
+        : key.split('/').pop() || key;
+    const size = typeof row['size'] === 'number' ? row['size'] : Number(row['size'] || 0) || 0;
+    const lastModified =
+      typeof row['lastModified'] === 'string' && (row['lastModified'] as string)
+        ? (row['lastModified'] as string)
+        : typeof row['last_modified'] === 'string'
+          ? (row['last_modified'] as string)
+          : null;
+    const url = typeof row['url'] === 'string' && (row['url'] as string) ? (row['url'] as string) : null;
+    if (!url) return null;
+    return { key, name: nameCandidate, url, size, lastModified };
+  }
+
+  private sortFamilyPhotosByDateDesc(items: GameFamilyPhoto[]): GameFamilyPhoto[] {
+    return [...items].sort((a, b) => {
+      const timeA = a.lastModified ? new Date(a.lastModified).getTime() : 0;
+      const timeB = b.lastModified ? new Date(b.lastModified).getTime() : 0;
+      return timeB - timeA;
+    });
+  }
+
+  private static sleepGame(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * En dev, le proxy vers l’hébergeur peut time-out; le PHP peut retourner 5xx. On retente sans boucler sur les 4xx.
+   */
+  async listFamilyPhotosForSelected(): Promise<GameFamilyPhoto[]> {
+    const user = this.getUser();
+    const token = this.getToken();
+    if (!user?.famille_id) throw new Error('Utilisateur non authentifié (album).');
+    if (!token) throw new Error("Jeton d'invitation introuvable.");
+    const personneId = this.getSelectedPersonneId();
+    if (!personneId) throw new Error('Personne sélectionnée introuvable.');
+
+    const endpoint = this.resolveApiUrl('/api/photos-list.php');
+    const body = JSON.stringify({ personneId });
+
+    let lastError = 'Impossible de récupérer les photos';
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt > 0) {
+        await GameBackendBridge.sleepGame(300 * attempt);
+      }
+      let res: Response;
+      try {
+        res = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'x-app-token': token,
+            'content-type': 'application/json',
+          },
+          body,
+          cache: 'no-store',
+        });
+      } catch (netErr) {
+        lastError = (netErr as Error)?.message || "Problème réseau (time-out) vers l'album";
+        if (attempt < 2) continue;
+        throw new Error(lastError);
+      }
+
+      let payload: { items?: unknown; error?: string } | null = null;
+      try {
+        payload = (await res.json()) as { items?: unknown; error?: string };
+      } catch {
+        payload = null;
+      }
+
+      if (res.status >= 500 && res.status <= 599) {
+        lastError = payload?.error || `Album indisponible (HTTP ${res.status})`;
+        if (attempt < 2) continue;
+        throw new Error(lastError);
+      }
+      if (res.status === 429) {
+        lastError = 'Trop de requêtes, réessayez dans un instant.';
+        if (attempt < 2) continue;
+        throw new Error(lastError);
+      }
+      if (!res.ok) {
+        throw new Error(payload?.error || 'Impossible de récupérer les photos');
+      }
+      const items = Array.isArray(payload?.items) ? payload?.items : [];
+      const mapped = (items as Record<string, unknown>[])
+        .map((item) => this.normalizeFamilyPhotoRow(item))
+        .filter((p): p is GameFamilyPhoto => p != null);
+      return this.sortFamilyPhotosByDateDesc(mapped);
+    }
+    throw new Error(lastError);
+  }
+
+  async deleteFamilyPhotoForSelected(key: string): Promise<void> {
+    const user = this.getUser();
+    const token = this.getToken();
+    if (!user?.famille_id) throw new Error('Utilisateur non authentifié.');
+    if (!token) throw new Error("Jeton d'invitation introuvable.");
+    if (!key) throw new Error('Clé photo manquante');
+    const personneId = this.getSelectedPersonneId();
+    if (!personneId) throw new Error('Personne sélectionnée introuvable.');
+
+    const endpoint = this.resolveApiUrl('/api/photos-delete.php');
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'x-app-token': token,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ key, personneId }),
+      cache: 'no-store',
+    });
+
+    let payload: { error?: string } | null = null;
+    try {
+      payload = (await res.json()) as { error?: string };
+    } catch {
+      payload = null;
+    }
+    if (!res.ok) {
+      throw new Error(payload?.error || `Suppression impossible (HTTP ${res.status})`);
+    }
   }
 
   async getAvatarForSelected(): Promise<{ seed?: string; options?: any } | null> {

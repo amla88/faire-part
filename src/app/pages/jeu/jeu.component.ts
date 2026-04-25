@@ -19,6 +19,7 @@ import {
   resetGameModalTouchOverlayBlockDepth,
 } from 'src/game/core/modal-touch-overlay-bridge';
 import { gameState, isPlayerArchetype, REMOTE_PROGRESS_PLAYER_KEY, type ActId } from 'src/game/core/game-state';
+import { dispatchRequestDomainMap, startSceneFromGame } from 'src/game/core/open-domain-map';
 import { gameBackend } from 'src/game/services/GameBackendBridge';
 
 @Component({
@@ -39,7 +40,6 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
   readonly fullscreenAvailable = signal(
     typeof document !== 'undefined' && !!document.fullscreenEnabled
   );
-  readonly showMap = signal(false);
   readonly mapUnlocked = signal(false);
   readonly progressFlags = signal<Record<string, boolean>>({});
   /** Masque les contrôles tactiles Angular pendant dialogue / formulaire Phaser. */
@@ -56,9 +56,7 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
   readonly hasSave = signal(false);
   private userInteracted = false;
   private mapEventHandler = () => {
-    this.refreshProgress();
-    this.mapUnlocked.set(true);
-    this.showMap.set(true);
+    this.goToDomainMap();
   };
 
   private touchOverlayBlockHandler = () => {
@@ -156,7 +154,7 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
   private syncProgressSignalsFromGameState(): void {
     const flags = (gameState.snapshot.flags || {}) as Record<string, boolean>;
     this.progressFlags.set({ ...flags });
-    this.mapUnlocked.set(flags['hub.map_unlocked'] === true);
+    this.mapUnlocked.set(this.isDomainMapUnlocked());
     this.hasSave.set(gameState.hasSave());
     this.currentAct.set(gameState.snapshot.act);
   }
@@ -186,8 +184,9 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
   resumeGame(): void {
     this.showIntro.set(false);
     try {
-      // relancer le boot pour reprendre à l'acte sauvegardé
-      this.game?.scene.start('BootScene');
+      if (this.game) {
+        startSceneFromGame(this.game, 'BootScene');
+      }
     } catch {}
     requestAnimationFrame(() => this.refreshPhaserScale());
   }
@@ -200,7 +199,6 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
     } catch {}
     this.hasSave.set(false);
     this.showIntro.set(false);
-    this.showMap.set(false);
     this.mapUnlocked.set(false);
     resetVirtualInputState();
     try {
@@ -218,7 +216,7 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
       }
 
       // Redémarrer depuis l'acte 0
-      game.scene.start('Act0CarrosseScene');
+      startSceneFromGame(game, 'Act0CarrosseScene');
     } catch {}
     requestAnimationFrame(() => this.refreshPhaserScale());
   }
@@ -230,65 +228,60 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  toggleMap(): void {
-    this.refreshProgress();
-    if (this.currentAct() === 'hub') {
-      // Sur la carte du domaine, l'UI Angular est masquée : le bouton renvoie vers Phaser.
-      this.showMap.set(false);
-      resetVirtualInputState();
+  /**
+   * Carte du domaine : ferme modales / dialogues Phaser puis `HubOpenWorldScene`.
+   * (Pas de `gameState.load()` ici : évite un désalignement `currentAct` Angular / Phaser.)
+   */
+  goToDomainMap(): void {
+    if (!this.isDomainMapUnlocked()) return;
+
+    dispatchRequestDomainMap();
+    resetGameModalTouchOverlayBlockDepth();
+    this.gameModalBlocksTouchOverlay.set(false);
+    resetVirtualInputState();
+
+    if (!this.game) {
       try {
-        this.game?.scene.start('HubOpenWorldScene');
-      } catch {}
-      requestAnimationFrame(() => this.refreshPhaserScale());
-      return;
+        this.game = createGame(this.gameHost.nativeElement);
+        this.attachHostResizeObserver();
+        requestAnimationFrame(() => this.refreshPhaserScale());
+      } catch (e) {
+        console.error('goToDomainMap: createGame', e);
+        return;
+      }
     }
-    this.showMap.set(!this.showMap());
-    if (!this.showMap()) resetVirtualInputState();
+    const g = this.game;
+    try {
+      startSceneFromGame(g, 'HubOpenWorldScene');
+    } catch (e) {
+      console.error('goToDomainMap: startSceneFromGame', e);
+    }
+    requestAnimationFrame(() => this.refreshPhaserScale());
+  }
+
+  /**
+   * Bouton Carte : visible uniquement quand les actes 0 à 3 (choix, registre, allergènes, avatar) sont validés.
+   */
+  isDomainMapUnlocked(): boolean {
+    return (
+      this.isDone('act0.chosen') &&
+      this.isDone('act1.register_done') &&
+      this.isDone('act2.allergens_done') &&
+      this.isDone('act3.avatar_done')
+    );
   }
 
   goTo(sceneKey: string): void {
     try {
-      this.game?.scene.start(sceneKey);
+      if (this.game) {
+        startSceneFromGame(this.game, sceneKey);
+      }
     } catch {}
-    // Fermer la carte après déplacement (UX).
-    this.showMap.set(false);
     resetVirtualInputState();
   }
 
   isDone(flagKey: string): boolean {
     return this.progressFlags()?.[flagKey] === true;
-  }
-
-  mapHubUnlocked(): boolean {
-    return this.isDone('hub.map_unlocked');
-  }
-
-  mapAct1Locked(): boolean {
-    return !this.isDone('act0.intro_seen');
-  }
-
-  mapAct2Locked(): boolean {
-    return !this.isDone('act1.register_done');
-  }
-
-  mapAct3Locked(): boolean {
-    return !this.isDone('act2.allergens_done');
-  }
-
-  mapAct4Locked(): boolean {
-    return !this.isDone('act3.avatar_done');
-  }
-
-  mapAct5Locked(): boolean {
-    return !this.isDone('act3.avatar_done');
-  }
-
-  mapAct6Locked(): boolean {
-    return !this.isDone('act3.avatar_done');
-  }
-
-  mapAct7Locked(): boolean {
-    return !this.allStepsDone();
   }
 
   /** Règles détaillées : docs/Scénario.md (section « Progression technique »). */

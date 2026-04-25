@@ -6,6 +6,7 @@ import { SceneInput } from '../systems/SceneInput';
 import { quests, QuestFlags } from '../systems/QuestSystem';
 import { gameBackend } from '../services/GameBackendBridge';
 import { gameState } from '../core/game-state';
+import { registerRequestDomainMapListener } from '../core/open-domain-map';
 import { getDialogue } from '../data/dialogues.catalog';
 import {
   ACT2_CHEF_TEXTURE_KEY,
@@ -158,6 +159,7 @@ export class Act2OfficeScene extends Phaser.Scene {
   }
 
   create(): void {
+    gameState.setAct('act2');
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor(GAME_BACKGROUND_COLOR);
 
@@ -232,6 +234,11 @@ export class Act2OfficeScene extends Phaser.Scene {
     this.wandererPauseUntil = this.time.now + 400;
 
     this.refreshDepths();
+
+    registerRequestDomainMapListener(this, () => {
+      this.dialogueBox.forceAbort();
+      this.formBox.stop();
+    });
   }
 
   private spawnTables(width: number, height: number): void {
@@ -434,11 +441,12 @@ export class Act2OfficeScene extends Phaser.Scene {
     this.updateStaticCooks();
     this.refreshDepths();
 
-    if (!quests.isDone(QuestFlags.act2AllergensDone)) {
-      const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.chef.x, this.chef.y);
-      const closeEnough = dist < 82;
-
-      if (closeEnough && act && !this.chefSpoken) {
+    const distChef = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.chef.x, this.chef.y);
+    const closeToChef = distChef < 82;
+    if (closeToChef && act) {
+      if (quests.isDone(QuestFlags.act2AllergensDone)) {
+        this.openHealthForm();
+      } else if (!this.chefSpoken) {
         this.chefSpoken = true;
         this.dialogueBox.start(
           getDialogue('act2.chefIntro'),
@@ -447,7 +455,7 @@ export class Act2OfficeScene extends Phaser.Scene {
           },
           { hideSceneHud: this.act2HudForOverlay() },
         );
-      } else if (closeEnough && act && this.chefSpoken) {
+      } else {
         this.openHealthForm();
       }
     }
@@ -649,9 +657,55 @@ export class Act2OfficeScene extends Phaser.Scene {
     }
   }
 
+  private onAct2HealthFormSaveSuccess(wasFirstCompletion: boolean): void {
+    try {
+      void gameBackend.upsertGameProgressForSelected(gameState.snapshot.flags);
+    } catch {}
+    if (wasFirstCompletion) {
+      quests.done(QuestFlags.act2AllergensDone);
+      this.info.setText('Acte 2 validé. Passage à l’Acte 3…');
+      this.time.delayedCall(600, () => {
+        if (quests.isDone(QuestFlags.hubMapUnlocked)) {
+          gameState.setAct('hub');
+          this.scene.start('HubOpenWorldScene');
+          return;
+        }
+        gameState.setAct('act3');
+        this.scene.start('Act3GrangeScene');
+      });
+    } else {
+      this.info.setText('Enregistrement mis à jour. Retour au domaine…');
+      this.time.delayedCall(800, () => {
+        gameState.setAct('hub');
+        this.scene.start('HubOpenWorldScene');
+      });
+    }
+  }
+
   private openHealthForm(): void {
-    if (this.formBox.active || quests.isDone(QuestFlags.act2AllergensDone)) return;
+    if (this.formBox.active) return;
     this.info.setText('Chargement du registre…');
+    const submit = (values: Record<string, string | undefined>) => {
+      if (this.saving) return;
+      const isFirst = !quests.isDone(QuestFlags.act2AllergensDone);
+      this.saving = true;
+      this.info.setText('Sauvegarde en cours…');
+      gameBackend
+        .recordRsvpForSelected({
+          allergenes_alimentaires: values['allergenes_alimentaires'] || '',
+          regimes_remarques: values['regimes_remarques'] || '',
+        })
+        .then(() => {
+          this.onAct2HealthFormSaveSuccess(isFirst);
+        })
+        .catch((e) => {
+          this.info.setText('Erreur: ' + String(e?.message || e));
+        })
+        .finally(() => {
+          this.saving = false;
+        });
+    };
+
     gameBackend
       .getSelectedPersonneRow()
       .then((row) => {
@@ -659,6 +713,7 @@ export class Act2OfficeScene extends Phaser.Scene {
           allergenes_alimentaires: String(row?.allergenes_alimentaires ?? ''),
           regimes_remarques: String(row?.regimes_remarques ?? ''),
         };
+        this.info.setText('');
         this.formBox.startTextFields({
           hideSceneHud: this.act2HudForOverlay(),
           title: 'Registre des saveurs',
@@ -668,41 +723,11 @@ export class Act2OfficeScene extends Phaser.Scene {
             { name: 'regimes_remarques', label: 'Remarques / régimes (optionnel)', placeholder: 'Végétarien, sans lactose…', multiline: true, maxLength: 2000 },
           ],
           defaults,
-          onSubmit: (values) => {
-            if (this.saving) return;
-            this.saving = true;
-            this.info.setText('Sauvegarde en cours…');
-            gameBackend
-              .recordRsvpForSelected({
-                allergenes_alimentaires: values['allergenes_alimentaires'] || '',
-                regimes_remarques: values['regimes_remarques'] || '',
-              })
-              .then(() => {
-                quests.done(QuestFlags.act2AllergensDone);
-                try {
-                  void gameBackend.upsertGameProgressForSelected(gameState.snapshot.flags);
-                } catch {}
-                this.info.setText('Acte 2 validé. Passage à l’Acte 3…');
-                this.time.delayedCall(600, () => {
-                  if (quests.isDone(QuestFlags.hubMapUnlocked)) {
-                    gameState.setAct('hub');
-                    this.scene.start('HubOpenWorldScene');
-                    return;
-                  }
-                  gameState.setAct('act3');
-                  this.scene.start('Act3GrangeScene');
-                });
-              })
-              .catch((e) => {
-                this.info.setText('Erreur: ' + String(e?.message || e));
-              })
-              .finally(() => {
-                this.saving = false;
-              });
-          },
+          onSubmit: submit,
         });
       })
       .catch(() => {
+        this.info.setText('');
         this.formBox.startTextFields({
           hideSceneHud: this.act2HudForOverlay(),
           title: 'Registre des saveurs',
@@ -711,38 +736,7 @@ export class Act2OfficeScene extends Phaser.Scene {
             { name: 'allergenes_alimentaires', label: 'Allergènes (optionnel)', placeholder: 'Noix, gluten…', multiline: true, maxLength: 2000 },
             { name: 'regimes_remarques', label: 'Remarques / régimes (optionnel)', placeholder: 'Végétarien, sans lactose…', multiline: true, maxLength: 2000 },
           ],
-          onSubmit: (values) => {
-            if (this.saving) return;
-            this.saving = true;
-            this.info.setText('Sauvegarde en cours…');
-            gameBackend
-              .recordRsvpForSelected({
-                allergenes_alimentaires: values['allergenes_alimentaires'] || '',
-                regimes_remarques: values['regimes_remarques'] || '',
-              })
-              .then(() => {
-                quests.done(QuestFlags.act2AllergensDone);
-                try {
-                  void gameBackend.upsertGameProgressForSelected(gameState.snapshot.flags);
-                } catch {}
-                this.info.setText('Acte 2 validé. Passage à l’Acte 3…');
-                this.time.delayedCall(600, () => {
-                  if (quests.isDone(QuestFlags.hubMapUnlocked)) {
-                    gameState.setAct('hub');
-                    this.scene.start('HubOpenWorldScene');
-                    return;
-                  }
-                  gameState.setAct('act3');
-                  this.scene.start('Act3GrangeScene');
-                });
-              })
-              .catch((e) => {
-                this.info.setText('Erreur: ' + String(e?.message || e));
-              })
-              .finally(() => {
-                this.saving = false;
-              });
-          },
+          onSubmit: submit,
         });
       });
   }

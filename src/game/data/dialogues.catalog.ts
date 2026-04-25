@@ -100,9 +100,11 @@ export const dialoguesCatalog: Record<DialogueId, DialogueData> = {
     steps: [
       {
         speaker: 'Le Vicomte des Murmures',
+        portraitTexture: 'portrait-vicomte',
+        portraitDisplaySize: { width: 188, height: 190 },
         portraitColor: 0xc9a55c,
         text:
-          "Psst… Approchez. Dans ce verger, les secrets tombent plus vite que les pommes. Confiez-moi une anecdote : je la consignerai avec plus de soin qu’un mot de passe dans un gestionnaire.",
+          "Psst… Approchez. Dans ce verger, les secrets tombent plus vite que les pommes. Offrez-moi un cliché ou une anecdote — je consignerai le tout avec plus de soin qu’un mot de passe dans un gestionnaire. Quand vous aurez donné ce que vous voulez partager, cliquez sur Terminer pour regagner le domaine.",
       },
     ],
   },
@@ -110,6 +112,8 @@ export const dialoguesCatalog: Record<DialogueId, DialogueData> = {
     steps: [
       {
         speaker: "La Baronne de l'Inspiration",
+        portraitTexture: 'portrait-baronne',
+        portraitDisplaySize: { width: 188, height: 190 },
         portraitColor: 0xc9a55c,
         text:
           "Ah… ce regard. Il a l’éclat d’une idée prête à compiler. Écrivez votre suggestion : je la livrerai aux hôtes comme un patch élégant, sans jamais froisser le protocole.",
@@ -122,7 +126,7 @@ export const dialoguesCatalog: Record<DialogueId, DialogueData> = {
         speaker: 'Le Maestro Polyphonique',
         portraitColor: 0xabbca6,
         text:
-          "La piste de danse est un système vivant : il lui faut des entrées, des sorties… et le bon tempo. Donnez-moi une chanson (titre, auteur, lien) et je l’ajouterai à la partition.",
+          "La piste de danse est un système vivant : il lui faut des entrées, des sorties… et le bon tempo. Donnez-moi une chanson (titre, auteur, lien) et je l’ajouterai à la partition de la soirée.",
       },
     ],
   },

@@ -7,6 +7,7 @@ import { SceneInput } from '../systems/SceneInput';
 import { getDialogue } from '../data/dialogues.catalog';
 import { gameBackend } from '../services/GameBackendBridge';
 import { gameState } from '../core/game-state';
+import { registerRequestDomainMapListener } from '../core/open-domain-map';
 import {
   LPC_DE_LA_PLUME_TEXTURE_KEY,
   LPC_PLAYER_IDLE_FIRST_FRAMES,
@@ -112,6 +113,7 @@ export class Act1CourScene extends Phaser.Scene {
   }
 
   create(): void {
+    gameState.setAct('act1');
     const { width, height } = this.scale;
 
     this.cameras.main.setBackgroundColor(GAME_BACKGROUND_COLOR);
@@ -204,6 +206,11 @@ export class Act1CourScene extends Phaser.Scene {
     this.refreshNpcBlock();
     this.syncNpcLabelPosition();
     this.updateAct1DepthSorting();
+
+    registerRequestDomainMapListener(this, () => {
+      this.dialogueBox.forceAbort();
+      this.formBox.stop();
+    });
   }
 
   private refreshNpcBlock(): void {
@@ -382,60 +389,60 @@ export class Act1CourScene extends Phaser.Scene {
     this.resolvePlayerCarriageCollision();
     this.resolvePlayerNpcCollision();
 
-    if (!quests.isDone(QuestFlags.act1RegisterDone)) {
-      const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.npc.x, this.npc.y);
-      const closeEnough = dist < ACT1_NPC_INTERACT_RADIUS;
+    const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.npc.x, this.npc.y);
+    const closeEnough = dist < ACT1_NPC_INTERACT_RADIUS;
+    if (closeEnough && interactJustDown) {
+      this.choicesText.setText('Consultation du registre…');
+      gameBackend
+        .getSelectedPersonneRow()
+        .then((row) => {
+          this.choicesText.setText('');
+          const defaults = row
+            ? {
+                present_reception: row.present_reception === true,
+                present_repas: row.present_repas === true,
+                present_soiree: row.present_soiree === true,
+                decline_invitation: row.decline_invitation === true,
+                invite_reception: row.invite_reception === true,
+                invite_repas: row.invite_repas === true,
+                invite_soiree: row.invite_soiree === true,
+              }
+            : undefined;
 
-      if (closeEnough && interactJustDown) {
-        this.choicesText.setText('Consultation du registre…');
-        gameBackend
-          .getSelectedPersonneRow()
-          .then((row) => {
-            this.choicesText.setText('');
-            const defaults = row
-              ? {
-                  present_reception: row.present_reception === true,
-                  present_repas: row.present_repas === true,
-                  present_soiree: row.present_soiree === true,
-                  decline_invitation: row.decline_invitation === true,
-                  invite_reception: row.invite_reception === true,
-                  invite_repas: row.invite_repas === true,
-                  invite_soiree: row.invite_soiree === true,
-                }
-              : undefined;
+          // IMPORTANT: même si "tout est false", on doit préremplir depuis la DB
+          // pour éviter de réécrire des valeurs par défaut.
+          const alreadyHasAnything =
+            !!row &&
+            (row.present_reception === true ||
+              row.present_repas === true ||
+              row.present_soiree === true ||
+              row.decline_invitation === true ||
+              String(row.allergenes_alimentaires || '').trim().length > 0 ||
+              String(row.regimes_remarques || '').trim().length > 0);
 
-            // IMPORTANT: même si "tout est false", on doit préremplir depuis la DB
-            // pour éviter de réécrire des valeurs par défaut.
-            const alreadyHasAnything =
-              !!row &&
-              (row.present_reception === true ||
-                row.present_repas === true ||
-                row.present_soiree === true ||
-                row.decline_invitation === true ||
-                String(row.allergenes_alimentaires || '').trim().length > 0 ||
-                String(row.regimes_remarques || '').trim().length > 0);
-
-            const dlg = alreadyHasAnything ? getDialogue('act1.already') : getDialogue('act1.register');
-            const hud = this.act1HudForOverlay();
-            this.dialogueBox.start(
-              dlg,
-              () => {
-                if (alreadyHasAnything) {
-                  this.questText.setText('Registre déjà rempli (modifiable).');
-                  this.hintText.setText('Vous pouvez confirmer ou ajuster.');
-                }
-                this.openRegisterChoices(defaults);
-              },
-              { hideSceneHud: hud },
-            );
-          })
-          .catch(() => {
-            this.choicesText.setText('');
-            this.dialogueBox.start(getDialogue('act1.register'), () => this.openRegisterChoices(), {
-              hideSceneHud: this.act1HudForOverlay(),
-            });
+          const dlg = alreadyHasAnything ? getDialogue('act1.already') : getDialogue('act1.register');
+          const hud = this.act1HudForOverlay();
+          this.dialogueBox.start(
+            dlg,
+            () => {
+              if (alreadyHasAnything) {
+                this.questText.setText('Registre déjà rempli (modifiable).');
+                this.hintText.setText('Vous pouvez confirmer ou ajuster.');
+              } else {
+                this.questText.setText('');
+                this.hintText.setText('Parlez à M. de la Plume');
+              }
+              this.openRegisterChoices(defaults);
+            },
+            { hideSceneHud: hud },
+          );
+        })
+        .catch(() => {
+          this.choicesText.setText('');
+          this.dialogueBox.start(getDialogue('act1.register'), () => this.openRegisterChoices(), {
+            hideSceneHud: this.act1HudForOverlay(),
           });
-      }
+        });
     }
 
     this.updateAct1DepthSorting();

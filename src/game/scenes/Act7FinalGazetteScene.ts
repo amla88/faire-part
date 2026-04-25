@@ -5,6 +5,10 @@ import { gameBackend } from '../services/GameBackendBridge';
 import { quests, QuestFlags } from '../systems/QuestSystem';
 
 export class Act7FinalGazetteScene extends Phaser.Scene {
+  private bg!: Phaser.GameObjects.Image;
+  private panelBg?: Phaser.GameObjects.Rectangle;
+  private titleText!: Phaser.GameObjects.Text;
+  private introText!: Phaser.GameObjects.Text;
   private countdownText!: Phaser.GameObjects.Text;
   private thanksText!: Phaser.GameObjects.Text;
   private target: Date | null = null;
@@ -20,24 +24,34 @@ export class Act7FinalGazetteScene extends Phaser.Scene {
     gameState.setAct('act7');
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor(GAME_BACKGROUND_COLOR);
+
+    this.bg = this.add.image(0, 0, 'act7-gazette').setOrigin(0, 0).setDepth(-20);
+    this.layoutBackground(width, height);
+    this.scale.on('resize', this.onResize, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.scale.off('resize', this.onResize, this);
+      this.panelBg?.destroy();
+      this.panelBg = undefined;
+    });
+
     this.add.text(18, 14, 'ACTE 7 — La Gazette', {
       fontFamily: 'monospace',
       fontSize: '14px',
       color: '#2c2433',
     });
 
-    const title = this.add.text(width / 2, height * 0.33, 'La Gazette', {
+    this.titleText = this.add.text(0, 0, 'La Gazette', {
       fontFamily: 'monospace',
       fontSize: '18px',
       color: '#2c2433',
       align: 'center',
     });
-    title.setOrigin(0.5);
+    this.titleText.setOrigin(0.5);
 
-    this.add.text(
-      width / 2,
-      height * 0.45,
-      "Très chers lecteurs,\nles cuisines sont alertées, les musiciens accordés…\nTout est prêt pour l’union la plus attendue de l’année.",
+    this.introText = this.add.text(
+      0,
+      0,
+      "Très chers lecteurs,\nles cuisines sont alertées,\nles musiciens accordés…\nTout est prêt pour l’union\nla plus attendue de l’année.",
       {
         fontFamily: 'monospace',
         fontSize: '14px',
@@ -45,9 +59,10 @@ export class Act7FinalGazetteScene extends Phaser.Scene {
         align: 'center',
         lineSpacing: 6,
       }
-    ).setOrigin(0.5);
+    );
+    this.introText.setOrigin(0.5);
 
-    this.thanksText = this.add.text(width / 2, height * 0.58, 'Merci…', {
+    this.thanksText = this.add.text(0, 0, 'Merci…', {
       fontFamily: 'monospace',
       fontSize: '13px',
       color: '#2c2433',
@@ -56,12 +71,14 @@ export class Act7FinalGazetteScene extends Phaser.Scene {
     });
     this.thanksText.setOrigin(0.5);
 
-    this.countdownText = this.add.text(width / 2, height * 0.68, '', {
+    this.countdownText = this.add.text(0, 0, '', {
       fontFamily: 'monospace',
       fontSize: '16px',
       color: '#2c2433',
       align: 'center',
     }).setOrigin(0.5);
+
+    this.applyPanelLayout(width, height);
 
     this.target = this.resolveTargetDate();
     this.renderCountdown();
@@ -88,6 +105,63 @@ export class Act7FinalGazetteScene extends Phaser.Scene {
     }
   }
 
+  private onResize = (gameSize: Phaser.Structs.Size): void => {
+    this.layoutBackground(gameSize.width, gameSize.height);
+    this.applyPanelLayout(gameSize.width, gameSize.height);
+  };
+
+  /**
+   * Mise en page du “panel” + textes.
+   *
+   * Pour repositionner correctement :
+   * - bouge le panel : ajuste `PANEL_X_FRAC` / `PANEL_Y_FRAC`
+   * - change sa taille : ajuste `PANEL_W_FRAC` / `PANEL_H_FRAC`
+   *
+   * Les textes suivent automatiquement le panel (offsets internes).
+   */
+  private applyPanelLayout(width: number, height: number): void {
+    const PANEL_SHOW_BG = false;
+    const PANEL_X_FRAC = 0.70;
+    const PANEL_Y_FRAC = 0.48;
+    const PANEL_W_FRAC = 0.30;
+    const PANEL_H_FRAC = 0.72;
+
+    const cx = width * PANEL_X_FRAC;
+    const cy = height * PANEL_Y_FRAC;
+    const pw = width * PANEL_W_FRAC;
+    const ph = height * PANEL_H_FRAC;
+
+    if (PANEL_SHOW_BG) {
+      if (!this.panelBg || !this.panelBg.active) {
+        this.panelBg?.destroy();
+        this.panelBg = this.add
+          .rectangle(cx, cy, pw, ph, 0x2563b8, 0.18)
+          .setStrokeStyle(2, 0x6eb6ff, 0.35)
+          .setDepth(-6);
+      } else {
+        this.panelBg.setPosition(cx, cy);
+        this.panelBg.setSize(pw, ph);
+      }
+    } else {
+      this.panelBg?.setVisible(false);
+    }
+
+    // Offsets internes au panel (fractions de sa hauteur).
+    this.titleText.setPosition(cx, cy - ph * 0.40);
+    this.introText.setPosition(cx, cy - ph * 0.19);
+    this.thanksText.setPosition(cx, cy + ph * 0.12);
+    this.countdownText.setPosition(cx, cy + ph * 0.40);
+  }
+
+  private layoutBackground(width: number, height: number): void {
+    const tex = this.textures.get('act7-gazette').getSourceImage() as HTMLImageElement;
+    const srcW = Math.max(1, tex?.width || 1);
+    const srcH = Math.max(1, tex?.height || 1);
+    const scale = Math.max(width / srcW, height / srcH);
+    this.bg.setScale(scale);
+    this.bg.setPosition((width - srcW * scale) / 2, (height - srcH * scale) / 2);
+  }
+
   override update(): void {
     if (!this.keySpace) return;
     const back =
@@ -107,7 +181,7 @@ export class Act7FinalGazetteScene extends Phaser.Scene {
         const nom = String(row?.nom || '').trim();
         const who = (prenom || nom) ? `${prenom} ${nom}`.trim() : 'cher invité';
         this.thanksText.setText(
-          `Merci, ${who}.\nVos réponses sont consignées.\nLa carte demeure à votre disposition — au besoin, revenez ajuster un détail.`
+          `Merci, ${who}.\nVos réponses sont consignées.\nLa carte demeure à votre disposition,\nrevenez ajuster un détail\nou utilisez le menu de gauche.`
         );
       });
     } catch {
@@ -116,36 +190,53 @@ export class Act7FinalGazetteScene extends Phaser.Scene {
   }
 
   private resolveTargetDate(): Date | null {
-    // Optionnel: <meta name="wedding-date-iso" content="2026-08-30T14:00:00+02:00">
-    const raw = document.querySelector('meta[name="wedding-date-iso"]')?.getAttribute('content') || '';
-    const v = raw.trim();
-    if (!v) return null;
-    const d = new Date(v);
-    if (Number.isNaN(d.getTime())) return null;
-    return d;
+    // Date cible fixe demandée : 12 septembre 2026 (midi heure FR pour éviter les effets DST/minuit).
+    // Format ISO avec offset +02:00 (France en été).
+    const fixed = new Date('2026-09-12T12:00:00+02:00');
+    if (!Number.isNaN(fixed.getTime())) return fixed;
+    return null;
   }
 
   private renderCountdown(): void {
     if (!this.countdownText) return;
     if (!this.target) {
-      this.countdownText.setText("Compte à rebours: date à définir (meta 'wedding-date-iso').");
+      this.countdownText.setText('Compte à rebours: date à définir.');
       return;
     }
 
-    const ms = this.target.getTime() - Date.now();
-    if (ms <= 0) {
+    const now = new Date();
+    const target = this.target;
+    if (target.getTime() - now.getTime() <= 0) {
       this.countdownText.setText('C’est aujourd’hui.');
       return;
     }
 
-    const totalSec = Math.floor(ms / 1000);
-    const days = Math.floor(totalSec / 86400);
-    const hours = Math.floor((totalSec % 86400) / 3600);
-    const mins = Math.floor((totalSec % 3600) / 60);
-    const secs = totalSec % 60;
+    // Diff “calendaire” en mois + jours + heures.
+    // Méthode: on avance mois par mois depuis `now` jusqu'à dépasser `target`.
+    const start = new Date(now.getTime());
+    start.setMinutes(0, 0, 0);
+    const end = new Date(target.getTime());
+    end.setMinutes(0, 0, 0);
 
-    const pad = (n: number) => String(n).padStart(2, '0');
-    this.countdownText.setText(`Compte à rebours\n${days}j ${pad(hours)}h ${pad(mins)}m ${pad(secs)}s`);
+    let months = 0;
+    const cursor = new Date(start.getTime());
+    while (months < 1200) {
+      const next = new Date(cursor.getTime());
+      next.setMonth(next.getMonth() + 1);
+      if (next.getTime() <= end.getTime()) {
+        cursor.setTime(next.getTime());
+        months += 1;
+        continue;
+      }
+      break;
+    }
+
+    const remainingMs = Math.max(0, end.getTime() - cursor.getTime());
+    const remainingHoursTotal = Math.floor(remainingMs / 3600000);
+    const days = Math.floor(remainingHoursTotal / 24);
+    const hours = remainingHoursTotal % 24;
+
+    this.countdownText.setText(`Temps restant\navant le grand jour\n${months} mois\n${days} jours\n${hours} heures`);
   }
 }
 

@@ -13,6 +13,8 @@ export interface DialogueStep {
   portraitColor?: number;
   /** Texture préchargée (ex. `portrait-majordome`). Sinon silhouette générique + tint. */
   portraitTexture?: string;
+  /** Index de frame si la texture est une spritesheet (ex. idle ULPC). */
+  portraitFrame?: number;
   /** Taille d'affichage du portrait (en px). Par défaut: silhouettes 72×72. */
   portraitDisplaySize?: { width: number; height: number };
 }
@@ -191,6 +193,23 @@ export class DialogueBox {
     }
   }
 
+  /**
+   * Fermeture forcée (ex. retour domaine) : pas d’`onDone`, seulement dévoilage + remise à plat overlay / masque HUD.
+   */
+  forceAbort(): void {
+    this.onDone = undefined;
+    this.active = false;
+    this.hide();
+    if (this.hudMaskPushed) {
+      try {
+        sceneHudMaskPop(this.scene);
+      } catch {
+        // ignore
+      }
+      this.hudMaskPushed = false;
+    }
+  }
+
   next(): void {
     if (!this.active) return;
     this.index += 1;
@@ -218,7 +237,12 @@ export class DialogueBox {
     const portraitSize = step.portraitDisplaySize ?? DEFAULT_PORTRAIT_SIZE;
     // `setTexture` peut réinitialiser la taille d’affichage : toujours fixer la taille après la texture.
     if (tex && this.scene.textures.exists(tex)) {
-      this.portrait.setTexture(tex);
+      const frame = step.portraitFrame;
+      if (frame != null) {
+        this.portrait.setTexture(tex, frame);
+      } else {
+        this.portrait.setTexture(tex);
+      }
       this.portrait.clearTint();
     } else {
       this.portrait.setTexture('portrait-generic');
