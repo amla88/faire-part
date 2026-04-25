@@ -48,15 +48,21 @@ export class AdminSuiviPresencesJeuxComponent implements OnInit {
   filterSoiree = signal(true);
   filterRepas = signal(true);
   filterReception = signal(true);
+  /** Si vrai : uniquement les familles sans date de dernière connexion. */
+  onlyNeverConnected = signal(false);
 
   filteredFamilles = computed(() => {
-    const rows = this.sortedByConnexion(this.familles());
+    let rows = this.sortedByConnexion(this.familles());
     const s = this.filterSoiree();
     const r = this.filterRepas();
     const rc = this.filterReception();
-    if (s && r && rc) return rows;
-    if (!s && !r && !rc) return rows;
-    return rows.filter((fam) => this.familleMatchesMomentFilters(fam, s, r, rc));
+    if (!(s && r && rc) && (s || r || rc)) {
+      rows = rows.filter((fam) => this.familleMatchesMomentFilters(fam, s, r, rc));
+    }
+    if (this.onlyNeverConnected()) {
+      rows = rows.filter((fam) => fam?.connexion == null || String(fam.connexion).trim() === '');
+    }
+    return rows;
   });
 
   constructor(private readonly ngSupabase: NgSupabaseService) {}
