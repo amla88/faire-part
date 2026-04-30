@@ -24,7 +24,7 @@ import {
 } from '../data/lpc-garcon';
 import { gameBackend } from '../services/GameBackendBridge';
 import { SceneInput } from '../systems/SceneInput';
-import { QuestFlags } from '../systems/QuestSystem';
+import { QuestFlags, quests } from '../systems/QuestSystem';
 import { DialogueBox } from '../ui/DialogueBox';
 import { FormBox } from '../ui/FormBox';
 
@@ -170,15 +170,6 @@ export class Act5GlorietteScene extends Phaser.Scene {
       this.formBox.stop();
     });
 
-    void gameBackend.listIdeesForSelected().then((list) => {
-      this.syncAct5IdeaQuest(list.length);
-      try {
-        void gameBackend.upsertGameProgressForSelected(gameState.snapshot.flags);
-      } catch {}
-      try {
-        window.dispatchEvent(new CustomEvent('fp-game-progress-updated'));
-      } catch {}
-    });
   }
 
   /** Bandeau bas : uniquement messages ponctuels (erreur, « rapprochez-vous », etc.). */
@@ -449,11 +440,6 @@ export class Act5GlorietteScene extends Phaser.Scene {
     this.inputState.commit();
   }
 
-  /** Comme l’acte 4 (anecdotes) : l’acte 5 est validé dès qu’au moins une idée est enregistrée côté serveur. */
-  private syncAct5IdeaQuest(count: number): void {
-    gameState.setFlag(QuestFlags.act5IdeaDone, count > 0);
-  }
-
   private openIdeaForm(): void {
     if (this.formBox.active) return;
     void gameBackend.listIdeesForSelected().then((list) => {
@@ -461,14 +447,11 @@ export class Act5GlorietteScene extends Phaser.Scene {
         hideSceneHud: this.sceneHudForOverlay(),
         title: 'Boîte à idées (Acte 5)',
         subtitle:
-          'Enregistre l’idée et la place dans la liste. Terminer valide l’acte et ramène à la carte (au moins une idée).',
+          'Ajouter : enregistre une idée dans la liste. Terminer : valide l’acte et revient à la carte.',
+        submitButtonLabel: 'Ajouter',
         closeOnSubmit: false,
         onTerminer: async (): Promise<boolean | string> => {
-          const after = await gameBackend.listIdeesForSelected();
-          if (after.length === 0) {
-            return 'Enregistrez au moins une idée avant de terminer.';
-          }
-          this.syncAct5IdeaQuest(after.length);
+          quests.done(QuestFlags.act5IdeaDone);
           try {
             void gameBackend.upsertGameProgressForSelected(gameState.snapshot.flags);
           } catch {}
@@ -485,8 +468,6 @@ export class Act5GlorietteScene extends Phaser.Scene {
         existingIdees: list,
         onDeleteIdee: async (id) => {
           await gameBackend.deleteIdeeForSelected(id);
-          const again = await gameBackend.listIdeesForSelected();
-          this.syncAct5IdeaQuest(again.length);
           try {
             void gameBackend.upsertGameProgressForSelected(gameState.snapshot.flags);
           } catch {}
@@ -519,16 +500,14 @@ export class Act5GlorietteScene extends Phaser.Scene {
           this.setAct5Info('La Baronne recueille votre inspiration…');
           gameBackend
             .insertIdeeForSelected(contenu)
-            .then(() => gameBackend.listIdeesForSelected())
-            .then((after) => {
-              this.syncAct5IdeaQuest(after.length);
+            .then(() => {
               try {
                 void gameBackend.upsertGameProgressForSelected(gameState.snapshot.flags);
               } catch {}
               try {
                 window.dispatchEvent(new CustomEvent('fp-game-progress-updated'));
               } catch {}
-              this.setAct5Info('Idée enregistrée. Vous pouvez en ajouter d’autres ou terminer.');
+              this.setAct5Info('Idée enregistrée. Vous pouvez en ajouter d’autres ou toucher Terminer.');
               this.formBox.stop();
               this.time.delayedCall(0, () => {
                 this.openIdeaForm();

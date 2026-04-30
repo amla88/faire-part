@@ -685,15 +685,15 @@ export class Act4VergerScene extends Phaser.Scene {
     const p = quests.isDone(QuestFlags.act4PhotoDone);
     const a = quests.isDone(QuestFlags.act4AnecdoteDone);
     if (p && a) {
-      return 'Vous avez partagé une photo et une anecdote. Vous pouvez cliquer sur Terminer.';
+      return 'Vous avez partagé une photo et une anecdote. Terminer (coffret) ramène au domaine quand vous voulez.';
     }
     if (p) {
-      return 'Photo reçue. L’anecdote est facultative — ou cliquez sur Terminer.';
+      return 'Photo reçue. L’anecdote est facultative — Terminer (coffret) pour le domaine.';
     }
     if (a) {
-      return 'Anecdote reçue. La photo est facultative — ou cliquez sur Terminer.';
+      return 'Anecdote reçue. La photo est facultative — Terminer (coffret) pour le domaine.';
     }
-    return 'Déposez une photo, une anecdote, ou les deux, puis Terminer quand c’est prêt.';
+    return 'Déposez une photo, une anecdote, ou les deux ; Terminer (coffret) ramène au domaine quand c’est prêt.';
   }
 
   private openAnecdoteForm(): void {
@@ -703,8 +703,15 @@ export class Act4VergerScene extends Phaser.Scene {
         hideSceneHud: this.sceneHudForOverlay(),
         title: 'Confier une anecdote',
         subtitle: list.length
-          ? 'Vos textes déjà reçus sont listés ci-dessus. Saisissez un nouveau message plus bas.'
-          : undefined,
+          ? 'Vos textes déjà reçus sont listés ci-dessus. Ajouter pour consigner ; Terminer pour revenir au coffret.'
+          : 'Ajouter pour consigner votre anecdote. Terminer pour revenir au coffret.',
+        submitButtonLabel: 'Ajouter',
+        closeOnSubmit: false,
+        onTerminer: async (): Promise<boolean | string> => {
+          this.info.setText(this.act4OffrandesSummary());
+          this.time.delayedCall(0, () => this.openVergerMenu());
+          return true;
+        },
         existingAnecdotes: list,
         onDeleteAnecdote: async (id) => {
           await gameBackend.deleteAnecdoteForSelected(id);
@@ -737,7 +744,7 @@ export class Act4VergerScene extends Phaser.Scene {
         ],
         validateBeforeSubmit: (values) => {
           const t = (values['contenu'] || '').trim();
-          return t ? null : 'Écrivez au moins quelques mots avant d’enregistrer.';
+          return t ? null : 'Écrivez au moins quelques mots avant d’ajouter.';
         },
         onSubmit: (values) => {
           if (this.saving) return;
@@ -758,7 +765,8 @@ export class Act4VergerScene extends Phaser.Scene {
                 window.dispatchEvent(new CustomEvent('fp-game-progress-updated'));
               } catch {}
               this.info.setText(this.act4OffrandesSummary());
-              this.time.delayedCall(150, () => this.openVergerMenu());
+              this.formBox.stop();
+              this.time.delayedCall(0, () => this.openAnecdoteForm());
             })
             .catch((e) => {
               this.info.setText('Erreur: ' + String(e?.message || e));
@@ -805,6 +813,8 @@ export class Act4VergerScene extends Phaser.Scene {
     sceneHudMaskPush(this, [this.info]);
     this.photoBox.start({
       title: 'Déposer un cliché',
+      footerLayout: 'add-terminer',
+      uploadButtonLabel: 'Ajouter',
       loadPhotos: () => gameBackend.listFamilyPhotosForSelected(),
       onDeletePhoto: async (key) => {
         await gameBackend.deleteFamilyPhotoForSelected(key);

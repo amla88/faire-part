@@ -492,6 +492,9 @@ export class Act6EcurieScene extends Phaser.Scene {
         closeOnSubmit: false,
         hideSceneHud: this.sceneHudForOverlay(),
         title: 'Air du bal (Acte 6)',
+        subtitle:
+          'Ajouter : enregistre une proposition dans la liste. Terminer : valide l’acte et revient à la carte.',
+        submitButtonLabel: 'Ajouter',
         musiqueSlots: {
           items: list,
           max: 3,
@@ -506,6 +509,21 @@ export class Act6EcurieScene extends Phaser.Scene {
             this.formBox.stop();
             this.time.delayedCall(0, () => this.openMusicForm());
           },
+        },
+        onTerminer: async (): Promise<boolean | string> => {
+          quests.done(QuestFlags.act6MusicDone);
+          try {
+            void gameBackend.upsertGameProgressForSelected(gameState.snapshot.flags);
+          } catch {}
+          try {
+            window.dispatchEvent(new CustomEvent('fp-game-progress-updated'));
+          } catch {}
+          this.setAct6Info('Merci ! À bientôt sur la carte du domaine.');
+          gameState.setAct('hub');
+          this.time.delayedCall(0, () => {
+            this.scene.start('HubOpenWorldScene');
+          });
+          return true;
         },
         validateBeforeSubmit: (values) => {
           if (list.length >= 3) {
@@ -543,7 +561,6 @@ export class Act6EcurieScene extends Phaser.Scene {
           this.setAct6Info('Le Maestro note votre proposition…');
           try {
             await gameBackend.insertMusiqueManualForSelected({ titre, auteur, lien, commentaire });
-            quests.done(QuestFlags.act6MusicDone);
             try {
               void gameBackend.upsertGameProgressForSelected(gameState.snapshot.flags);
             } catch {}
@@ -555,15 +572,15 @@ export class Act6EcurieScene extends Phaser.Scene {
             this.formBox.stop();
 
             if (after.length >= 3) {
-              this.setAct6Info('Les trois airs sont notés. Merci !');
-              this.time.delayedCall(650, () => {
-                gameState.setAct('hub');
-                this.scene.start('HubOpenWorldScene');
-              });
+              this.setAct6Info(
+                'Les trois titres sont indiqués. Touchez Terminer pour enregistrer l’acte et revenir à la carte.',
+              );
             } else {
-              this.setAct6Info(`${after.length}/3 titre(s) enregistré(s). Vous pouvez en proposer d’autres (Espace près du Maestro).`);
-              this.time.delayedCall(0, () => this.openMusicForm());
+              this.setAct6Info(
+                `${after.length}/3 titre(s) enregistré(s). Ajoutez-en d’autres ou touchez Terminer pour revenir au domaine.`,
+              );
             }
+            this.time.delayedCall(0, () => this.openMusicForm());
           } catch (e: unknown) {
             const msg = String((e as Error)?.message || e);
             if (msg.includes('musique_limit_reached')) {

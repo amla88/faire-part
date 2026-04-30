@@ -124,7 +124,8 @@ export const dialoguesCatalog: Record<DialogueId, DialogueData> = {
     steps: [
       {
         speaker: 'Le Maestro Polyphonique',
-        portraitColor: 0xabbca6,
+        portraitTexture: 'portrait-chef-orchestre',
+        portraitDisplaySize: { width: 188, height: 190 },
         text:
           "La piste de danse est un système vivant : il lui faut des entrées, des sorties… et le bon tempo. Donnez-moi une chanson (titre, auteur, lien) et je l’ajouterai à la partition de la soirée.",
       },

@@ -27,6 +27,11 @@
   background: var(--bridgerton-wood);
 }
 
+/** Pendant l’intro : rien sous la carte ne doit capter les taps (canvas / conteneur Phaser). */
+.game-host--intro-open {
+  pointer-events: none;
+}
+
 .top-actions {
   position: absolute;
   top: 12px;
@@ -47,20 +52,48 @@
 .orientation-lock {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
-  background: rgba(15, 10, 18, 0.72);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: max(12px, env(safe-area-inset-top, 0px)) 12px max(20px, env(safe-area-inset-bottom, 0px) + 12px);
+}
+
+.intro-overlay {
   z-index: 25;
-  padding: 12px;
+  justify-content: flex-start;
+  background: rgba(15, 10, 18, 0.72);
 }
 
 /* L'écran "tourner l'appareil" doit passer avant tout le reste */
 .orientation-lock {
   z-index: 30;
+  justify-content: center;
+  background: rgba(15, 10, 18, 0.72);
 }
 
 .intro-card {
   max-width: 560px;
+  width: min(100%, 560px);
+  flex-shrink: 0;
+  margin: 0 auto 8px;
+}
+
+.intro-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.intro-actions button {
+  touch-action: manipulation;
+  min-height: 48px;
+  padding-inline: 18px;
 }
 
 .touch-controls {

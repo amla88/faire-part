@@ -31,6 +31,8 @@ function stylePrimary(btn: HTMLButtonElement): void {
   btn.onmouseleave = () => { btn.style.background = BTN.grad; };
 }
 
+export type PhotoUploadFooterLayout = 'default' | 'add-terminer';
+
 function styleGhost(btn: HTMLButtonElement): void {
   btn.type = 'button';
   btn.style.fontFamily = 'monospace, ui-monospace, monospace';
@@ -56,7 +58,8 @@ export class PhotoUploadBox {
   private prevGlobalCaptureDisabled: boolean | null = null;
   private onPanelClose: (() => void) | null = null;
   private onEnd: ((didUpload: boolean) => void) | null = null;
-  private didUpload = false;
+  /** Au moins un envoi réussi dans cette session (transmis à `onEnd`). */
+  private uploadSucceededThisSession = false;
 
   public active = false;
   private centerX: number;
@@ -99,11 +102,18 @@ export class PhotoUploadBox {
     onPanelClose: () => void;
     /** Fermeture : retour menu (didUpload si un envoi a réussi dans cette session). */
     onEnd: (didUpload: boolean) => void;
+    /**
+     * `add-terminer` : après envoi réussi, rester sur le panneau ; « Terminer » referme vers `onEnd`.
+     * `default` : un envoi réussi ferme tout de suite (comportement historique).
+     */
+    footerLayout?: PhotoUploadFooterLayout;
+    /** Libellé du bouton d’envoi (défaut : « Envoyer » ou « Ajouter » si `footerLayout` = add-terminer). */
+    uploadButtonLabel?: string;
   }): void {
     this.cleanup();
     this.onPanelClose = args.onPanelClose;
     this.onEnd = args.onEnd;
-    this.didUpload = false;
+    this.uploadSucceededThisSession = false;
     this.setBoxSize(
       Math.floor(this.scene.scale.width * 0.9),
       Math.min(Math.floor(this.scene.scale.height * 0.72), 520),
@@ -153,11 +163,13 @@ export class PhotoUploadBox {
       if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
-        this.endSession(false);
+        this.stop();
       }
     };
     this.domKeydownHandler = onKeyDown;
     window.addEventListener('keydown', onKeyDown, true);
+
+    const addTerminer = (args.footerLayout ?? 'default') === 'add-terminer';
 
     void (async () => {
       let photos: GameFamilyPhoto[] = [];
@@ -169,7 +181,7 @@ export class PhotoUploadBox {
         b.textContent = 'Fermer';
         b.style.marginTop = '8px';
         styleGhost(b);
-        b.onclick = () => this.endSession(false);
+        b.onclick = () => this.stop();
         loadMsg.parentElement?.appendChild(b);
         return;
       }
@@ -243,9 +255,25 @@ export class PhotoUploadBox {
       styleGhost(cancel);
       cancel.style.flex = '0 0 auto';
       const submit = document.createElement('button');
-      submit.textContent = 'Envoyer';
-      stylePrimary(submit);
+      submit.type = 'button';
+      submit.textContent =
+        (args.uploadButtonLabel && args.uploadButtonLabel.trim()) ||
+        (addTerminer ? 'Ajouter' : 'Envoyer');
+      if (addTerminer) {
+        styleGhost(submit);
+      } else {
+        stylePrimary(submit);
+      }
       submit.style.flex = '0 0 auto';
+
+      let terminer: HTMLButtonElement | null = null;
+      if (addTerminer) {
+        terminer = document.createElement('button');
+        terminer.type = 'button';
+        terminer.textContent = 'Terminer';
+        stylePrimary(terminer);
+        terminer.style.flex = '0 0 auto';
+      }
       let busy = false;
       const previewShell = document.createElement('div');
       previewShell.style.boxSizing = 'border-box';
@@ -401,8 +429,23 @@ export class PhotoUploadBox {
       cancel.onclick = () => {
         if (busy) return;
         cleanupLocalPreview();
-        this.endSession(false);
+        input.value = '';
+        preview.style.display = 'none';
+        placeholderHint.style.display = 'block';
+        this.stop();
       };
+
+      if (addTerminer) {
+        terminer.onclick = () => {
+          if (busy) return;
+          cleanupLocalPreview();
+          input.value = '';
+          preview.style.display = 'none';
+          placeholderHint.style.display = 'block';
+          status.textContent = '';
+          this.stop();
+        };
+      }
 
       submit.onclick = async () => {
         if (busy) return;
@@ -415,12 +458,24 @@ export class PhotoUploadBox {
         status.textContent = 'Envoi en cours…';
         try {
           await args.onUpload(f);
+          this.uploadSucceededThisSession = true;
           args.onUploadSuccess?.();
           cleanupLocalPreview();
           input.value = '';
           preview.style.display = 'none';
           placeholderHint.style.display = 'block';
-          this.endSession(true);
+          if (addTerminer) {
+            status.textContent = 'Photo ajoutée à l’album.';
+            try {
+              const again = await args.loadPhotos();
+              renderAlbum(again);
+            } catch {
+              status.textContent =
+                'Photo enregistrée ; impossible de rafraîchir la liste depuis le serveur.';
+            }
+          } else {
+            this.stop();
+          }
         } catch (e: unknown) {
           status.textContent = 'Erreur: ' + String((e as Error)?.message || e);
         } finally {
@@ -431,6 +486,9 @@ export class PhotoUploadBox {
       controlsRow.appendChild(input);
       controlsRow.appendChild(cancel);
       controlsRow.appendChild(submit);
+      if (terminer) {
+        controlsRow.appendChild(terminer);
+      }
       leftCol.appendChild(fileHint);
       leftCol.appendChild(controlsRow);
       leftCol.appendChild(previewShell);
@@ -441,18 +499,13 @@ export class PhotoUploadBox {
     })();
   }
 
-  private endSession(did: boolean): void {
-    this.didUpload = did;
-    this.stop();
-  }
-
   /**
    * Fermeture forcée (ex. ouverture Carte du domaine) : dépile le masque, sans `onEnd` (pas de retour menu).
    */
   abort(): void {
     if (!this.active) return;
     this.active = false;
-    this.didUpload = false;
+    this.uploadSucceededThisSession = false;
     this.cleanup();
     this.hide();
     const p = this.onPanelClose;
@@ -463,9 +516,9 @@ export class PhotoUploadBox {
   }
 
   stop(): void {
-    const uploaded = this.didUpload;
+    const uploaded = this.uploadSucceededThisSession;
     this.active = false;
-    this.didUpload = false;
+    this.uploadSucceededThisSession = false;
     this.cleanup();
     this.hide();
     const p = this.onPanelClose;

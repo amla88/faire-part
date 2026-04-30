@@ -457,6 +457,8 @@ export class FormBox {
      * `false` : n’appelle que `onSubmit` (l’acte 5 ferme/rouvre pour rafraîchir la liste, ou gère l’UI).
      */
     closeOnSubmit?: boolean;
+    /** Libellé du bouton principal d’envoi (défaut : « Enregistrer »). Ex. acte 6 : « Ajouter ». */
+    submitButtonLabel?: string;
     /**
      * Bouton « Terminer » : ferme si le retour n’est ni `false` ni une chaîne non vide.
      * Retourner une chaîne affiche l’erreur dans le formulaire (DOM) sans fermer.
@@ -979,7 +981,7 @@ export class FormBox {
 
     const submit = document.createElement('button');
     submit.type = 'button';
-    submit.textContent = 'Enregistrer';
+    submit.textContent = (args.submitButtonLabel && args.submitButtonLabel.trim()) || 'Enregistrer';
     styleFormButton(submit, twoStepFooter ? 'ghost' : 'primary');
     submit.onclick = () => {
       const values: Record<string, string> = {};

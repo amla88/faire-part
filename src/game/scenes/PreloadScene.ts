@@ -59,6 +59,7 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image('portrait-de-la-plume', `${G}/portraits/portrait-de-la-plume.png`);
     this.load.image('portrait-cocher', `${G}/portraits/portrait-cocher.png`);
     this.load.image('portrait-chef', `${G}/portraits/portrait-chef.png`);
+    this.load.image('portrait-chef-orchestre', `${G}/portraits/portrait-chef-orchestre.png`);
     this.load.image('portrait-vicomte', `${G}/portraits/portrait-vicomte.png`);
     this.load.image('portrait-baronne', `${G}/portraits/portrait-baronne.png`);
     this.load.image('act0-carrosse', `${G}/backgrounds/acte0-carrosse.png`);

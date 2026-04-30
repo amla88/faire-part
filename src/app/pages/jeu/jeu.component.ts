@@ -44,7 +44,7 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
   readonly progressFlags = signal<Record<string, boolean>>({});
   /** Masque les contrôles tactiles Angular pendant dialogue / formulaire Phaser. */
   readonly gameModalBlocksTouchOverlay = signal(false);
-  /** Acte courant (Phaser `gameState.setAct`) — l’acte 3 n’affiche pas le pad directionnel / Parler. */
+  /** Acte courant (Phaser `gameState.setAct`) — acte 3 et hub : pas de pad / Parler (souris-clavier ou cibles tactiles Phaser). */
   readonly currentAct = signal<ActId>(gameState.snapshot.act);
 
   private game: import('phaser').Game | null = null;
@@ -183,6 +183,8 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
 
   resumeGame(): void {
     this.showIntro.set(false);
+    resetGameModalTouchOverlayBlockDepth();
+    this.gameModalBlocksTouchOverlay.set(false);
     try {
       if (this.game) {
         startSceneFromGame(this.game, 'BootScene');
@@ -200,6 +202,8 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
     this.hasSave.set(false);
     this.showIntro.set(false);
     this.mapUnlocked.set(false);
+    resetGameModalTouchOverlayBlockDepth();
+    this.gameModalBlocksTouchOverlay.set(false);
     resetVirtualInputState();
     try {
       const game = this.game;

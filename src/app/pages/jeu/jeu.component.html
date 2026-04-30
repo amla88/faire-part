@@ -1,6 +1,10 @@
 <div class="jeu-page">
   <div #gameShell class="game-shell" [class.portrait]="isPortrait()">
-    <div #gameHost class="game-host"></div>
+    <div
+      #gameHost
+      class="game-host"
+      [class.game-host--intro-open]="showIntro() && !isPortrait()"
+    ></div>
 
     @if (isPortrait()) {
       <div class="orientation-lock">
@@ -18,16 +22,16 @@
           <p><strong>PC:</strong> fleches ou ZQSD pour se deplacer, Espace pour interagir.</p>
           <p><strong>Mobile/Tablette:</strong> utilisez les boutons directionnels, puis le bouton <strong>Parler</strong> pour interagir.</p>
           <p>Vous pouvez masquer les controles avec le bouton en haut a droite.</p>
-          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <div class="intro-actions">
             @if (hasSave()) {
-              <button mat-flat-button color="primary" (click)="resumeGame()">
+              <button mat-flat-button color="primary" type="button" (click)="resumeGame()">
                 Reprendre
               </button>
               <button mat-stroked-button type="button" (click)="restartGame()">
                 Recommencer
               </button>
             } @else {
-              <button mat-flat-button color="primary" (click)="startGame()">
+              <button mat-flat-button color="primary" type="button" (click)="startGame()">
                 Commencer
               </button>
             }
@@ -36,13 +40,13 @@
       </div>
     }
 
-    @if (!isPortrait() && currentAct() !== 'hub' && !gameModalBlocksTouchOverlay()) {
+    @if (!isPortrait() && !gameModalBlocksTouchOverlay()) {
       <div class="top-actions">
         <button mat-flat-button type="button" (click)="toggleControls()">
           <mat-icon>{{ showControls() ? 'visibility_off' : 'visibility' }}</mat-icon>
           {{ showControls() ? 'Masquer UI' : 'Afficher UI' }}
         </button>
-        @if (mapUnlocked()) {
+        @if (mapUnlocked() && currentAct() !== 'hub') {
           <button
             mat-flat-button
             color="primary"
