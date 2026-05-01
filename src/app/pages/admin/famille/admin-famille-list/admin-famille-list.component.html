@@ -27,9 +27,10 @@
 </div>
 
 <div class="legend-container f-s-13 text-muted m-t-16 m-b-8">
-  <b>Légende des invitations :</b>
-  1er point : Réception, 2ème : Repas, 3ème : Soirée.
-  (<mat-icon style="color:#4CAF50; font-size: 12px; width:12px; height:12px;">lens</mat-icon>: Invité, <mat-icon style="color:#F44336; font-size: 12px; width:12px; height:12px;">lens</mat-icon>: Non invité)
+  <b>Légende :</b>
+  1er point : Réception, 2e : Repas, 3e : Soirée, 4e : Anniversaire (invité uniquement — la présence se renseigne côté invités).
+  (<mat-icon style="color:#4CAF50; font-size: 12px; width:12px; height:12px;">lens</mat-icon>: oui,
+  <mat-icon style="color:#F44336; font-size: 12px; width:12px; height:12px;">lens</mat-icon>: non)
 </div>
 
     <div class="table-responsive" *ngIf="!loading()">
@@ -60,9 +61,10 @@
                 />
                 {{ p.prenom }} {{ p.nom }}
                 <span class="person-invites">
-                  <mat-icon (click)="toggleInvite(p, 'invite_reception', element.id)" [style.color]="p.invite_reception ? '#4CAF50' : '#F44336'" matTooltip="Réception" class="invite-icon clickable">lens</mat-icon>
-                  <mat-icon (click)="toggleInvite(p, 'invite_repas', element.id)" [style.color]="p.invite_repas ? '#4CAF50' : '#F44336'" matTooltip="Repas" class="invite-icon clickable">lens</mat-icon>
-                  <mat-icon (click)="toggleInvite(p, 'invite_soiree', element.id)" [style.color]="p.invite_soiree ? '#4CAF50' : '#F44336'" matTooltip="Soirée" class="invite-icon clickable">lens</mat-icon>
+                  <mat-icon (click)="togglePersonField(p, 'invite_reception', element.id)" [style.color]="p.invite_reception ? '#4CAF50' : '#F44336'" matTooltip="Réception — invité" class="invite-icon clickable">lens</mat-icon>
+                  <mat-icon (click)="togglePersonField(p, 'invite_repas', element.id)" [style.color]="p.invite_repas ? '#4CAF50' : '#F44336'" matTooltip="Repas — invité" class="invite-icon clickable">lens</mat-icon>
+                  <mat-icon (click)="togglePersonField(p, 'invite_soiree', element.id)" [style.color]="p.invite_soiree ? '#4CAF50' : '#F44336'" matTooltip="Soirée — invité" class="invite-icon clickable">lens</mat-icon>
+                  <mat-icon (click)="togglePersonField(p, 'invite_anniversaire', element.id)" [style.color]="p.invite_anniversaire ? '#4CAF50' : '#F44336'" matTooltip="Anniversaire — invité" class="invite-icon clickable">lens</mat-icon>
                 </span>
                 <button matChipRemove color="warn" [attr.aria-label]="'Supprimer ' + p.prenom + ' ' + p.nom" (click)="deletePerson(element.id, p.id)">
                   <mat-icon>delete</mat-icon>

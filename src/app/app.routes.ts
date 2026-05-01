@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { BlankComponent } from './layouts/blank/blank.component';
 import { FullComponent } from './layouts/full/full.component';
-import { AuthGuard, landingRedirectGuard } from './services/auth.guard';
+import { AuthGuard, anniversaire40Guard, landingRedirectGuard } from './services/auth.guard';
 import { adminGuard } from './services/admin.guard';
 
 export const routes: Routes = [
@@ -73,6 +73,12 @@ export const routes: Routes = [
                 path: 'jeu',
                 loadComponent: () =>
                   import('./pages/jeu/jeu.component').then((m) => m.JeuComponent),
+              },
+              {
+                path: 'anniversaire-40',
+                canActivate: [anniversaire40Guard],
+                loadComponent: () =>
+                  import('./pages/anniversaire-40/anniversaire-40.component').then((m) => m.Anniversaire40Component),
               },
               {
                 path: 'profile',

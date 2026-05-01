@@ -1,4 +1,5 @@
-import { Component, OnInit, ChangeDetectionStrategy, signal } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, signal, inject, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -27,10 +28,14 @@ import { PostLoginWelcomeDialogComponent } from './post-login-welcome-dialog/pos
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
+
   selectedPersonName = 'invité';
 
   readonly emailLoading = signal(true);
   readonly profileEmail = signal<string>('');
+  /** Affiche l’encart anniversaire (personne courante invitée). */
+  readonly showAnniversaireInviteCard = signal(false);
 
   constructor(
     private auth: AuthService,
@@ -56,7 +61,15 @@ export class DashboardComponent implements OnInit {
       void this.avatar.loadAvatarFromRpc(Number(selectedId));
     }
     void this.loadProfileEmail(selectedId);
+    this.refreshAnnivInviteCard();
+    this.auth.guestNavLayoutTick$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.refreshAnnivInviteCard());
     queueMicrotask(() => this.openPostLoginWelcomeIfNeeded());
+  }
+
+  private refreshAnnivInviteCard(): void {
+    this.showAnniversaireInviteCard.set(this.auth.canSeeAnniversaire40Page());
   }
 
   private openPostLoginWelcomeIfNeeded(): void {

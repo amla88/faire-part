@@ -13,6 +13,36 @@
 
 	<app-response-summary></app-response-summary>
 
+	@if (showAnniversaireInviteCard()) {
+		<section class="dashboard-anniversaire-wrap" aria-labelledby="dashboard-anniv-title">
+			<mat-card class="bridgerton-card dashboard-anniversaire-card">
+				<mat-card-content>
+					<div class="dashboard-anniversaire-heading">
+						<span class="bridgerton-card-kicker">Anniversaire</span>
+						<h2 id="dashboard-anniv-title" class="bridgerton-card-title dashboard-anniversaire-title">
+							Vous êtes invité(e)
+						</h2>
+					</div>
+					<p class="dashboard-anniversaire-prose">
+						Une page du domaine rassemble les détails de la célébration des 40 ans d'Amaury.
+					</p>
+					<div class="dashboard-anniversaire-actions">
+						<button
+							mat-flat-button
+							color="primary"
+							type="button"
+							routerLink="/anniversaire-40"
+							class="bridgerton-rsvp-btn"
+						>
+							<mat-icon>celebration</mat-icon>
+							Voir les informations
+						</button>
+					</div>
+				</mat-card-content>
+			</mat-card>
+		</section>
+	}
+
 	<section class="dashboard-email-wrap" aria-labelledby="dashboard-email-title">
 		<mat-card class="bridgerton-card dashboard-email-card">
 			@if (emailLoading()) {

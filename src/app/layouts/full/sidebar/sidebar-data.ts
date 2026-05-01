@@ -9,6 +9,12 @@ export const navItems: NavItem[] = [
     route: '/dashboard',
   },
   { displayName: 'Chronique pixel', iconName: 'device-gamepad-2', route: '/jeu' },
+  {
+    displayName: 'Anniversaire 40 ans',
+    iconName: 'cake',
+    route: '/anniversaire-40',
+    requiresAnniversaireInvite: true,
+  },
 
   { navCap: 'Les salons' },
   { displayName: 'Votre effigie', iconName: 'user', route: '/avatar' },

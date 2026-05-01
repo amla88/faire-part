@@ -1,0 +1,128 @@
+<div class="anniv-page">
+  <div class="anniv-bg-grid" aria-hidden="true"></div>
+
+  <div class="anniv-inner">
+    <header class="anniv-hero">
+      <div class="anniv-hero-visual">
+        <img [src]="heroSrc" width="1200" height="675" alt="Visuel Anniversaire 40 ans — Day After" loading="eager" />
+        <div class="anniv-hero-scanline" aria-hidden="true"></div>
+      </div>
+      <div class="anniv-hero-glow"></div>
+      <p class="anniv-badge">🚀 MISSION : EXTENSION DE CÉLÉBRATION – NIVEAU 40 🚀</p>
+      <h1 class="anniv-title">Day After &amp; club des 40 ans</h1>
+      <p class="anniv-sub">Retro-Geek &amp; Chill · Le domaine change de fréquence</p>
+      <p class="anniv-perso">
+        C’est <strong>Amaury</strong> qui passe les <strong>40 ans le 4 août</strong> — et qui fête cela avec vous le
+        <strong>13 septembre</strong>, au lendemain du grand jour.
+      </p>
+    </header>
+
+    <mat-card class="anniv-card anniv-intro">
+      <mat-card-content>
+        <p class="anniv-lead">
+          Bravo ! Si tu lis ces lignes, c’est que tu as passé les phases de qualification. Tu fais partie de l’élite
+          sélectionnée pour participer à l’événement le plus exclusif de l’année : le <strong>« Day After »</strong> de
+          notre mariage &amp; le passage d’<strong>Amaury</strong> dans le <strong>club des 40 ans</strong> — avec un
+          clin d’œil à son anniversaire du <strong>4 août</strong>, qu’on prolonge ensemble le <strong>13 septembre</strong> !
+        </p>
+        <p class="anniv-body">
+          Le domaine ne ferme pas ses portes, il change juste de fréquence. On troque les costumes pour un esprit
+          <strong>Retro-Geek &amp; Chill</strong>. Pas d’obligation, pas de pression, juste du pur plaisir pour ceux
+          qui en veulent encore.
+        </p>
+      </mat-card-content>
+    </mat-card>
+
+    <section class="anniv-section" aria-labelledby="anniv-programme-title">
+      <h2 id="anniv-programme-title" class="anniv-section-title">
+        <span class="anniv-section-icon" aria-hidden="true">🕹️</span>
+        Au programme du reboot
+      </h2>
+      <div class="anniv-grid">
+        @for (item of programme; track $index) {
+          <mat-card class="anniv-card anniv-tile">
+            <mat-card-content>
+              <div class="anniv-tile-head">
+                <mat-icon class="anniv-tile-icon">{{ item.icon }}</mat-icon>
+                <h3 class="anniv-tile-title">{{ item.title }}</h3>
+              </div>
+              <p class="anniv-tile-text">{{ item.text }}</p>
+            </mat-card-content>
+          </mat-card>
+        }
+      </div>
+    </section>
+
+    <mat-card class="anniv-card anniv-mission">
+      <mat-card-content>
+        <h2 class="anniv-section-title anniv-section-title--inline">
+          <span class="anniv-section-icon" aria-hidden="true">📅</span>
+          Infos de mission
+        </h2>
+        <ul class="anniv-infos">
+          <li>
+            <span class="anniv-info-label">Lieu</span>
+            <span class="anniv-info-value">La ferme aux chiens (on ne bouge pas !)</span>
+          </li>
+          <li>
+            <span class="anniv-info-label">Heure</span>
+            <span class="anniv-info-value">Dès le lendemain matin (mais pas trop tôt !).</span>
+          </li>
+          <li>
+            <span class="anniv-info-label">Dress code</span>
+            <span class="anniv-info-value"
+              >Ton t-shirt de geek préféré ou simplement ta tenue la plus confortable.</span
+            >
+          </li>
+        </ul>
+        <p class="anniv-footnote">
+          C’est une invitation « bonus » : on adorerait t’avoir avec nous pour prolonger la magie, mais on comprend si
+          tes batteries ont besoin de repos.
+        </p>
+        <p class="anniv-cta">Alors, prêt à insérer une pièce pour une partie supplémentaire ?</p>
+      </mat-card-content>
+    </mat-card>
+
+    <section class="anniv-presence-section" aria-labelledby="anniv-presence-title">
+      <mat-card class="anniv-card anniv-presence-card">
+        <mat-card-content>
+          <h2 id="anniv-presence-title" class="anniv-presence-title">Serez-vous des nôtres ?</h2>
+          @if (loadingPresence()) {
+            <div class="anniv-presence-loading">
+              <mat-progress-spinner diameter="40" mode="indeterminate" aria-label="Chargement" />
+              <span>Chargement de votre réponse…</span>
+            </div>
+          } @else if (presenceLoadError()) {
+            <p class="anniv-presence-error" role="alert">{{ presenceLoadError() }}</p>
+          } @else {
+            <p class="anniv-presence-lede">
+              Vous pourrez modifier ce choix à tout moment.
+            </p>
+            <div class="anniv-presence-control" [class.anniv-presence-control--saving]="savingPresence()">
+              <span
+                class="anniv-presence-side anniv-presence-side--absent"
+                [class.anniv-presence-side--active]="!presentAnniversaire()"
+                >Absent(e)</span
+              >
+              <mat-slide-toggle
+                class="anniv-presence-toggle"
+                [checked]="presentAnniversaire()"
+                [disabled]="savingPresence()"
+                (change)="onPresenceChange($event.checked)"
+                aria-label="Présence à l’anniversaire : présent ou absent"
+              />
+              <span
+                class="anniv-presence-side anniv-presence-side--present"
+                [class.anniv-presence-side--active]="presentAnniversaire()"
+                >Présent(e)</span
+              >
+            </div>
+            @if (savingPresence()) {
+              <p class="anniv-presence-saving">Enregistrement…</p>
+            }
+          }
+        </mat-card-content>
+      </mat-card>
+    </section>
+  </div>
+</div>

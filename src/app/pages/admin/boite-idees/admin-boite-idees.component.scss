@@ -1,0 +1,24 @@
+.admin-contribution-block {
+  scroll-margin-top: 88px;
+}
+
+.admin-idees-search {
+  min-width: 220px;
+  flex: 1 1 240px;
+  max-width: 400px;
+}
+
+.admin-idees-table {
+  .idee-contenu {
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 220px;
+    overflow: auto;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+}
+
+.text-warn {
+  color: #b00020;
+}

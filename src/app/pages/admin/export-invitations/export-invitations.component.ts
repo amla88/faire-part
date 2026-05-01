@@ -23,7 +23,7 @@ export interface Personne {
   invite_reception: boolean;
   invite_repas: boolean;
   invite_soiree: boolean;
-
+  invite_anniversaire?: boolean;
 }
 
 export interface Famille {

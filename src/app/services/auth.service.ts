@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
+import { Subject } from 'rxjs';
 import { NgSupabaseService } from './ng-supabase.service';
 import { AvatarService } from './avatar.service';
 import { isCountdownWindowActive } from './countdown-window';
@@ -11,6 +12,8 @@ export interface PersonneSummary {
   id: number;
   nom: string;
   prenom: string;
+  /** Invité à l’événement anniversaire (Day After) — affichage menu / route dédiée. */
+  invite_anniversaire?: boolean;
 }
 
 export interface AppUser {
@@ -27,6 +30,10 @@ export interface AppUser {
 })
 export class AuthService {
   private readonly STORAGE_KEY = 'app_user';
+  /** Rafraîchir le menu invité (ex. après changement de personne). */
+  private readonly guestNavLayoutTick = new Subject<void>();
+  readonly guestNavLayoutTick$ = this.guestNavLayoutTick.asObservable();
+
   // avatarDataUri is delegated to AvatarService for centralized handling
   public avatarDataUri!: () => string | null;
 
@@ -99,7 +106,12 @@ export class AuthService {
         return { success: false, error: errMsg };
       }
       const personnesData = personnesRpc.data as any[] | null;
-      const personnes: PersonneSummary[] = (personnesData || []).map((p: any) => ({ id: p.id, nom: p.nom, prenom: p.prenom }));
+      const personnes: PersonneSummary[] = (personnesData || []).map((p: any) => ({
+        id: p.id,
+        nom: p.nom,
+        prenom: p.prenom,
+        invite_anniversaire: p.invite_anniversaire === true || p.invite_anniversaire === 'true',
+      }));
 
       // Précharger les avatars pour chaque personne (via RPC sécurisé) et les attacher au user
       const avatarsMap: Record<number, any> = {};
@@ -159,10 +171,77 @@ export class AuthService {
         /* ignore */
       }
 
+      this.pingGuestNavLayout();
       return { success: true, user };
     } catch (e: any) {
       return { success: false, error: e?.message || String(e) };
     }
+  }
+
+  private pingGuestNavLayout(): void {
+    try {
+      this.guestNavLayoutTick.next();
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /**
+   * Recharge les drapeaux personnes (dont `invite_anniversaire`) depuis la DB et met à jour `localStorage`.
+   * Utile si la session a été créée avant une migration, ou si l’admin a modifié l’invitation après connexion.
+   */
+  async refreshGuestPersonnesFromRpc(): Promise<void> {
+    const u = this.getUser();
+    const token = this.getToken();
+    if (!u?.famille_id || !token) return;
+
+    const { data, error } = await this.supabase.getClient().rpc('get_personnes_by_famille', {
+      p_famille_id: u.famille_id,
+    });
+    if (error) {
+      console.warn('[AuthService] refreshGuestPersonnesFromRpc', error);
+      return;
+    }
+
+    const rows = Array.isArray(data) ? data : [];
+    const personnes: PersonneSummary[] = rows.map((p: any) => ({
+      id: p.id,
+      nom: p.nom,
+      prenom: p.prenom,
+      invite_anniversaire: p.invite_anniversaire === true || p.invite_anniversaire === 'true',
+    }));
+
+    let selected = u.selected_personne_id ?? null;
+    if (selected != null && !personnes.some((p) => Number(p.id) === Number(selected))) {
+      selected = personnes.length === 1 ? personnes[0].id : null;
+    } else if (selected == null && personnes.length === 1) {
+      selected = personnes[0].id;
+    }
+
+    const next: AppUser = {
+      ...u,
+      personnes,
+      selected_personne_id: selected,
+    };
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(next));
+    this.pingGuestNavLayout();
+  }
+
+  /**
+   * Personne courante (sélection ou unique) invitée à l’anniversaire : menu + page `/anniversaire-40`.
+   */
+  canSeeAnniversaire40Page(): boolean {
+    const u = this.getUser();
+    if (!u?.personnes?.length) return false;
+    const pid =
+      u.selected_personne_id != null
+        ? Number(u.selected_personne_id)
+        : u.personnes.length === 1
+          ? Number(u.personnes[0].id)
+          : NaN;
+    if (!Number.isFinite(pid)) return false;
+    const p = u.personnes.find((x) => Number(x.id) === pid);
+    return p?.invite_anniversaire === true;
   }
 
   logout(): void {
@@ -170,6 +249,7 @@ export class AuthService {
     try {
       localStorage.removeItem('app_token');
     } catch {}
+    this.pingGuestNavLayout();
   }
 
   isLoggedIn(): boolean {
@@ -219,6 +299,7 @@ export class AuthService {
     user.selected_personne_id = personneId;
     // persist selection immediately
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(user));
+    this.pingGuestNavLayout();
 
     // If we already have an image cached for this personne, avoid blocking RPC.
     // We still trigger a background refresh to keep metadata up-to-date.

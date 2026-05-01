@@ -2,7 +2,7 @@
   <mat-card-content>
     <mat-card-title>Suivi présences &amp; jeu</mat-card-title>
     <p class="f-s-13 text-muted m-t-8 m-b-16">
-      Familles triées par dernière connexion (les plus récentes en premier). Cochez les moments pour afficher les colonnes et limiter la liste aux familles invitées sur au moins un de ces moments. Optionnellement, n’affichez que les familles qui ne se sont jamais connectées.
+      Familles triées par dernière connexion (les plus récentes en premier). Cochez les moments pour afficher les colonnes et limiter la liste aux familles invitées sur au moins un de ces moments (réception, repas, soirée, anniversaire). Optionnellement, n’affichez que les familles qui ne se sont jamais connectées.
     </p>
 
     <div class="toolbar m-b-16 d-flex flex-wrap align-center gap-16">
@@ -10,6 +10,7 @@
       <mat-checkbox [checked]="filterSoiree()" (change)="filterSoiree.set($event.checked)">Soirée</mat-checkbox>
       <mat-checkbox [checked]="filterRepas()" (change)="filterRepas.set($event.checked)">Repas</mat-checkbox>
       <mat-checkbox [checked]="filterReception()" (change)="filterReception.set($event.checked)">Réception</mat-checkbox>
+      <mat-checkbox [checked]="filterAnniversaire()" (change)="filterAnniversaire.set($event.checked)">Anniversaire</mat-checkbox>
       <mat-checkbox [checked]="onlyNeverConnected()" (change)="onlyNeverConnected.set($event.checked)">
         Jamais connectés uniquement
       </mat-checkbox>
@@ -55,6 +56,9 @@
                   @if (showMoment('soiree')) {
                     <th>Soirée</th>
                   }
+                  @if (showMoment('anniversaire')) {
+                    <th>Anniversaire</th>
+                  }
                   <th>Jeu</th>
                 </tr>
               </thead>
@@ -75,6 +79,11 @@
                     @if (showMoment('soiree')) {
                       <td>
                         <span class="presence-pill" [ngClass]="presenceClass(p, 'soiree')">{{ presenceLabel(p, 'soiree') }}</span>
+                      </td>
+                    }
+                    @if (showMoment('anniversaire')) {
+                      <td>
+                        <span class="presence-pill" [ngClass]="presenceClass(p, 'anniversaire')">{{ presenceLabel(p, 'anniversaire') }}</span>
                       </td>
                     }
                     <td class="cell-jeu">

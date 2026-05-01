@@ -7,6 +7,7 @@ import {
   Router,
   UrlTree,
   CanMatchFn,
+  CanActivateFn,
 } from '@angular/router';
 import { AuthService } from './auth.service';
 import { isCountdownWindowActive } from './countdown-window';
@@ -30,6 +31,16 @@ export const landingRedirectGuard: CanMatchFn = () => {
   }
 
   return router.parseUrl('/dashboard');
+};
+
+/** Page Anniversaire 40 ans : uniquement si la personne sélectionnée est invitée (`invite_anniversaire`). */
+export const anniversaire40Guard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  if (!auth.canSeeAnniversaire40Page()) {
+    return router.parseUrl('/dashboard');
+  }
+  return true;
 };
 
 @Injectable({ providedIn: 'root' })

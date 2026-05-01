@@ -92,6 +92,8 @@ export class RsvpComponent implements OnInit {
         present_repas: r.present_repas ?? false,
         invite_soiree: r.invite_soiree ?? false,
         present_soiree: r.present_soiree ?? false,
+        invite_anniversaire: r.invite_anniversaire ?? false,
+        present_anniversaire: r.present_anniversaire ?? false,
         decline_invitation: r.decline_invitation ?? false,
         allergenes_alimentaires: r.allergenes_alimentaires ?? '',
         regimes_remarques: r.regimes_remarques ?? '',
@@ -113,6 +115,7 @@ export class RsvpComponent implements OnInit {
           present_reception: [{ value: !!p.present_reception, disabled: !p.invite_reception }],
           present_repas: [{ value: !!p.present_repas, disabled: !p.invite_repas }],
           present_soiree: [{ value: !!p.present_soiree, disabled: !p.invite_soiree }],
+          present_anniversaire: [{ value: !!p.present_anniversaire, disabled: !p.invite_anniversaire }],
           allergenes_alimentaires: [p.allergenes_alimentaires || '', [Validators.maxLength(2000)]],
           regimes_remarques: [p.regimes_remarques || '', [Validators.maxLength(2000)]],
         });
@@ -127,9 +130,10 @@ export class RsvpComponent implements OnInit {
             present_reception?: boolean;
             present_repas?: boolean;
             present_soiree?: boolean;
+            present_anniversaire?: boolean;
             decline_invitation?: boolean;
           };
-          if (v.present_reception || v.present_repas || v.present_soiree) {
+          if (v.present_reception || v.present_repas || v.present_soiree || v.present_anniversaire) {
             if (v.decline_invitation) {
               g.patchValue({ decline_invitation: false }, { emitEvent: true });
             }
@@ -138,6 +142,7 @@ export class RsvpComponent implements OnInit {
         g.get('present_reception')?.valueChanges.subscribe(clearDeclineIfAnyPresent);
         g.get('present_repas')?.valueChanges.subscribe(clearDeclineIfAnyPresent);
         g.get('present_soiree')?.valueChanges.subscribe(clearDeclineIfAnyPresent);
+        g.get('present_anniversaire')?.valueChanges.subscribe(clearDeclineIfAnyPresent);
 
         if (p.decline_invitation) {
           this.applyDeclineToRow(g, p, true);
@@ -167,6 +172,7 @@ export class RsvpComponent implements OnInit {
           present_reception: !!v.present_reception,
           present_repas: !!v.present_repas,
           present_soiree: !!v.present_soiree,
+          present_anniversaire: !!v.present_anniversaire,
           allergenes_alimentaires: (v.allergenes_alimentaires ?? '').trim(),
           regimes_remarques: (v.regimes_remarques ?? '').trim(),
         };
@@ -209,7 +215,7 @@ export class RsvpComponent implements OnInit {
    */
   private applyDeclineToRow(
     g: FormGroup,
-    p: { invite_reception: boolean; invite_repas: boolean; invite_soiree: boolean },
+    p: { invite_reception: boolean; invite_repas: boolean; invite_soiree: boolean; invite_anniversaire: boolean },
     declined: boolean
   ): void {
     if (declined) {
@@ -218,6 +224,7 @@ export class RsvpComponent implements OnInit {
           present_reception: false,
           present_repas: false,
           present_soiree: false,
+          present_anniversaire: false,
           allergenes_alimentaires: '',
           regimes_remarques: '',
         },
@@ -226,6 +233,7 @@ export class RsvpComponent implements OnInit {
       g.get('present_reception')?.disable({ emitEvent: false });
       g.get('present_repas')?.disable({ emitEvent: false });
       g.get('present_soiree')?.disable({ emitEvent: false });
+      g.get('present_anniversaire')?.disable({ emitEvent: false });
       g.get('allergenes_alimentaires')?.disable({ emitEvent: false });
       g.get('regimes_remarques')?.disable({ emitEvent: false });
       return;
@@ -239,6 +247,9 @@ export class RsvpComponent implements OnInit {
 
     if (p.invite_soiree) g.get('present_soiree')?.enable({ emitEvent: false });
     else g.get('present_soiree')?.disable({ emitEvent: false });
+
+    if (p.invite_anniversaire) g.get('present_anniversaire')?.enable({ emitEvent: false });
+    else g.get('present_anniversaire')?.disable({ emitEvent: false });
 
     if (p.invite_repas) {
       g.get('allergenes_alimentaires')?.enable({ emitEvent: false });

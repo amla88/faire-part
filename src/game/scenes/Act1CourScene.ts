@@ -402,10 +402,12 @@ export class Act1CourScene extends Phaser.Scene {
                 present_reception: row.present_reception === true,
                 present_repas: row.present_repas === true,
                 present_soiree: row.present_soiree === true,
+                present_anniversaire: row.present_anniversaire === true,
                 decline_invitation: row.decline_invitation === true,
                 invite_reception: row.invite_reception === true,
                 invite_repas: row.invite_repas === true,
                 invite_soiree: row.invite_soiree === true,
+                invite_anniversaire: row.invite_anniversaire === true,
               }
             : undefined;
 
@@ -416,6 +418,7 @@ export class Act1CourScene extends Phaser.Scene {
             (row.present_reception === true ||
               row.present_repas === true ||
               row.present_soiree === true ||
+              row.present_anniversaire === true ||
               row.decline_invitation === true ||
               String(row.allergenes_alimentaires || '').trim().length > 0 ||
               String(row.regimes_remarques || '').trim().length > 0);
@@ -453,23 +456,29 @@ export class Act1CourScene extends Phaser.Scene {
     present_reception?: boolean;
     present_repas?: boolean;
     present_soiree?: boolean;
+    present_anniversaire?: boolean;
     decline_invitation?: boolean;
     invite_reception?: boolean;
     invite_repas?: boolean;
     invite_soiree?: boolean;
+    invite_anniversaire?: boolean;
   }): void {
     const declined = defaults?.decline_invitation === true;
     const invR = defaults?.invite_reception !== false;
     const invP = defaults?.invite_repas !== false;
     const invS = defaults?.invite_soiree !== false;
+    /** Anniversaire : uniquement si l’admin a explicitement coché l’invitation (colonne défaut false). */
+    const invA = defaults?.invite_anniversaire !== false;
     const pr = declined ? false : defaults?.present_reception === true;
     const pp = declined ? false : defaults?.present_repas === true;
     const ps = declined ? false : defaults?.present_soiree === true;
+    const pa = declined ? false : defaults?.present_anniversaire === true;
 
     const toggles: ToggleOption[] = [];
-    if (invR) toggles.push({ key: 'present_reception', label: 'Réception', value: pr });
-    if (invP) toggles.push({ key: 'present_repas', label: 'Repas', value: pp });
-    if (invS) toggles.push({ key: 'present_soiree', label: 'Soirée', value: ps });
+    if (invR) toggles.push({ key: 'present_reception', label: 'Réception | 12 septembre à partie de 11h30', value: pr });
+    if (invP) toggles.push({ key: 'present_repas', label: 'Repas | 12 septembre à 15h00', value: pp });
+    if (invS) toggles.push({ key: 'present_soiree', label: 'Soirée | 12 septembre à 20h00', value: ps });
+    if (invA) toggles.push({ key: 'present_anniversaire', label: 'Anniversaire | 13 septembre', value: pa });
     toggles.push({
       key: 'decline_invitation',
       label: 'Ne participe pas (refus)',
@@ -491,6 +500,7 @@ export class Act1CourScene extends Phaser.Scene {
             present_reception: decline || !invR ? false : !!values['present_reception'],
             present_repas: decline || !invP ? false : !!values['present_repas'],
             present_soiree: decline || !invS ? false : !!values['present_soiree'],
+            present_anniversaire: decline || !invA ? false : !!values['present_anniversaire'],
           })
           .then(() => {
             quests.done(QuestFlags.act1RegisterDone);

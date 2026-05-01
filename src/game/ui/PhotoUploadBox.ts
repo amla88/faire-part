@@ -435,7 +435,7 @@ export class PhotoUploadBox {
         this.stop();
       };
 
-      if (addTerminer) {
+      if (terminer) {
         terminer.onclick = () => {
           if (busy) return;
           cleanupLocalPreview();

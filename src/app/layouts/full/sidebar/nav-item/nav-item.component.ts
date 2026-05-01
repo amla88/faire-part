@@ -42,7 +42,13 @@ export class AppNavItemComponent implements OnChanges {
 
   onItemSelected(item: NavItem) {
     if (!item.children || !item.children.length) {
-      this.router.navigate([item.route]);
+      const route = item.route ?? '';
+      // `navigate(['/a/b'])` ne découpe pas en segments : préférer une URL absolue explicite.
+      if (route.startsWith('/')) {
+        void this.router.navigateByUrl(route);
+      } else {
+        void this.router.navigate([route]);
+      }
     }
     if (item.children && item.children.length) {
       this.expanded = !this.expanded;

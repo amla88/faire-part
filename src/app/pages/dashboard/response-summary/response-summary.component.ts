@@ -24,6 +24,7 @@ export class ResponseSummaryComponent implements OnInit {
   showReceptionHeader = false;
   showRepasHeader = false;
   showSoireeHeader = false;
+  showAnniversaireHeader = false;
 
   public isTrue(v: any): boolean {
     return v === true || v === 'true' || v === 1 || v === '1';
@@ -70,6 +71,8 @@ export class ResponseSummaryComponent implements OnInit {
         present_repas: r.present_repas ?? false,
         invite_soiree: r.invite_soiree ?? false,
         present_soiree: r.present_soiree ?? false,
+        invite_anniversaire: r.invite_anniversaire ?? false,
+        present_anniversaire: r.present_anniversaire ?? false,
         decline_invitation: r.decline_invitation ?? false,
         allergenes_alimentaires: r.allergenes_alimentaires ?? '',
         regimes_remarques: r.regimes_remarques ?? '',
@@ -78,6 +81,7 @@ export class ResponseSummaryComponent implements OnInit {
       this.showReceptionHeader = this.personnes.some((pp: any) => this.isTrue(pp.invite_reception));
       this.showRepasHeader = this.personnes.some((pp: any) => this.isTrue(pp.invite_repas));
       this.showSoireeHeader = this.personnes.some((pp: any) => this.isTrue(pp.invite_soiree));
+      this.showAnniversaireHeader = this.personnes.some((pp: any) => this.isTrue(pp.invite_anniversaire));
     } catch (err) {
       console.error('Erreur lors de la récupération des personnes :', err);
       this.personnes = [];

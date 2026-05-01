@@ -20,6 +20,7 @@
 					<span class="header-event" [class.hidden]="!showReceptionHeader" [attr.aria-hidden]="!showReceptionHeader">Réception</span>
 					<span class="header-event" [class.hidden]="!showRepasHeader" [attr.aria-hidden]="!showRepasHeader">Repas</span>
 					<span class="header-event" [class.hidden]="!showSoireeHeader" [attr.aria-hidden]="!showSoireeHeader">Soirée</span>
+					<span class="header-event" [class.hidden]="!showAnniversaireHeader" [attr.aria-hidden]="!showAnniversaireHeader">Anniversaire</span>
 				</div>
 			</div>
 
@@ -63,6 +64,16 @@
 							{{ isTrue(p.present_soiree) ? 'nightlife' : 'bedtime' }}
 						</mat-icon>
 						<span *ngIf="isTrue(p.invite_soiree)" class="sr-only">Soirée: {{ isTrue(p.present_soiree) ? 'Présent' : 'Absent' }}</span>
+
+						<mat-icon
+							class="event-icon"
+							[class.present]="isTrue(p.present_anniversaire)"
+							[style.visibility]="isTrue(p.invite_anniversaire) ? 'visible' : 'hidden'"
+							[attr.aria-hidden]="!isTrue(p.invite_anniversaire)"
+							aria-label="Anniversaire">
+							{{ isTrue(p.present_anniversaire) ? 'celebration' : 'cake' }}
+						</mat-icon>
+						<span *ngIf="isTrue(p.invite_anniversaire)" class="sr-only">Anniversaire: {{ isTrue(p.present_anniversaire) ? 'Présent' : 'Absent' }}</span>
 					</div>
 				</div>
 				<div *ngIf="!isTrue(p.decline_invitation) && isTrue(p.invite_repas) && hasDietaryNotes(p)" class="person-dietary-notes" aria-label="Notes pour le banquet">

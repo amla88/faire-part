@@ -39,6 +39,17 @@ export const AdminRoutes: Routes = [
       import('./musiques/admin-musiques.component').then((m) => m.AdminMusiquesComponent),
   },
   {
+    path: 'boite-idees',
+    loadComponent: () =>
+      import('./boite-idees/admin-boite-idees.component').then((m) => m.AdminBoiteIdeesComponent),
+  },
+  /** Même écran que « Boîte à idées » : liste idées + anecdotes ; défile jusqu’aux anecdotes. */
+  {
+    path: 'anecdotes',
+    loadComponent: () =>
+      import('./boite-idees/admin-boite-idees.component').then((m) => m.AdminBoiteIdeesComponent),
+  },
+  {
     path: 'export-invitations',
     loadComponent: () => import('./export-invitations/export-invitations.component').then((m) => m.ExportInvitationsComponent),
   },

@@ -11,7 +11,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { QuestFlags } from 'src/game/systems/QuestSystem';
 
-export type PresenceMoment = 'soiree' | 'repas' | 'reception';
+export type PresenceMoment = 'soiree' | 'repas' | 'reception' | 'anniversaire';
 
 interface GameProgressRow {
   personne_id: number;
@@ -48,6 +48,7 @@ export class AdminSuiviPresencesJeuxComponent implements OnInit {
   filterSoiree = signal(true);
   filterRepas = signal(true);
   filterReception = signal(true);
+  filterAnniversaire = signal(true);
   /** Si vrai : uniquement les familles sans date de dernière connexion. */
   onlyNeverConnected = signal(false);
 
@@ -56,8 +57,9 @@ export class AdminSuiviPresencesJeuxComponent implements OnInit {
     const s = this.filterSoiree();
     const r = this.filterRepas();
     const rc = this.filterReception();
-    if (!(s && r && rc) && (s || r || rc)) {
-      rows = rows.filter((fam) => this.familleMatchesMomentFilters(fam, s, r, rc));
+    const a = this.filterAnniversaire();
+    if (!(s && r && rc && a) && (s || r || rc || a)) {
+      rows = rows.filter((fam) => this.familleMatchesMomentFilters(fam, s, r, rc, a));
     }
     if (this.onlyNeverConnected()) {
       rows = rows.filter((fam) => fam?.connexion == null || String(fam.connexion).trim() === '');
@@ -78,7 +80,7 @@ export class AdminSuiviPresencesJeuxComponent implements OnInit {
       const res = await client
         .from('familles')
         .select(
-          'id, connexion, personne_principale, personnes!personnes_famille_id_fkey(id, nom, prenom, invite_reception, present_reception, invite_repas, present_repas, invite_soiree, present_soiree, decline_invitation)'
+          'id, connexion, personne_principale, personnes!personnes_famille_id_fkey(id, nom, prenom, invite_reception, present_reception, invite_repas, present_repas, invite_soiree, present_soiree, invite_anniversaire, present_anniversaire, decline_invitation)'
         );
       if (res.error) throw res.error;
       const list = Array.isArray(res.data) ? (res.data as any[]) : [];
@@ -144,15 +146,28 @@ export class AdminSuiviPresencesJeuxComponent implements OnInit {
   showMoment(moment: PresenceMoment): boolean {
     if (moment === 'soiree') return this.filterSoiree();
     if (moment === 'repas') return this.filterRepas();
+    if (moment === 'anniversaire') return this.filterAnniversaire();
     return this.filterReception();
   }
 
   presenceLabel(person: any, moment: PresenceMoment): string {
     if (person?.decline_invitation) return 'Refus invitation';
     const inviteKey =
-      moment === 'soiree' ? 'invite_soiree' : moment === 'repas' ? 'invite_repas' : 'invite_reception';
+      moment === 'soiree'
+        ? 'invite_soiree'
+        : moment === 'repas'
+          ? 'invite_repas'
+          : moment === 'anniversaire'
+            ? 'invite_anniversaire'
+            : 'invite_reception';
     const presentKey =
-      moment === 'soiree' ? 'present_soiree' : moment === 'repas' ? 'present_repas' : 'present_reception';
+      moment === 'soiree'
+        ? 'present_soiree'
+        : moment === 'repas'
+          ? 'present_repas'
+          : moment === 'anniversaire'
+            ? 'present_anniversaire'
+            : 'present_reception';
     if (!person?.[inviteKey]) return 'Non invité';
     return person?.[presentKey] ? 'Oui' : 'Non';
   }
@@ -160,9 +175,21 @@ export class AdminSuiviPresencesJeuxComponent implements OnInit {
   presenceClass(person: any, moment: PresenceMoment): string {
     if (person?.decline_invitation) return 'presence--declined';
     const inviteKey =
-      moment === 'soiree' ? 'invite_soiree' : moment === 'repas' ? 'invite_repas' : 'invite_reception';
+      moment === 'soiree'
+        ? 'invite_soiree'
+        : moment === 'repas'
+          ? 'invite_repas'
+          : moment === 'anniversaire'
+            ? 'invite_anniversaire'
+            : 'invite_reception';
     const presentKey =
-      moment === 'soiree' ? 'present_soiree' : moment === 'repas' ? 'present_repas' : 'present_reception';
+      moment === 'soiree'
+        ? 'present_soiree'
+        : moment === 'repas'
+          ? 'present_repas'
+          : moment === 'anniversaire'
+            ? 'present_anniversaire'
+            : 'present_reception';
     if (!person?.[inviteKey]) return 'presence--na';
     return person?.[presentKey] ? 'presence--yes' : 'presence--no';
   }
@@ -207,12 +234,13 @@ export class AdminSuiviPresencesJeuxComponent implements OnInit {
     });
   }
 
-  private familleMatchesMomentFilters(fam: any, s: boolean, r: boolean, rc: boolean): boolean {
+  private familleMatchesMomentFilters(fam: any, s: boolean, r: boolean, rc: boolean, a: boolean): boolean {
     const personnes: any[] = Array.isArray(fam?.personnes) ? fam.personnes : [];
     for (const p of personnes) {
       if (s && p.invite_soiree) return true;
       if (r && p.invite_repas) return true;
       if (rc && p.invite_reception) return true;
+      if (a && p.invite_anniversaire) return true;
     }
     return false;
   }

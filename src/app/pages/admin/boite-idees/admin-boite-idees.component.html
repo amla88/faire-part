@@ -1,0 +1,145 @@
+<mat-card class="cardWithShadow">
+  <mat-card-content>
+    <mat-card-title>Idées &amp; anecdotes — contributions invités</mat-card-title>
+    <p class="f-s-13 text-muted m-t-8 m-b-16">
+      <strong>Boîte à idées</strong> : acte 5 (gloriette). <strong>Anecdotes</strong> : page « Chroniques du salon » et acte 4 (verger). Les deux listes sont triées du plus récent au plus ancien.
+    </p>
+
+    <div class="m-b-16 d-flex flex-wrap align-center gap-12">
+      <button mat-stroked-button type="button" (click)="load()" [disabled]="loading() || loadingAnecdotes()">
+        <mat-icon>refresh</mat-icon>
+        Tout actualiser
+      </button>
+    </div>
+
+    <section id="admin-section-idees" class="admin-contribution-block">
+      <h2 class="f-s-18 f-w-600 m-t-0 m-b-12">Boîte à idées (acte 5)</h2>
+
+      <div class="m-b-12 d-flex flex-wrap align-center gap-12">
+        <mat-form-field appearance="outline" class="admin-idees-search">
+          <mat-label>Filtrer les idées</mat-label>
+          <input
+            matInput
+            placeholder="Texte, nom, n° de famille…"
+            [value]="filterText()"
+            (input)="filterText.set($any($event.target).value)"
+          />
+        </mat-form-field>
+      </div>
+
+      <div class="f-s-13 text-muted m-b-8">
+        {{ filteredRows().length }} idée(s) affichée(s)
+      </div>
+
+      @if (loading()) {
+        <div class="d-flex justify-center p-24">
+          <mat-progress-spinner diameter="40" mode="indeterminate" />
+        </div>
+      } @else if (error()) {
+        <p class="text-warn m-0">{{ error() }}</p>
+      } @else if (filteredRows().length === 0) {
+        <p class="text-muted m-0">
+          @if (rows().length === 0) {
+            Aucune idée enregistrée pour l’instant.
+          } @else {
+            Aucun résultat ne correspond au filtre.
+          }
+        </p>
+      } @else {
+        <div class="table-responsive">
+          <table mat-table [dataSource]="filteredRows()" class="w-100 admin-idees-table">
+            <ng-container matColumnDef="created_at">
+              <th mat-header-cell *matHeaderCellDef class="f-w-600">Date</th>
+              <td mat-cell *matCellDef="let row">{{ formatDate(row.created_at) }}</td>
+            </ng-container>
+            <ng-container matColumnDef="auteur">
+              <th mat-header-cell *matHeaderCellDef class="f-w-600">Auteur</th>
+              <td mat-cell *matCellDef="let row">{{ row.prenom }} {{ row.nom }}</td>
+            </ng-container>
+            <ng-container matColumnDef="famille">
+              <th mat-header-cell *matHeaderCellDef class="f-w-600">Famille</th>
+              <td mat-cell *matCellDef="let row">
+                <a mat-button color="primary" [routerLink]="['/admin/famille', row.famille_id]">
+                  Fiche #{{ row.famille_id }}
+                </a>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="contenu">
+              <th mat-header-cell *matHeaderCellDef class="f-w-600">Idée</th>
+              <td mat-cell *matCellDef="let row">
+                <div class="idee-contenu">{{ row.contenu }}</div>
+              </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns; trackBy: trackById"></tr>
+          </table>
+        </div>
+      }
+    </section>
+
+    <section id="admin-section-anecdotes" class="admin-contribution-block m-t-32">
+      <h2 class="f-s-18 f-w-600 m-t-0 m-b-12">Anecdotes</h2>
+
+      <div class="m-b-12 d-flex flex-wrap align-center gap-12">
+        <mat-form-field appearance="outline" class="admin-idees-search">
+          <mat-label>Filtrer les anecdotes</mat-label>
+          <input
+            matInput
+            placeholder="Texte, nom, n° de famille…"
+            [value]="filterTextAnecdotes()"
+            (input)="filterTextAnecdotes.set($any($event.target).value)"
+          />
+        </mat-form-field>
+      </div>
+
+      <div class="f-s-13 text-muted m-b-8">
+        {{ filteredRowsAnecdotes().length }} anecdote(s) affichée(s)
+      </div>
+
+      @if (loadingAnecdotes()) {
+        <div class="d-flex justify-center p-24">
+          <mat-progress-spinner diameter="40" mode="indeterminate" />
+        </div>
+      } @else if (errorAnecdotes()) {
+        <p class="text-warn m-0">{{ errorAnecdotes() }}</p>
+      } @else if (filteredRowsAnecdotes().length === 0) {
+        <p class="text-muted m-0">
+          @if (rowsAnecdotes().length === 0) {
+            Aucune anecdote enregistrée pour l’instant.
+          } @else {
+            Aucun résultat ne correspond au filtre.
+          }
+        </p>
+      } @else {
+        <div class="table-responsive">
+          <table mat-table [dataSource]="filteredRowsAnecdotes()" class="w-100 admin-idees-table">
+            <ng-container matColumnDef="created_at">
+              <th mat-header-cell *matHeaderCellDef class="f-w-600">Date</th>
+              <td mat-cell *matCellDef="let row">{{ formatDate(row.created_at) }}</td>
+            </ng-container>
+            <ng-container matColumnDef="auteur">
+              <th mat-header-cell *matHeaderCellDef class="f-w-600">Auteur</th>
+              <td mat-cell *matCellDef="let row">{{ row.prenom }} {{ row.nom }}</td>
+            </ng-container>
+            <ng-container matColumnDef="famille">
+              <th mat-header-cell *matHeaderCellDef class="f-w-600">Famille</th>
+              <td mat-cell *matCellDef="let row">
+                <a mat-button color="primary" [routerLink]="['/admin/famille', row.famille_id]">
+                  Fiche #{{ row.famille_id }}
+                </a>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="contenu">
+              <th mat-header-cell *matHeaderCellDef class="f-w-600">Anecdote</th>
+              <td mat-cell *matCellDef="let row">
+                <div class="idee-contenu">{{ row.contenu }}</div>
+              </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns; trackBy: trackByAnecdoteId"></tr>
+          </table>
+        </div>
+      }
+    </section>
+  </mat-card-content>
+</mat-card>

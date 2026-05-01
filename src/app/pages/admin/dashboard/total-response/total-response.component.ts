@@ -22,16 +22,18 @@ import {
 export class TotalResponseComponent implements OnInit {
   private supabase = inject(NgSupabaseService);
 
-  // signal for dynamic series values (présents Réception, Repas, Soirée, totalPresentAny)
-  series: WritableSignal<number[]> = signal([0, 0, 0, 0]);
+  // signal for dynamic series values (Réception, Repas, Soirée, Anniversaire, réponses totales)
+  series: WritableSignal<number[]> = signal([0, 0, 0, 0, 0]);
   totalPersons = 0;
   // keep raw counts to show value/total in labels
   inviteReceptionCount = 0;
   inviteRepasCount = 0;
   inviteSoireeCount = 0;
+  inviteAnniversaireCount = 0;
   presentReceptionCount = 0;
   presentRepasCount = 0;
   presentSoireeCount = 0;
+  presentAnniversaireCount = 0;
   totalPresentAnyCount = 0;
 
   chartOptions: ChartOptions = {
@@ -69,8 +71,8 @@ export class TotalResponseComponent implements OnInit {
         },
       }
     },
-  colors: ['#1ab7ea', '#0084ff', '#39539E', '#0077B5'],
-    labels: ['Réception', 'Repas', 'Soirée', 'Réponses Totales'],
+  colors: ['#1ab7ea', '#0084ff', '#39539E', '#E91E63', '#0077B5'],
+    labels: ['Réception', 'Repas', 'Soirée', 'Anniversaire', 'Réponses Totales'],
     responsive: [{
       breakpoint: 480,
       options: {
@@ -87,7 +89,9 @@ export class TotalResponseComponent implements OnInit {
       const client = this.supabase.getClient();
       const { data, error } = await client
         .from('personnes')
-        .select('invite_reception, present_reception, invite_repas, present_repas, invite_soiree, present_soiree');
+        .select(
+          'invite_reception, present_reception, invite_repas, present_repas, invite_soiree, present_soiree, invite_anniversaire, present_anniversaire'
+        );
 
       if (error) {
         console.warn('Erreur Supabase fetch personnes:', error);
@@ -105,6 +109,7 @@ export class TotalResponseComponent implements OnInit {
         const hasPresentReception = isTrue(r.present_reception);
         const hasPresentRepas = isTrue(r.present_repas);
         const hasPresentSoiree = isTrue(r.present_soiree);
+        const hasPresentAnniversaire = isTrue(r.present_anniversaire);
 
         if (isTrue(r.invite_reception)) acc.inviteReception++;
         if (hasPresentReception) acc.presentReception++;
@@ -115,7 +120,10 @@ export class TotalResponseComponent implements OnInit {
         if (isTrue(r.invite_soiree)) acc.inviteSoiree++;
         if (hasPresentSoiree) acc.presentSoiree++;
 
-        if (hasPresentReception || hasPresentRepas || hasPresentSoiree) acc.totalPresentAny++;
+        if (isTrue(r.invite_anniversaire)) acc.inviteAnniversaire++;
+        if (hasPresentAnniversaire) acc.presentAnniversaire++;
+
+        if (hasPresentReception || hasPresentRepas || hasPresentSoiree || hasPresentAnniversaire) acc.totalPresentAny++;
 
         return acc;
       }, {
@@ -125,6 +133,8 @@ export class TotalResponseComponent implements OnInit {
         presentRepas: 0,
         inviteSoiree: 0,
         presentSoiree: 0,
+        inviteAnniversaire: 0,
+        presentAnniversaire: 0,
         totalPresentAny: 0
       } as any);
 
@@ -137,6 +147,8 @@ export class TotalResponseComponent implements OnInit {
       this.presentRepasCount = counts.presentRepas;
       this.inviteSoireeCount = counts.inviteSoiree;
       this.presentSoireeCount = counts.presentSoiree;
+      this.inviteAnniversaireCount = counts.inviteAnniversaire;
+      this.presentAnniversaireCount = counts.presentAnniversaire;
       this.totalPresentAnyCount = counts.totalPresentAny;
       this.totalPersons = totalPersons;
 
@@ -145,6 +157,7 @@ export class TotalResponseComponent implements OnInit {
         pct(counts.presentReception, counts.inviteReception),
         pct(counts.presentRepas, counts.inviteRepas),
         pct(counts.presentSoiree, counts.inviteSoiree),
+        pct(counts.presentAnniversaire, counts.inviteAnniversaire),
         pct(counts.totalPresentAny, totalPersons)
       ]);
 
@@ -157,6 +170,7 @@ export class TotalResponseComponent implements OnInit {
           if (idx === 0) return `Réception: ${this.presentReceptionCount} / ${this.inviteReceptionCount}`;
           if (idx === 1) return `Repas: ${this.presentRepasCount} / ${this.inviteRepasCount}`;
           if (idx === 2) return `Soirée: ${this.presentSoireeCount} / ${this.inviteSoireeCount}`;
+          if (idx === 3) return `Anniversaire: ${this.presentAnniversaireCount} / ${this.inviteAnniversaireCount}`;
           return `Réponses Totales: ${this.totalPresentAnyCount} / ${this.totalPersons}`;
         }
       };

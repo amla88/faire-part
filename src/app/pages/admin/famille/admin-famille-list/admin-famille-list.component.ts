@@ -192,48 +192,51 @@ export class AdminFamilleListComponent implements OnInit {
     }
   }
 
-  async toggleInvite(person: any, inviteType: 'invite_reception' | 'invite_repas' | 'invite_soiree', familleId: number) {
-    const newValue = !person[inviteType];
-    const originalValue = person[inviteType];
+  /** Bascule invite_* / invite_anniversaire depuis la liste des familles (pas de présence anniversaire ici). */
+  async togglePersonField(
+    person: any,
+    field:
+      | 'invite_reception'
+      | 'invite_repas'
+      | 'invite_soiree'
+      | 'invite_anniversaire',
+    familleId: number,
+  ) {
+    const newValue = !person[field];
+    const originalValue = person[field];
 
-    // Optimistic UI Update
-    this.familles.update(currentFamilles =>
-      currentFamilles.map(famille =>
+    this.familles.update((currentFamilles) =>
+      currentFamilles.map((famille) =>
         famille.id === familleId
           ? {
               ...famille,
               personnes: famille.personnes.map((p: any) =>
-                p.id === person.id ? { ...p, [inviteType]: newValue } : p
+                p.id === person.id ? { ...p, [field]: newValue } : p,
               ),
             }
-          : famille
-      )
+          : famille,
+      ),
     );
 
     try {
-      const { error } = await this.ngSupabase
-        .getClient()
-        .from('personnes')
-        .update({ [inviteType]: newValue })
-        .eq('id', person.id);
+      const { error } = await this.ngSupabase.getClient().from('personnes').update({ [field]: newValue }).eq('id', person.id);
 
       if (error) throw error;
     } catch (err) {
-      console.error('Erreur mise à jour invitation', err);
-      this.snackBar.open("Erreur: Le statut n'a pas pu être mis à jour.", 'Fermer', { duration: 5000 });
+      console.error('Erreur mise à jour personne', err);
+      this.snackBar.open("Erreur: le statut n'a pas pu être mis à jour.", 'Fermer', { duration: 5000 });
 
-      // Rollback UI on error
-      this.familles.update(currentFamilles =>
-        currentFamilles.map(famille =>
+      this.familles.update((currentFamilles) =>
+        currentFamilles.map((famille) =>
           famille.id === familleId
             ? {
                 ...famille,
                 personnes: famille.personnes.map((p: any) =>
-                  p.id === person.id ? { ...p, [inviteType]: originalValue } : p
+                  p.id === person.id ? { ...p, [field]: originalValue } : p,
                 ),
               }
-            : famille
-        )
+            : famille,
+        ),
       );
     }
   }
