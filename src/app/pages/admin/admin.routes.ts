@@ -50,6 +50,11 @@ export const AdminRoutes: Routes = [
       import('./boite-idees/admin-boite-idees.component').then((m) => m.AdminBoiteIdeesComponent),
   },
   {
+    path: 'photo-albums',
+    loadComponent: () =>
+      import('./photo-albums/admin-photo-albums.component').then((m) => m.AdminPhotoAlbumsComponent),
+  },
+  {
     path: 'export-invitations',
     loadComponent: () => import('./export-invitations/export-invitations.component').then((m) => m.ExportInvitationsComponent),
   },

@@ -1,0 +1,90 @@
+<div class="admin-photo-albums">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Albums photo invités</mat-card-title>
+      <mat-card-subtitle>
+        Regroupement par famille — fichiers sur le domaine (dossiers <code>personne-*</code>).
+      </mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-actions class="admin-photo-albums-toolbar">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="sort-field">
+        <mat-label>Ordre des familles</mat-label>
+        <mat-select
+          [value]="sortMode()"
+          (selectionChange)="setSortMode($event.value)"
+          [disabled]="loading()"
+        >
+          <mat-option value="modified">Dernière modification (récent en premier)</mat-option>
+          <mat-option value="alpha">Alphabétique (nom de la personne principale)</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <button mat-stroked-button type="button" color="primary" (click)="reload()" [disabled]="loading()">
+        <mat-icon>refresh</mat-icon>
+        Rafraîchir
+      </button>
+    </mat-card-actions>
+    <mat-card-content>
+      @if (loading()) {
+        <div class="admin-photo-albums-loading">
+          <mat-progress-spinner diameter="40" mode="indeterminate"></mat-progress-spinner>
+          <span>Chargement des familles et des clichés…</span>
+        </div>
+      } @else if (error()) {
+        <p class="admin-photo-albums-error" role="alert">{{ error() }}</p>
+      } @else if (displayGroups().length === 0) {
+        <p class="admin-photo-albums-empty">Aucune photo enregistrée pour le moment (aucun dossier album côté serveur).</p>
+      } @else {
+        <p class="admin-photo-albums-summary">
+          <strong>{{ displayGroups().length }}</strong> famille(s) avec au moins une photo —
+          <strong>{{ totalPhotos() }}</strong> cliché(s) au total.
+        </p>
+
+        @for (g of displayGroups(); track g.familleId) {
+          <section class="famille-block" [attr.aria-labelledby]="'fam-title-' + g.familleId">
+            <div class="famille-block-head">
+              <h2 class="famille-block-title" [id]="'fam-title-' + g.familleId">{{ g.familleLabel }}</h2>
+              <div class="famille-block-meta">
+                @if (g.albumLastModified) {
+                  <mat-chip-set>
+                    <mat-chip>Dernière photo : {{ formatDate(g.albumLastModified) }}</mat-chip>
+                  </mat-chip-set>
+                }
+                <a mat-button color="primary" [routerLink]="['/admin/famille', g.familleId]">
+                  <mat-icon>open_in_new</mat-icon>
+                  Fiche famille
+                </a>
+              </div>
+            </div>
+
+            @for (p of g.personnes; track p.personneId) {
+              <div class="personne-album">
+                <h3 class="personne-album-title">{{ p.prenom }} {{ p.nom }}</h3>
+                <div class="photo-grid">
+                  @for (photo of p.items; track photo.key) {
+                    <article class="photo-card">
+                      <a [href]="photo.url" target="_blank" rel="noopener" class="image-link">
+                        <span class="image-link-inner">
+                          <img [src]="photo.url" [alt]="photo.name" loading="lazy" />
+                        </span>
+                        <span class="image-link-hint" aria-hidden="true">
+                          <mat-icon>open_in_new</mat-icon>
+                        </span>
+                      </a>
+                      <div class="photo-meta">
+                        <strong class="photo-name" [title]="photo.name">{{ photo.name }}</strong>
+                        <div class="photo-meta-row">
+                          <span>{{ formatDate(photo.lastModified) }}</span>
+                          <span>{{ formatSize(photo.size) }}</span>
+                        </div>
+                      </div>
+                    </article>
+                  }
+                </div>
+              </div>
+            }
+          </section>
+        }
+      }
+    </mat-card-content>
+  </mat-card>
+</div>

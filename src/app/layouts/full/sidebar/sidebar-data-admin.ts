@@ -15,4 +15,5 @@ export const navItemsAdmin: NavItem[] = [
   { displayName: 'Musiques invités', iconName: 'music', route: '/admin/musiques' },
   { displayName: 'Boîte à idées', iconName: 'bulb', route: '/admin/boite-idees' },
   { displayName: 'Anecdotes', iconName: 'quotes', route: '/admin/anecdotes' },
+  { displayName: 'Albums photo', iconName: 'photo_library', route: '/admin/photo-albums' },
 ];
