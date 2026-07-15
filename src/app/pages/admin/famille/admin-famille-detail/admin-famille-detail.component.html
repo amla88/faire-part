@@ -98,6 +98,47 @@
           </mat-card>
         </div>
 
+        <div class="m-t-16 reponses-section">
+          <div class="d-flex flex-wrap justify-between align-center gap-8 m-b-12">
+            <h4 class="m-0 title-margin-bottom">Réponses reçues</h4>
+            <button mat-stroked-button type="button" (click)="openEditReponses()">
+              <mat-icon>edit</mat-icon>
+              Modifier les réponses
+            </button>
+          </div>
+
+          @if (reponsesPersonnes().length === 0) {
+            <p class="text-muted f-s-13">Aucune personne enregistrée pour cette famille.</p>
+          } @else {
+            <div class="reponses-table-scroll">
+              <table class="reponses-table w-100">
+                <thead>
+                  <tr>
+                    <th>Membre</th>
+                    @for (moment of presenceMoments; track moment) {
+                      <th>{{ presenceMomentLabel(moment) }}</th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (p of reponsesPersonnes(); track trackByPersonneId($index, p)) {
+                    <tr>
+                      <td class="cell-name">{{ p.prenom }} {{ p.nom }}</td>
+                      @for (moment of presenceMoments; track moment) {
+                        <td>
+                          <span class="presence-pill" [ngClass]="presenceClass(p, moment)">
+                            {{ presenceLabel(p, moment) }}
+                          </span>
+                        </td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+
         <h4 class="m-t-16 title-margin-bottom">Personnes</h4>
         <div formArrayName="persons">
           <div *ngFor="let p of persons.controls; let i = index" [formGroupName]="i" class="person-item p-8 b-t-1 d-flex align-center">

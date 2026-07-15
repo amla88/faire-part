@@ -36,10 +36,16 @@
               <h3 class="f-s-16 f-w-600 m-0">{{ getFamilyDisplayName(fam) }}</h3>
               <div class="f-s-12 text-muted">Dernière connexion : {{ formatConnexion(fam.connexion) }}</div>
             </div>
-            <a mat-stroked-button color="primary" [routerLink]="['/admin/famille', fam.id]">
-              <mat-icon>open_in_new</mat-icon>
-              Fiche famille
-            </a>
+            <div class="famille-header-actions d-flex flex-wrap gap-8">
+              <button mat-stroked-button type="button" (click)="openEditReponses(fam)">
+                <mat-icon>edit</mat-icon>
+                Modifier les réponses
+              </button>
+              <a mat-stroked-button color="primary" [routerLink]="['/admin/famille', fam.id]">
+                <mat-icon>open_in_new</mat-icon>
+                Fiche famille
+              </a>
+            </div>
           </div>
 
           <div class="table-scroll">

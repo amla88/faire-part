@@ -44,3 +44,63 @@
   display: flex;
   justify-content: center;
 }
+
+.reponses-section {
+  padding-top: 4px;
+}
+
+.reponses-table-scroll {
+  overflow-x: auto;
+}
+
+.reponses-table {
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th,
+  td {
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    vertical-align: top;
+  }
+
+  th {
+    font-weight: 600;
+    background: rgba(0, 0, 0, 0.04);
+  }
+}
+
+.cell-name {
+  font-weight: 500;
+  min-width: 140px;
+}
+
+.presence-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.presence--yes {
+  background: rgba(76, 175, 80, 0.15);
+  color: #2e7d32;
+}
+
+.presence--no {
+  background: rgba(244, 67, 54, 0.12);
+  color: #c62828;
+}
+
+.presence--na {
+  background: rgba(0, 0, 0, 0.06);
+  color: #616161;
+}
+
+.presence--declined {
+  background: rgba(156, 39, 176, 0.12);
+  color: #6a1b9a;
+}

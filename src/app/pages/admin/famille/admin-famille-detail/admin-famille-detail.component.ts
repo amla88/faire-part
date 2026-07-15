@@ -23,6 +23,19 @@ import {
 } from 'src/app/utils/qr-export-png';
 import { ConfirmDialogService } from 'src/app/shared/dialogs/confirm-dialog/confirm-dialog.service';
 import { ConfirmDialogData } from 'src/app/shared/dialogs/confirm-dialog/confirm-dialog.component';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import {
+  EditFamilleReponsesDialogComponent,
+  EditFamilleReponsesPerson,
+  patchPersonnesReponses,
+  toEditReponsesPerson,
+} from '../../suivi-presences-jeux/edit-famille-reponses-dialog.component';
+import {
+  ALL_PRESENCE_MOMENTS,
+  presenceClass,
+  presenceLabel,
+  presenceMomentLabel,
+} from '../../shared/presence-response.util';
 
 @Component({
   selector: 'app-admin-famille-detail',
@@ -41,6 +54,7 @@ import { ConfirmDialogData } from 'src/app/shared/dialogs/confirm-dialog/confirm
     MatButtonModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
+    MatDialogModule,
     QRCodeComponent,
   ],
   templateUrl: './admin-famille-detail.component.html',
@@ -48,6 +62,11 @@ import { ConfirmDialogData } from 'src/app/shared/dialogs/confirm-dialog/confirm
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminFamilleDetailComponent implements OnInit {
+  readonly presenceMoments = ALL_PRESENCE_MOMENTS;
+  readonly presenceLabel = presenceLabel;
+  readonly presenceClass = presenceClass;
+  readonly presenceMomentLabel = presenceMomentLabel;
+
   famille = signal<any | null>(null);
   loading = signal(false);
   currentToken = signal<string | null>(null);
@@ -83,6 +102,11 @@ export class AdminFamilleDetailComponent implements OnInit {
     return `Famille #${fam.id}`;
   });
 
+  reponsesPersonnes = computed(() => {
+    const personnes = this.famille()?.personnes;
+    return Array.isArray(personnes) ? personnes : [];
+  });
+
   form = this.fb.group({
     rue: [''],
     numero: [''],
@@ -112,6 +136,7 @@ export class AdminFamilleDetailComponent implements OnInit {
     private fb: FormBuilder,
     private adminAuth: AdminAuthService,
     private confirmDialog: ConfirmDialogService,
+    private dialog: MatDialog,
     @Inject(DOCUMENT) private document: Document,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
@@ -134,6 +159,48 @@ export class AdminFamilleDetailComponent implements OnInit {
 
   get persons(): FormArray {
     return this.form.get('persons') as FormArray;
+  }
+
+  openEditReponses(): void {
+    const fam = this.famille();
+    if (!fam) return;
+
+    const personnes = this.reponsesPersonnes().map(toEditReponsesPerson);
+    const ref = this.dialog.open(EditFamilleReponsesDialogComponent, {
+      width: '520px',
+      maxWidth: '95vw',
+      data: {
+        familyName: this.familyDisplayName(),
+        personnes,
+        onUpdated: (updated: EditFamilleReponsesPerson[]) => this.applyUpdatedReponses(updated),
+      },
+    });
+
+    ref.afterClosed().subscribe((updated) => {
+      if (updated?.length) {
+        this.applyUpdatedReponses(updated);
+      }
+    });
+  }
+
+  private applyUpdatedReponses(updated: EditFamilleReponsesPerson[]): void {
+    const fam = this.famille();
+    if (!fam) return;
+
+    const personnes = patchPersonnesReponses(fam.personnes || [], updated);
+    this.famille.set({ ...fam, personnes: [...personnes] });
+
+    for (const ctrl of this.persons.controls) {
+      const g = ctrl as FormGroup;
+      const id = Number(g.get('id')?.value);
+      const u = updated.find((p) => p.id === id);
+      if (!u) continue;
+      g.patchValue({ present_anniversaire: u.present_anniversaire }, { emitEvent: false });
+    }
+  }
+
+  trackByPersonneId(_: number, p: any): number {
+    return p.id;
   }
 
   createPersonGroup(data?: any): FormGroup {

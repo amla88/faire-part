@@ -9,9 +9,22 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { QuestFlags } from 'src/game/systems/QuestSystem';
+import {
+  EditFamilleReponsesDialogComponent,
+  EditFamilleReponsesPerson,
+  patchPersonnesReponses,
+  toEditReponsesPerson,
+} from './edit-famille-reponses-dialog.component';
+import {
+  PresenceMoment,
+  presenceClass,
+  presenceLabel,
+  presenceMomentLabel,
+} from '../shared/presence-response.util';
 
-export type PresenceMoment = 'soiree' | 'repas' | 'reception' | 'anniversaire';
+export type { PresenceMoment };
 
 interface GameProgressRow {
   personne_id: number;
@@ -32,6 +45,7 @@ interface GameProgressRow {
     MatProgressSpinnerModule,
     MatChipsModule,
     MatTooltipModule,
+    MatDialogModule,
   ],
   templateUrl: './admin-suivi-presences-jeux.component.html',
   styleUrls: ['./admin-suivi-presences-jeux.component.scss'],
@@ -67,7 +81,10 @@ export class AdminSuiviPresencesJeuxComponent implements OnInit {
     return rows;
   });
 
-  constructor(private readonly ngSupabase: NgSupabaseService) {}
+  constructor(
+    private readonly ngSupabase: NgSupabaseService,
+    private readonly dialog: MatDialog
+  ) {}
 
   ngOnInit(): void {
     void this.load();
@@ -143,6 +160,10 @@ export class AdminSuiviPresencesJeuxComponent implements OnInit {
     }
   }
 
+  presenceLabel = presenceLabel;
+  presenceClass = presenceClass;
+  presenceMomentLabel = presenceMomentLabel;
+
   showMoment(moment: PresenceMoment): boolean {
     if (moment === 'soiree') return this.filterSoiree();
     if (moment === 'repas') return this.filterRepas();
@@ -150,48 +171,34 @@ export class AdminSuiviPresencesJeuxComponent implements OnInit {
     return this.filterReception();
   }
 
-  presenceLabel(person: any, moment: PresenceMoment): string {
-    if (person?.decline_invitation) return 'Refus invitation';
-    const inviteKey =
-      moment === 'soiree'
-        ? 'invite_soiree'
-        : moment === 'repas'
-          ? 'invite_repas'
-          : moment === 'anniversaire'
-            ? 'invite_anniversaire'
-            : 'invite_reception';
-    const presentKey =
-      moment === 'soiree'
-        ? 'present_soiree'
-        : moment === 'repas'
-          ? 'present_repas'
-          : moment === 'anniversaire'
-            ? 'present_anniversaire'
-            : 'present_reception';
-    if (!person?.[inviteKey]) return 'Non invité';
-    return person?.[presentKey] ? 'Oui' : 'Non';
+  openEditReponses(fam: any): void {
+    const familleId = Number(fam.id);
+    const personnes = (fam.personnes || []).map(toEditReponsesPerson);
+
+    const ref = this.dialog.open(EditFamilleReponsesDialogComponent, {
+      width: '520px',
+      maxWidth: '95vw',
+      data: {
+        familyName: this.getFamilyDisplayName(fam),
+        personnes,
+        onUpdated: (updated: EditFamilleReponsesPerson[]) => this.applyUpdatedPersonnes(familleId, updated),
+      },
+    });
+
+    ref.afterClosed().subscribe((updated) => {
+      if (updated?.length) {
+        this.applyUpdatedPersonnes(familleId, updated);
+      }
+    });
   }
 
-  presenceClass(person: any, moment: PresenceMoment): string {
-    if (person?.decline_invitation) return 'presence--declined';
-    const inviteKey =
-      moment === 'soiree'
-        ? 'invite_soiree'
-        : moment === 'repas'
-          ? 'invite_repas'
-          : moment === 'anniversaire'
-            ? 'invite_anniversaire'
-            : 'invite_reception';
-    const presentKey =
-      moment === 'soiree'
-        ? 'present_soiree'
-        : moment === 'repas'
-          ? 'present_repas'
-          : moment === 'anniversaire'
-            ? 'present_anniversaire'
-            : 'present_reception';
-    if (!person?.[inviteKey]) return 'presence--na';
-    return person?.[presentKey] ? 'presence--yes' : 'presence--no';
+  private applyUpdatedPersonnes(familleId: number, updated: EditFamilleReponsesPerson[]): void {
+    this.familles.update((rows) =>
+      rows.map((fam) => {
+        if (Number(fam.id) !== familleId) return fam;
+        return { ...fam, personnes: [...patchPersonnesReponses(fam.personnes || [], updated)] };
+      })
+    );
   }
 
   gameParticipated(personneId: number): boolean {
