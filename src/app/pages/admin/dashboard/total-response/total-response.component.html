@@ -1,15 +1,24 @@
 <mat-card class="cardWithShadow">
-    <mat-card-content>
-        <mat-card-title>Réponses aux invitations</mat-card-title>
-        <apx-chart
-            #chart
-            [series]="series()"
-            [chart]="chartOptions.chart"
-            [plotOptions]="chartOptions.plotOptions"
-            [labels]="chartOptions.labels"
-            [colors]="chartOptions.colors!"
-            [responsive]="chartOptions.responsive!"
-            [legend]="chartOptions.legend!">
-        </apx-chart>
-    </mat-card-content>
+  <mat-card-content>
+    <mat-card-title>Réponses aux invitations</mat-card-title>
+    <p class="chart-hint f-s-13 text-muted m-t-8 m-b-12">
+      Les arcs reflètent les réponses des familles vérifiées. Le dénominateur inclut tous les invités (vérifiés ou non), sauf pour « Réponses vérifiées » (toutes les personnes).
+    </p>
+
+    @if (loading()) {
+      <p class="f-s-13 text-muted">Chargement…</p>
+    } @else if (loadError()) {
+      <p class="chart-error" role="alert">{{ loadError() }}</p>
+    } @else if (chartReady()) {
+      <apx-chart
+        [series]="series()"
+        [chart]="chart"
+        [plotOptions]="plotOptions()"
+        [labels]="chartLabels()"
+        [colors]="colors"
+        [legend]="legendOptions()"
+        [responsive]="responsive"
+      />
+    }
+  </mat-card-content>
 </mat-card>

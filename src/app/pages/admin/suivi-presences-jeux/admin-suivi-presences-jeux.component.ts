@@ -10,6 +10,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { QuestFlags } from 'src/game/systems/QuestSystem';
 import {
   EditFamilleReponsesDialogComponent,
@@ -46,6 +47,7 @@ interface GameProgressRow {
     MatChipsModule,
     MatTooltipModule,
     MatDialogModule,
+    MatSnackBarModule,
   ],
   templateUrl: './admin-suivi-presences-jeux.component.html',
   styleUrls: ['./admin-suivi-presences-jeux.component.scss'],
@@ -65,6 +67,8 @@ export class AdminSuiviPresencesJeuxComponent implements OnInit {
   filterAnniversaire = signal(true);
   /** Si vrai : uniquement les familles sans date de dernière connexion. */
   onlyNeverConnected = signal(false);
+  /** Si faux (défaut) : uniquement les familles non vérifiées. Si vrai : toutes. */
+  includeVerifiedFamilies = signal(false);
 
   filteredFamilles = computed(() => {
     let rows = this.sortedByConnexion(this.familles());
@@ -78,12 +82,16 @@ export class AdminSuiviPresencesJeuxComponent implements OnInit {
     if (this.onlyNeverConnected()) {
       rows = rows.filter((fam) => fam?.connexion == null || String(fam.connexion).trim() === '');
     }
+    if (!this.includeVerifiedFamilies()) {
+      rows = rows.filter((fam) => !fam?.reponses_verifiees);
+    }
     return rows;
   });
 
   constructor(
     private readonly ngSupabase: NgSupabaseService,
-    private readonly dialog: MatDialog
+    private readonly dialog: MatDialog,
+    private readonly snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
@@ -97,7 +105,7 @@ export class AdminSuiviPresencesJeuxComponent implements OnInit {
       const res = await client
         .from('familles')
         .select(
-          'id, connexion, personne_principale, personnes!personnes_famille_id_fkey(id, nom, prenom, invite_reception, present_reception, invite_repas, present_repas, invite_soiree, present_soiree, invite_anniversaire, present_anniversaire, decline_invitation)'
+          'id, connexion, personne_principale, reponses_verifiees, personnes!personnes_famille_id_fkey(id, nom, prenom, invite_reception, present_reception, invite_repas, present_repas, invite_soiree, present_soiree, invite_anniversaire, present_anniversaire, decline_invitation)'
         );
       if (res.error) throw res.error;
       const list = Array.isArray(res.data) ? (res.data as any[]) : [];
@@ -199,6 +207,32 @@ export class AdminSuiviPresencesJeuxComponent implements OnInit {
         return { ...fam, personnes: [...patchPersonnesReponses(fam.personnes || [], updated)] };
       })
     );
+  }
+
+  async toggleReponsesVerifiees(fam: any, checked: boolean): Promise<void> {
+    const familleId = Number(fam.id);
+    const previous = !!fam.reponses_verifiees;
+
+    this.familles.update((rows) =>
+      rows.map((f) => (Number(f.id) === familleId ? { ...f, reponses_verifiees: checked } : f))
+    );
+
+    try {
+      const { error } = await this.ngSupabase
+        .getClient()
+        .from('familles')
+        .update({ reponses_verifiees: checked })
+        .eq('id', familleId);
+      if (error) throw error;
+    } catch (e) {
+      console.error('[AdminSuiviPresencesJeux] toggleReponsesVerifiees', e);
+      this.snackBar.open('Erreur : le statut « réponses vérifiées » n’a pas pu être enregistré.', 'Fermer', {
+        duration: 5000,
+      });
+      this.familles.update((rows) =>
+        rows.map((f) => (Number(f.id) === familleId ? { ...f, reponses_verifiees: previous } : f))
+      );
+    }
   }
 
   gameParticipated(personneId: number): boolean {

@@ -101,10 +101,18 @@
         <div class="m-t-16 reponses-section">
           <div class="d-flex flex-wrap justify-between align-center gap-8 m-b-12">
             <h4 class="m-0 title-margin-bottom">Réponses reçues</h4>
-            <button mat-stroked-button type="button" (click)="openEditReponses()">
-              <mat-icon>edit</mat-icon>
-              Modifier les réponses
-            </button>
+            <div class="d-flex flex-wrap align-center gap-12">
+              <mat-checkbox
+                [checked]="!!famille()?.reponses_verifiees"
+                (change)="toggleReponsesVerifiees($event.checked)"
+              >
+                Réponses vérifiées
+              </mat-checkbox>
+              <button mat-stroked-button type="button" (click)="openEditReponses()">
+                <mat-icon>edit</mat-icon>
+                Modifier les réponses
+              </button>
+            </div>
           </div>
 
           @if (reponsesPersonnes().length === 0) {

@@ -1,0 +1,12 @@
+.chart-hint {
+  max-width: 52rem;
+}
+
+.chart-error {
+  color: #c62828;
+  font-size: 13px;
+}
+
+:host ::ng-deep .apexcharts-legend-text {
+  line-height: 1.35;
+}

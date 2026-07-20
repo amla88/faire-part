@@ -203,6 +203,30 @@ export class AdminFamilleDetailComponent implements OnInit {
     return p.id;
   }
 
+  async toggleReponsesVerifiees(checked: boolean): Promise<void> {
+    const fam = this.famille();
+    if (!fam) return;
+
+    const familleId = Number(fam.id);
+    const previous = !!fam.reponses_verifiees;
+    this.famille.set({ ...fam, reponses_verifiees: checked });
+
+    try {
+      const { error } = await this.ngSupabase
+        .getClient()
+        .from('familles')
+        .update({ reponses_verifiees: checked })
+        .eq('id', familleId);
+      if (error) throw error;
+    } catch (err) {
+      console.error('Erreur mise à jour réponses vérifiées', err);
+      this.snackBar.open('Erreur : le statut « réponses vérifiées » n’a pas pu être enregistré.', 'Fermer', {
+        duration: 5000,
+      });
+      this.famille.set({ ...fam, reponses_verifiees: previous });
+    }
+  }
+
   createPersonGroup(data?: any): FormGroup {
     return this.fb.group({
       id: [data?.id || null],
