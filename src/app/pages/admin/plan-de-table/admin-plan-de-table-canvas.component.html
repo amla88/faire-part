@@ -328,9 +328,19 @@
                 [class.chair-marker-interactive]="m.personneId != null && h.mode() === 'assign' && !h.readonlyLayout()"
                 (mousedown)="h.onChairMacaronMouseDown($event, m)"
               >
-                <circle [attr.r]="h.chairMacaronRadiusCm" class="chair-dot" />
+                <circle
+                  [attr.r]="h.chairMacaronRadiusCm"
+                  class="chair-dot"
+                  [class.chair-dot--absent]="m.absentRepas"
+                />
                 @if (m.initials) {
-                  <text text-anchor="middle" dominant-baseline="middle" class="chair-initials" pointer-events="none">
+                  <text
+                    text-anchor="middle"
+                    dominant-baseline="middle"
+                    class="chair-initials"
+                    [class.chair-initials--absent]="m.absentRepas"
+                    pointer-events="none"
+                  >
                     {{ m.initials }}
                   </text>
                 }

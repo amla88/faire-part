@@ -57,7 +57,10 @@
                 <h3 class="mobile-plan-guest-list__table-name">{{ mobileTableListTitle(t, ti) }}</h3>
                 <ul class="mobile-plan-guest-list__ul">
                   @for (a of assignmentsByTable().get(t.id) ?? []; track a.id) {
-                    <li class="mobile-plan-guest-list__li">
+                    <li
+                      class="mobile-plan-guest-list__li"
+                      [class.mobile-plan-guest-list__li--absent]="isAbsentRepas(a.personne_id)"
+                    >
                       @if (personneById().get(a.personne_id); as pers) {
                         {{ displayPersonne(pers) }}
                       } @else {

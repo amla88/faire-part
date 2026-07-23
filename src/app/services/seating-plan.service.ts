@@ -101,6 +101,8 @@ export interface PersonneRepasRow {
   prenom: string;
   nom: string;
   famille_id: number;
+  /** Présence confirmée au repas (RSVP). */
+  present_repas: boolean;
   /** Supabase peut renvoyer un objet ou un tableau selon la relation. */
   familles: { personne_principale: number | null } | { personne_principale: number | null }[] | null;
 }
@@ -998,7 +1000,7 @@ export class SeatingPlanService {
     const { data, error } = await client
       .from('personnes')
       .select(
-        'id, prenom, nom, famille_id, familles!personnes_famille_id_fkey(personne_principale)',
+        'id, prenom, nom, famille_id, present_repas, familles!personnes_famille_id_fkey(personne_principale)',
       )
       .eq('invite_repas', true)
       .order('nom')
@@ -1007,6 +1009,9 @@ export class SeatingPlanService {
       console.error('[SeatingPlanService] getPersonnesRepas', error);
       return [];
     }
-    return (data || []) as unknown as PersonneRepasRow[];
+    return ((data || []) as unknown as PersonneRepasRow[]).map((p) => ({
+      ...p,
+      present_repas: p.present_repas === true,
+    }));
   }
 }

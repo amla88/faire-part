@@ -234,6 +234,11 @@
   stroke-width: 2;
 }
 
+.chair-dot--absent {
+  fill: #ffcdd2;
+  stroke: #c62828;
+}
+
 .chair-dot--ghost {
   opacity: 0.94;
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.28));
@@ -248,6 +253,10 @@
   font-weight: 600;
   fill: #3e2723;
   user-select: none;
+}
+
+.chair-initials--absent {
+  fill: #b71c1c;
 }
 
 .floor-svg .wall-line {

@@ -12,6 +12,8 @@ import { SeatingPlanService } from 'src/app/services/seating-plan.service';
 export interface TableGuestMember {
   personneId: number;
   line: string;
+  /** Assigné alors qu’il ne vient pas au repas. */
+  absentRepas?: boolean;
 }
 
 export interface TableGuestsFamilleGroup {
@@ -103,8 +105,13 @@ const COLOR_PRESETS = ['#e8b4b8', '#c5cae9', '#e1bee7', '#ffcc80', '#a5d6a7', '#
             @if (g.members.length > 1) {
               <div class="famille-frame">
                 @for (m of g.members; track m.personneId) {
-                  <div class="guest-row">
-                    <span class="guest-line">{{ m.line }}</span>
+                  <div class="guest-row" [class.guest-row--absent]="m.absentRepas">
+                    <span class="guest-line">
+                      {{ m.line }}
+                      @if (m.absentRepas) {
+                        <span class="guest-absent-tag">ne vient pas</span>
+                      }
+                    </span>
                     @if (!data.readonlyLayout) {
                       <button
                         mat-icon-button
@@ -122,8 +129,13 @@ const COLOR_PRESETS = ['#e8b4b8', '#c5cae9', '#e1bee7', '#ffcc80', '#a5d6a7', '#
               </div>
             } @else {
               @for (m of g.members; track m.personneId) {
-                <div class="guest-row guest-row--solo">
-                  <span class="guest-line">{{ m.line }}</span>
+                <div class="guest-row guest-row--solo" [class.guest-row--absent]="m.absentRepas">
+                  <span class="guest-line">
+                    {{ m.line }}
+                    @if (m.absentRepas) {
+                      <span class="guest-absent-tag">ne vient pas</span>
+                    }
+                  </span>
                   @if (!data.readonlyLayout) {
                     <button
                       mat-icon-button
@@ -257,9 +269,19 @@ const COLOR_PRESETS = ['#e8b4b8', '#c5cae9', '#e1bee7', '#ffcc80', '#a5d6a7', '#
       min-height: 44px;
       padding: 4px 0;
     }
+    .guest-row--absent {
+      background: rgba(198, 40, 40, 0.1);
+      border-radius: 8px;
+      padding-left: 8px;
+      padding-right: 4px;
+      margin: 2px 0;
+    }
     .guest-row--solo {
       padding-left: 4px;
       padding-right: 0;
+    }
+    .guest-row--solo.guest-row--absent {
+      padding-left: 8px;
     }
     .famille-frame .guest-row + .guest-row {
       border-top: 1px solid rgba(0, 0, 0, 0.06);
@@ -269,6 +291,18 @@ const COLOR_PRESETS = ['#e8b4b8', '#c5cae9', '#e1bee7', '#ffcc80', '#a5d6a7', '#
       flex: 1;
       white-space: normal;
       word-break: break-word;
+    }
+    .guest-row--absent .guest-line {
+      color: #b71c1c;
+      font-weight: 600;
+    }
+    .guest-absent-tag {
+      display: inline-block;
+      margin-left: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #c62828;
+      text-transform: lowercase;
     }
     .guest-remove {
       flex-shrink: 0;

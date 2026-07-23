@@ -505,11 +505,18 @@ export class AdminPlanDeTableComponent {
     return m;
   });
 
-  /** Invités repas non encore assignés à une table sur la variante sélectionnée. */
+  /** Présents au repas, non encore assignés à une table sur la variante sélectionnée. */
   unassignedPersonnes = computed(() => {
     const assigned = new Set(this.assignments().map((a) => a.personne_id));
-    return this.personnes().filter((p) => !assigned.has(p.id));
+    return this.personnes().filter((p) => p.present_repas && !assigned.has(p.id));
   });
+
+  /** True si la personne n’est pas (ou plus) présente au repas. */
+  isAbsentRepas(personneId: number | null | undefined): boolean {
+    if (personneId == null) return false;
+    const p = this.personneById().get(personneId);
+    return !p || !p.present_repas;
+  }
 
   /** Filtre prénom, nom ou libellé de famille (personne principale) sur les non placés. */
   assignListSearch = signal('');
@@ -1729,6 +1736,8 @@ export class AdminPlanDeTableComponent {
     initials: string;
     personneId: number | null;
     tableId: number;
+    /** Placé alors qu’il ne vient pas au repas — macaron rouge. */
+    absentRepas: boolean;
   }[] {
     const positions = this.chairsForTable(t);
     const assigns = this.assignmentsByTable().get(t.id) ?? [];
@@ -1739,9 +1748,10 @@ export class AdminPlanDeTableComponent {
       return {
         x: p.x,
         y: p.y,
-        initials: pers ? this.initials(pers) : '',
+        initials: pers ? this.initials(pers) : a ? '?' : '',
         personneId: a?.personne_id ?? null,
         tableId: t.id,
+        absentRepas: !!a && (!pers || !pers.present_repas),
       };
     });
   }
@@ -2531,15 +2541,25 @@ export class AdminPlanDeTableComponent {
     if (!table || vid == null) return;
     const label = table.label?.trim() ? table.label.trim() : `Table ${tableId}`;
     const byId = this.personneById();
-    type Row = { personneId: number; familleId: number; line: string };
+    type Row = { personneId: number; familleId: number; line: string; absentRepas: boolean };
     const rows: Row[] = [];
     for (const a of assigns) {
       const p = byId.get(a.personne_id);
       if (!p) {
-        rows.push({ personneId: a.personne_id, familleId: -1, line: `Invité #${a.personne_id}` });
+        rows.push({
+          personneId: a.personne_id,
+          familleId: -1,
+          line: `Invité #${a.personne_id}`,
+          absentRepas: true,
+        });
       } else {
         const line = `${p.prenom ?? ''} ${p.nom ?? ''}`.trim() || `Personne #${p.id}`;
-        rows.push({ personneId: p.id, familleId: p.famille_id ?? -1, line });
+        rows.push({
+          personneId: p.id,
+          familleId: p.famille_id ?? -1,
+          line,
+          absentRepas: !p.present_repas,
+        });
       }
     }
     const orderFam: number[] = [];
@@ -2549,7 +2569,11 @@ export class AdminPlanDeTableComponent {
         famMap.set(r.familleId, []);
         orderFam.push(r.familleId);
       }
-      famMap.get(r.familleId)!.push({ personneId: r.personneId, line: r.line });
+      famMap.get(r.familleId)!.push({
+        personneId: r.personneId,
+        line: r.line,
+        absentRepas: r.absentRepas,
+      });
     }
     const groups: TableGuestsFamilleGroup[] = orderFam.map((fid) => ({
       familleId: fid,

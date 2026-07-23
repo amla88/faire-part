@@ -104,6 +104,12 @@
   background: rgba(0, 0, 0, 0.04);
 }
 
+.mobile-plan-guest-list__li--absent {
+  background: rgba(198, 40, 40, 0.12);
+  color: #b71c1c;
+  font-weight: 600;
+}
+
 .mobile-plan-guest-list__li--empty {
   font-style: italic;
   color: rgba(0, 0, 0, 0.45);

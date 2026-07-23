@@ -320,7 +320,7 @@
       @if (h.mode() === 'assign') {
         <mat-card class="cardWithShadow">
           <mat-card-content>
-            <mat-card-title>Invités au repas</mat-card-title>
+            <mat-card-title>Présents au repas</mat-card-title>
             <mat-form-field appearance="outline" class="assign-search-field" subscriptSizing="dynamic">
               <mat-label>Rechercher prénom, nom ou famille</mat-label>
               <input
@@ -366,7 +366,7 @@
                 </section>
               } @empty {
                 @if (h.unassignedPersonnes().length === 0) {
-                  <p class="text-muted f-s-13 assign-unplaced-empty">Tout le monde est placé sur cette variante.</p>
+                  <p class="text-muted f-s-13 assign-unplaced-empty">Tous les présents au repas sont placés sur cette variante.</p>
                 } @else {
                   <p class="text-muted f-s-13 assign-unplaced-empty">Aucun résultat pour « {{ h.assignListSearch().trim() }} ».</p>
                 }
@@ -376,9 +376,19 @@
               <h4 class="side-subtitle">À « {{ st.label || 'Table ' + st.id }} »</h4>
               <ul class="people-list">
                 @for (a of h.assignmentsByTable().get(st.id) ?? []; track a.id) {
-                  <li class="person-row placed">
+                  <li
+                    class="person-row placed"
+                    [class.person-row--absent]="h.isAbsentRepas(a.personne_id)"
+                    [matTooltip]="
+                      h.isAbsentRepas(a.personne_id)
+                        ? 'Ne vient pas au repas — retirez-la de la table'
+                        : ''
+                    "
+                  >
                     @if (h.personneById().get(a.personne_id); as pers) {
                       {{ h.displayPersonne(pers) }}
+                    } @else {
+                      Personne #{{ a.personne_id }}
                     }
                     @if (!h.readonlyLayout()) {
                       <button mat-icon-button type="button" (click)="h.unassign(a.personne_id)" matTooltip="Retirer">

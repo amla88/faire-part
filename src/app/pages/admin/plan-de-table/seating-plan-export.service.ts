@@ -45,7 +45,9 @@ const EXPORT_SVG_STYLES = `
   .table-shape { fill: rgba(228, 236, 222, 0.88); stroke: #8a7a6e; stroke-width: 1.5px; }
   .table-label { font-size: 20px; font-weight: 600; fill: #3a322f; }
   .chair-dot { fill: #fff9f6; stroke: #c4a574; stroke-width: 2px; }
+  .chair-dot--absent { fill: #ffcdd2; stroke: #c62828; stroke-width: 2px; }
   .chair-initials { font-size: 14px; font-weight: 600; fill: #3a322f; }
+  .chair-initials--absent { fill: #b71c1c; }
   .wall-line { fill: none; stroke: #8a7e74; }
   .window-opening { fill: none; stroke: #9ab8c4; opacity: 0.96; }
   .door-plan .door-threshold { fill: none; stroke: #7a9aaa; stroke-linecap: butt; }

@@ -203,6 +203,12 @@
   &.placed {
     cursor: default;
   }
+
+  &.person-row--absent {
+    background: rgba(198, 40, 40, 0.12);
+    color: #b71c1c;
+    font-weight: 600;
+  }
 }
 
 .m-t-12 {
