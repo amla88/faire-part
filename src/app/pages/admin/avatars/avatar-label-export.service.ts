@@ -5,32 +5,186 @@ import {
   AvatarLabelPerson,
   AvatarLabelSettings,
   DEFAULT_LABEL_BACKGROUND,
+  expandLabelJobs,
   WEDDING_LOGO_SRC,
 } from './avatar-label-export.types';
 import { AVATAR_PLACEHOLDER_SRC } from './admin-avatars.utils';
 
 const EXPORT_DPI = 300;
+const A4_WIDTH_MM = 210;
+const A4_HEIGHT_MM = 297;
+const A4_MARGIN_MM = 10;
+
+interface LabelRenderAssets {
+  bg: HTMLImageElement;
+  logo: HTMLImageElement;
+}
+
+interface A4LabelLayout {
+  cols: number;
+  rows: number;
+  gapX: number;
+  gapY: number;
+  offsetX: number;
+  offsetY: number;
+  perPage: number;
+}
 
 @Injectable({ providedIn: 'root' })
 export class AvatarLabelExportService {
   async exportPdf(famille: AvatarLabelFamille, settings: AvatarLabelSettings): Promise<void> {
-    const canvas = await this.renderLabelCanvas(famille, settings);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    const jobs = expandLabelJobs([famille], settings, AVATAR_PLACEHOLDER_SRC);
+    const orientation =
+      settings.widthMm >= settings.heightMm ? ('landscape' as const) : ('portrait' as const);
     const pdf = new jsPDF({
       unit: 'mm',
       format: [settings.widthMm, settings.heightMm],
-      orientation: settings.widthMm >= settings.heightMm ? 'landscape' : 'portrait',
+      orientation,
       compress: true,
     });
-    pdf.addImage(dataUrl, 'JPEG', 0, 0, settings.widthMm, settings.heightMm);
+
+    for (let i = 0; i < jobs.length; i++) {
+      if (i > 0) {
+        pdf.addPage([settings.widthMm, settings.heightMm], orientation);
+      }
+      const canvas = await this.renderLabelCanvas(jobs[i], settings);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      pdf.addImage(dataUrl, 'JPEG', 0, 0, settings.widthMm, settings.heightMm);
+    }
+
     const slug = this.fileSlug(famille.displayName);
-    pdf.save(`etiquette-${slug}.pdf`);
+    const suffix = jobs.length > 1 ? '-par-personne' : '';
+    pdf.save(`etiquette-${slug}${suffix}.pdf`);
+  }
+
+  async exportAllLabelsA4Pdf(
+    familles: AvatarLabelFamille[],
+    settings: AvatarLabelSettings
+  ): Promise<void> {
+    const jobs = expandLabelJobs(familles, settings, AVATAR_PLACEHOLDER_SRC);
+    if (jobs.length === 0) {
+      throw new Error('Aucune étiquette à exporter');
+    }
+
+    const bgSrc = settings.backgroundDataUrl ?? DEFAULT_LABEL_BACKGROUND;
+    const assets: LabelRenderAssets = {
+      bg: await this.loadImage(bgSrc),
+      logo: await this.loadImage(WEDDING_LOGO_SRC),
+    };
+
+    const layout = this.computeA4Layout(settings.widthMm, settings.heightMm);
+    const pdf = new jsPDF({
+      unit: 'mm',
+      format: 'a4',
+      orientation: 'portrait',
+      compress: true,
+    });
+
+    for (let i = 0; i < jobs.length; i++) {
+      const posOnPage = i % layout.perPage;
+      if (i > 0 && posOnPage === 0) {
+        pdf.addPage('a4', 'portrait');
+      }
+
+      const col = posOnPage % layout.cols;
+      const row = Math.floor(posOnPage / layout.cols);
+      const x = layout.offsetX + col * (settings.widthMm + layout.gapX);
+      const y = layout.offsetY + row * (settings.heightMm + layout.gapY);
+
+      const canvas = await this.renderLabelCanvas(jobs[i], settings, assets);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      pdf.addImage(dataUrl, 'JPEG', x, y, settings.widthMm, settings.heightMm);
+      this.drawLabelCutGuide(pdf, x, y, settings.widthMm, settings.heightMm);
+    }
+
+    this.drawA4PageFooters(pdf, layout, settings, jobs.length);
+    pdf.save(this.allLabelsFilename());
   }
 
   async exportPng(famille: AvatarLabelFamille, settings: AvatarLabelSettings): Promise<void> {
     const canvas = await this.renderLabelCanvas(famille, settings);
     const slug = this.fileSlug(famille.displayName);
     this.downloadDataUrl(canvas.toDataURL('image/png'), `etiquette-${slug}.png`);
+  }
+
+  private allLabelsFilename(): string {
+    const stamp = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `etiquettes-toutes-familles-${stamp.getFullYear()}${pad(stamp.getMonth() + 1)}${pad(stamp.getDate())}.pdf`;
+  }
+
+  private computeA4Layout(labelW: number, labelH: number): A4LabelLayout {
+    const usableW = A4_WIDTH_MM - A4_MARGIN_MM * 2;
+    const usableH = A4_HEIGHT_MM - A4_MARGIN_MM * 2;
+    const maxCols = Math.max(1, Math.floor(usableW / labelW));
+    const maxRows = Math.max(1, Math.floor(usableH / labelH));
+
+    let best: A4LabelLayout = {
+      cols: 1,
+      rows: 1,
+      gapX: 0,
+      gapY: 0,
+      offsetX: A4_MARGIN_MM,
+      offsetY: A4_MARGIN_MM,
+      perPage: 1,
+    };
+
+    for (let cols = 1; cols <= maxCols; cols++) {
+      for (let rows = 1; rows <= maxRows; rows++) {
+        const perPage = cols * rows;
+        const gapX = cols > 1 ? (usableW - cols * labelW) / (cols - 1) : 0;
+        const gapY = rows > 1 ? (usableH - rows * labelH) / (rows - 1) : 0;
+        const gridW = cols * labelW + Math.max(0, cols - 1) * gapX;
+        const gridH = rows * labelH + Math.max(0, rows - 1) * gapY;
+        if (gridW > usableW + 0.01 || gridH > usableH + 0.01) continue;
+
+        if (perPage > best.perPage) {
+          best = {
+            cols,
+            rows,
+            gapX,
+            gapY,
+            offsetX: A4_MARGIN_MM + (usableW - gridW) / 2,
+            offsetY: A4_MARGIN_MM + (usableH - gridH) / 2,
+            perPage,
+          };
+        }
+      }
+    }
+
+    return best;
+  }
+
+  private drawLabelCutGuide(pdf: jsPDF, x: number, y: number, w: number, h: number): void {
+    pdf.setDrawColor(190, 190, 190);
+    pdf.setLineWidth(0.12);
+    pdf.rect(x, y, w, h, 'S');
+  }
+
+  private drawA4PageFooters(
+    pdf: jsPDF,
+    layout: A4LabelLayout,
+    settings: AvatarLabelSettings,
+    totalLabels: number
+  ): void {
+    const pageCount = pdf.getNumberOfPages();
+    for (let page = 1; page <= pageCount; page++) {
+      pdf.setPage(page);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7);
+      pdf.setTextColor(130, 130, 130);
+      const labelsOnPage = Math.min(
+        layout.perPage,
+        totalLabels - (page - 1) * layout.perPage
+      );
+      pdf.text(
+        `Étiquettes ${settings.widthMm}×${settings.heightMm} mm — ${labelsOnPage} par page — ${page}/${pageCount}`,
+        A4_WIDTH_MM / 2,
+        A4_HEIGHT_MM - 4,
+        { align: 'center' }
+      );
+    }
+    pdf.setTextColor(0, 0, 0);
   }
 
   private fileSlug(name: string): string {
@@ -58,7 +212,8 @@ export class AvatarLabelExportService {
 
   private async renderLabelCanvas(
     famille: AvatarLabelFamille,
-    settings: AvatarLabelSettings
+    settings: AvatarLabelSettings,
+    assets?: LabelRenderAssets
   ): Promise<HTMLCanvasElement> {
     const wPx = this.mmToPx(settings.widthMm);
     const hPx = this.mmToPx(settings.heightMm);
@@ -69,10 +224,9 @@ export class AvatarLabelExportService {
     if (!ctx) throw new Error('Canvas indisponible');
 
     const bgSrc = settings.backgroundDataUrl ?? DEFAULT_LABEL_BACKGROUND;
-    const [bg, logo] = await Promise.all([
-      this.loadImage(bgSrc),
-      this.loadImage(WEDDING_LOGO_SRC),
-    ]);
+    const [bg, logo] = assets
+      ? [assets.bg, assets.logo]
+      : await Promise.all([this.loadImage(bgSrc), this.loadImage(WEDDING_LOGO_SRC)]);
 
     ctx.drawImage(bg, 0, 0, wPx, hPx);
 
@@ -90,7 +244,7 @@ export class AvatarLabelExportService {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    await this.drawAvatars(ctx, famille.personnes, 0, 0, midX, hPx);
+    await this.drawAvatars(ctx, famille.personnes, 0, 0, midX, hPx, famille.subtitle);
     this.drawBranding(ctx, logo, settings.weddingDate, midX, 0, wPx - midX, hPx);
 
     return canvas;
@@ -102,7 +256,8 @@ export class AvatarLabelExportService {
     x: number,
     y: number,
     w: number,
-    h: number
+    h: number,
+    subtitle?: string
   ): Promise<void> {
     const list = personnes.length > 0 ? personnes : [{ prenom: '?', nom: '', imageSrc: AVATAR_PLACEHOLDER_SRC }];
     const count = list.length;
@@ -129,6 +284,11 @@ export class AvatarLabelExportService {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         ctx.fillText(name, cx, cy + avatarSize / 2 + avatarSize * 0.06, cellW * 0.95);
+      }
+      if (count === 1 && subtitle?.trim()) {
+        ctx.fillStyle = 'rgba(92, 74, 82, 0.85)';
+        ctx.font = `italic ${Math.max(8, avatarSize * 0.12)}px Georgia, "Times New Roman", serif`;
+        ctx.fillText(subtitle.trim(), cx, cy + avatarSize / 2 + avatarSize * 0.22, cellW * 0.95);
       }
     }
   }

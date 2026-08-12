@@ -12,6 +12,8 @@ export interface AvatarLabelSettings {
   weddingDate: string;
   /** Data URL si fond personnalisé, sinon null → fond par défaut */
   backgroundDataUrl: string | null;
+  /** true = une étiquette par membre ; false = une étiquette globale par famille */
+  oneLabelPerPerson: boolean;
 }
 
 export function defaultAvatarLabelSettings(): AvatarLabelSettings {
@@ -20,6 +22,7 @@ export function defaultAvatarLabelSettings(): AvatarLabelSettings {
     heightMm: DEFAULT_LABEL_HEIGHT_MM,
     weddingDate: DEFAULT_WEDDING_DATE,
     backgroundDataUrl: null,
+    oneLabelPerPerson: false,
   };
 }
 
@@ -39,6 +42,7 @@ export function loadAvatarLabelSettings(): AvatarLabelSettings {
         typeof parsed.backgroundDataUrl === 'string' && parsed.backgroundDataUrl.startsWith('data:')
           ? parsed.backgroundDataUrl
           : null,
+      oneLabelPerPerson: parsed.oneLabelPerPerson === true,
     };
   } catch {
     return defaults;
@@ -67,5 +71,34 @@ export interface AvatarLabelPerson {
 
 export interface AvatarLabelFamille {
   displayName: string;
+  /** Sous-titre (ex. nom de famille) sur les étiquettes individuelles */
+  subtitle?: string;
   personnes: AvatarLabelPerson[];
+}
+
+export function expandLabelJobs(
+  familles: AvatarLabelFamille[],
+  settings: AvatarLabelSettings,
+  placeholderSrc: string
+): AvatarLabelFamille[] {
+  if (!settings.oneLabelPerPerson) {
+    return familles;
+  }
+
+  const jobs: AvatarLabelFamille[] = [];
+  for (const famille of familles) {
+    const members =
+      famille.personnes.length > 0
+        ? famille.personnes
+        : [{ prenom: '?', nom: '', imageSrc: placeholderSrc }];
+    for (const personne of members) {
+      const personName = `${personne.prenom} ${personne.nom}`.trim();
+      jobs.push({
+        displayName: personName || famille.displayName,
+        subtitle: famille.displayName,
+        personnes: [personne],
+      });
+    }
+  }
+  return jobs;
 }

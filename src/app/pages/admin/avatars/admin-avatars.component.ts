@@ -17,6 +17,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { FormsModule } from '@angular/forms';
 import { NgSupabaseService } from 'src/app/services/ng-supabase.service';
 import { AvatarService } from 'src/app/services/avatar.service';
@@ -26,6 +28,7 @@ import {
   DEFAULT_LABEL_BACKGROUND,
   loadAvatarLabelSettings,
   saveAvatarLabelSettings,
+  expandLabelJobs,
 } from './avatar-label-export.types';
 import {
   avatarDisplaySrc,
@@ -70,6 +73,8 @@ export interface AdminAvatarFamilleView {
     MatSnackBarModule,
     MatTooltipModule,
     FormsModule,
+    MatProgressBarModule,
+    MatSlideToggleModule,
   ],
   templateUrl: './admin-avatars.component.html',
   styleUrls: ['./admin-avatars.component.scss'],
@@ -83,6 +88,7 @@ export class AdminAvatarsComponent implements OnInit {
 
   readonly loading = signal(false);
   readonly exportingFamilleId = signal<number | null>(null);
+  readonly exportingAllLabels = signal(false);
   readonly filterText = signal('');
   readonly familles = signal<AdminAvatarFamilleView[]>([]);
   readonly placeholderSrc = AVATAR_PLACEHOLDER_SRC;
@@ -111,6 +117,29 @@ export class AdminAvatarsComponent implements OnInit {
   readonly totalAvatars = computed(() =>
     this.filteredFamilles().reduce((acc, f) => acc + f.avatarCount, 0)
   );
+
+  readonly exportBusy = computed(
+    () => this.exportingAllLabels() || this.exportingFamilleId() != null
+  );
+
+  readonly totalLabelCount = computed(() =>
+    expandLabelJobs(
+      this.familles().map((f) => this.toLabelFamille(f)),
+      this.labelSettings(),
+      AVATAR_PLACEHOLDER_SRC
+    ).length
+  );
+
+  private toLabelFamille(f: AdminAvatarFamilleView) {
+    return {
+      displayName: f.displayName,
+      personnes: f.personnes.map((p) => ({
+        prenom: p.prenom,
+        nom: p.nom,
+        imageSrc: p.imageSrc,
+      })),
+    };
+  }
 
   ngOnInit(): void {
     void this.load();
@@ -219,6 +248,11 @@ export class AdminAvatarsComponent implements OnInit {
     this.persistLabelSettings();
   }
 
+  updateOneLabelPerPerson(checked: boolean): void {
+    this.labelSettings.update((s) => ({ ...s, oneLabelPerPerson: checked }));
+    this.persistLabelSettings();
+  }
+
   async onLabelBackgroundSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -260,27 +294,47 @@ export class AdminAvatarsComponent implements OnInit {
   async exportLabel(famille: AdminAvatarFamilleView, event: Event): Promise<void> {
     event.preventDefault();
     event.stopPropagation();
-    if (this.exportingFamilleId() != null) return;
+    if (this.exportBusy()) return;
 
     this.exportingFamilleId.set(famille.id);
     try {
-      await this.labelExport.exportPdf(
-        {
-          displayName: famille.displayName,
-          personnes: famille.personnes.map((p) => ({
-            prenom: p.prenom,
-            nom: p.nom,
-            imageSrc: p.imageSrc,
-          })),
-        },
-        this.labelSettings()
-      );
-      this.snackBar.open(`Étiquette exportée — ${famille.displayName}`, 'OK', { duration: 3000 });
+      await this.labelExport.exportPdf(this.toLabelFamille(famille), this.labelSettings());
+      const msg = this.labelSettings().oneLabelPerPerson
+        ? `Étiquettes exportées (${famille.memberCount} personne(s)) — ${famille.displayName}`
+        : `Étiquette exportée — ${famille.displayName}`;
+      this.snackBar.open(msg, 'OK', { duration: 3000 });
     } catch (e) {
       console.error('export label', e);
       this.snackBar.open('Export de l\'étiquette impossible.', 'OK', { duration: 5000 });
     } finally {
       this.exportingFamilleId.set(null);
+    }
+  }
+
+  async exportAllLabels(): Promise<void> {
+    const list = this.familles();
+    if (list.length === 0) {
+      this.snackBar.open('Aucune famille à exporter.', 'OK', { duration: 4000 });
+      return;
+    }
+    if (this.exportBusy()) return;
+
+    this.exportingAllLabels.set(true);
+    try {
+      await this.labelExport.exportAllLabelsA4Pdf(
+        list.map((f) => this.toLabelFamille(f)),
+        this.labelSettings()
+      );
+      this.snackBar.open(
+        `${this.totalLabelCount()} étiquette(s) exportée(s) en PDF A4.`,
+        'OK',
+        { duration: 4000 }
+      );
+    } catch (e) {
+      console.error('export all labels', e);
+      this.snackBar.open('Export groupé impossible.', 'OK', { duration: 5000 });
+    } finally {
+      this.exportingAllLabels.set(false);
     }
   }
 }

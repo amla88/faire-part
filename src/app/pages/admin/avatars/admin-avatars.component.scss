@@ -67,6 +67,10 @@
   }
 }
 
+.admin-avatars-label-mode {
+  grid-column: 1 / -1;
+}
+
 .admin-avatars-label-bg-actions {
   display: flex;
   flex-wrap: wrap;
@@ -77,6 +81,15 @@
 
 .admin-avatars-label-preview-wrap {
   grid-column: span 1;
+}
+
+.admin-avatars-label-export-all {
+  grid-column: 1 / -1;
+  padding-top: 4px;
+}
+
+.admin-avatars-export-progress {
+  max-width: 320px;
 }
 
 .admin-avatars-label-preview {

@@ -41,6 +41,21 @@
             (ngModelChange)="updateWeddingDate($event)"
           />
         </mat-form-field>
+        <div class="admin-avatars-label-mode">
+          <mat-slide-toggle
+            [checked]="labelSettings().oneLabelPerPerson"
+            (change)="updateOneLabelPerPerson($event.checked)"
+          >
+            Une étiquette par personne
+          </mat-slide-toggle>
+          <p class="f-s-12 text-muted m-t-4 m-b-0">
+            {{
+              labelSettings().oneLabelPerPerson
+                ? 'Chaque membre reçoit sa propre étiquette (nom + famille en sous-titre).'
+                : 'Une étiquette globale par famille avec tous les membres.'
+            }}
+          </p>
+        </div>
         <div class="admin-avatars-label-bg-actions">
           <input
             #labelBgInput
@@ -69,6 +84,27 @@
             [src]="labelBackgroundPreview()"
             alt="Aperçu fond étiquette"
           />
+        </div>
+        <div class="admin-avatars-label-export-all">
+          <button
+            mat-flat-button
+            color="primary"
+            type="button"
+            (click)="exportAllLabels()"
+            [disabled]="loading() || exportBusy() || familles().length === 0"
+          >
+            <mat-icon>picture_as_pdf</mat-icon>
+            Exporter toutes les étiquettes (A4)
+          </button>
+          <p class="f-s-12 text-muted m-t-8 m-b-0">
+            PDF prêt à imprimer : {{ totalLabelCount() }} étiquette(s) sur pages A4
+            ({{ labelSettings().widthMm }}×{{ labelSettings().heightMm }} mm).
+          </p>
+          <mat-progress-bar
+            *ngIf="exportingAllLabels()"
+            mode="indeterminate"
+            class="admin-avatars-export-progress m-t-8"
+          ></mat-progress-bar>
         </div>
       </div>
     </div>
@@ -163,7 +199,7 @@
                 color="primary"
                 type="button"
                 class="admin-avatars-export-btn"
-                [disabled]="exportingFamilleId() === f.id"
+                [disabled]="exportBusy() && exportingFamilleId() !== f.id"
                 (click)="exportLabel(f, $event)"
                 matTooltip="Exporter l'étiquette PDF"
               >
