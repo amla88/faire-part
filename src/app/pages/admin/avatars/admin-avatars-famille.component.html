@@ -1,0 +1,70 @@
+<mat-card class="cardWithShadow">
+  <mat-card-content>
+    <div class="admin-avatars-detail-header m-b-16">
+      <a mat-stroked-button routerLink="/admin/avatars">
+        <mat-icon>arrow_back</mat-icon>
+        Retour à la liste
+      </a>
+    </div>
+
+    <mat-card-title>{{ displayName() || 'Famille' }}</mat-card-title>
+    <p class="f-s-13 text-muted m-t-8 m-b-16" *ngIf="familleId() as fid">
+      Famille #{{ fid }} — {{ avatarCount() }} avatar(s) sur {{ personnes().length }} membre(s)
+    </p>
+
+    <div *ngIf="loading()" class="d-flex justify-center p-24">
+      <mat-progress-spinner diameter="40" mode="indeterminate"></mat-progress-spinner>
+    </div>
+
+    <div *ngIf="!loading() && personnes().length === 0" class="p-24 text-center text-muted">
+      Cette famille n'a aucun membre enregistré.
+    </div>
+
+    <ul *ngIf="!loading() && personnes().length > 0" class="admin-avatars-detail-grid">
+      <li *ngFor="let p of personnes()" class="admin-avatars-detail-card">
+        <figure class="admin-avatars-detail-figure">
+          <img
+            class="admin-avatars-detail-img"
+            [src]="p.imageSrc"
+            [alt]="'Avatar de ' + p.prenom + ' ' + p.nom"
+            width="200"
+            height="200"
+          />
+          <figcaption>
+            <span class="admin-avatars-detail-name">{{ p.prenom }} {{ p.nom }}</span>
+            <span
+              *ngIf="p.hasAvatar && p.generatedByAdmin"
+              class="admin-avatars-detail-status admin-avatars-detail-status--admin"
+            >
+              Généré par l'admin
+            </span>
+            <span
+              *ngIf="p.hasAvatar && !p.generatedByAdmin"
+              class="admin-avatars-detail-status admin-avatars-detail-status--ok"
+            >
+              Créé par l'invité
+            </span>
+            <span *ngIf="!p.hasAvatar" class="admin-avatars-detail-status admin-avatars-detail-status--missing">
+              Sans avatar
+            </span>
+            <span *ngIf="p.updatedLabel" class="admin-avatars-detail-date f-s-12 text-muted">
+              Dernière mise à jour : {{ p.updatedLabel }}
+            </span>
+            <button
+              *ngIf="p.canAdminGenerate"
+              mat-stroked-button
+              color="primary"
+              type="button"
+              class="admin-avatars-generate-btn m-t-8"
+              [disabled]="generatingPersonneId() === p.id"
+              (click)="generateRandomAvatar(p)"
+            >
+              <mat-icon>casino</mat-icon>
+              Générer au hasard
+            </button>
+          </figcaption>
+        </figure>
+      </li>
+    </ul>
+  </mat-card-content>
+</mat-card>

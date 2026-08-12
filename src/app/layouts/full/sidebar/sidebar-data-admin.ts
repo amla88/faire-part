@@ -13,6 +13,7 @@ export const navItemsAdmin: NavItem[] = [
   { displayName: 'Ajouter famille', iconName: 'user-plus', route: '/admin/famille' },
   { displayName: 'Plan de table', iconName: 'picnic-table', route: '/admin/plan-de-table' },
   { displayName: 'Musiques invités', iconName: 'music', route: '/admin/musiques' },
+  { displayName: 'Avatars invités', iconName: 'user-circle', route: '/admin/avatars' },
   { displayName: 'Boîte à idées', iconName: 'bulb', route: '/admin/boite-idees' },
   { displayName: 'Anecdotes', iconName: 'quotes', route: '/admin/anecdotes' },
   { displayName: 'Albums photo', iconName: 'photo_library', route: '/admin/photo-albums' },

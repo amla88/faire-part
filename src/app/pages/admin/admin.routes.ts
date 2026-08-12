@@ -39,6 +39,16 @@ export const AdminRoutes: Routes = [
       import('./musiques/admin-musiques.component').then((m) => m.AdminMusiquesComponent),
   },
   {
+    path: 'avatars',
+    loadComponent: () =>
+      import('./avatars/admin-avatars.component').then((m) => m.AdminAvatarsComponent),
+  },
+  {
+    path: 'avatars/:id',
+    loadComponent: () =>
+      import('./avatars/admin-avatars-famille.component').then((m) => m.AdminAvatarsFamilleComponent),
+  },
+  {
     path: 'boite-idees',
     loadComponent: () =>
       import('./boite-idees/admin-boite-idees.component').then((m) => m.AdminBoiteIdeesComponent),

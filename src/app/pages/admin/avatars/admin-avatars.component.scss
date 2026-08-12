@@ -1,0 +1,59 @@
+.admin-avatars-search {
+  min-width: 220px;
+  flex: 1 1 240px;
+}
+
+.admin-avatars-table {
+  .mat-mdc-cell,
+  .mat-mdc-header-cell {
+    vertical-align: top;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+}
+
+.admin-avatars-row {
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.03);
+  }
+}
+
+.admin-avatars-famille-link {
+  color: inherit;
+  text-decoration: none;
+
+  &:hover .f-w-600 {
+    text-decoration: underline;
+  }
+}
+
+.admin-avatars-members {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-avatars-member {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-avatars-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #ececec;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.admin-avatars-member-name {
+  font-size: 14px;
+}

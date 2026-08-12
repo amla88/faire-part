@@ -1,0 +1,85 @@
+.admin-avatars-detail-header {
+  display: flex;
+  align-items: center;
+}
+
+.admin-avatars-detail-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.admin-avatars-detail-card {
+  margin: 0;
+}
+
+.admin-avatars-detail-figure {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  background: #fafafa;
+  text-align: center;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.admin-avatars-detail-img {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #ececec;
+  border: 2px solid rgba(0, 0, 0, 0.08);
+  margin-bottom: 12px;
+}
+
+.admin-avatars-detail-name {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.admin-avatars-detail-status {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-bottom: 4px;
+
+  &--ok {
+    color: #2e7d32;
+    background: rgba(46, 125, 50, 0.12);
+  }
+
+  &--missing {
+    color: #757575;
+    background: rgba(0, 0, 0, 0.06);
+  }
+
+  &--admin {
+    color: #1565c0;
+    background: rgba(21, 101, 192, 0.12);
+  }
+}
+
+.admin-avatars-generate-btn {
+  mat-icon {
+    margin-right: 4px;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.admin-avatars-detail-date {
+  display: block;
+  margin-top: 4px;
+}
