@@ -1,0 +1,10 @@
+.admin-avatar-editor-dialog-title {
+  margin-bottom: 0;
+}
+
+.admin-avatar-editor-dialog-content {
+  max-width: min(960px, 92vw);
+  max-height: min(82vh, 900px);
+  overflow: auto;
+  padding-top: 8px;
+}

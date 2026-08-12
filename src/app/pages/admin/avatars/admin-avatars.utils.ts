@@ -14,7 +14,12 @@ export function isAdminGeneratedAvatar(avatar: AdminAvatarRow | null | undefined
 }
 
 export function canAdminGenerateAvatar(avatar: AdminAvatarRow | null | undefined): boolean {
-  return !hasAvatarConfig(avatar);
+  if (!hasAvatarConfig(avatar)) return true;
+  return isAdminGeneratedAvatar(avatar);
+}
+
+export function canAdminEditAvatar(avatar: AdminAvatarRow | null | undefined): boolean {
+  return canAdminGenerateAvatar(avatar);
 }
 
 export function hasAvatarConfig(avatar: AdminAvatarRow | null | undefined): boolean {

@@ -16,13 +16,23 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { FormsModule } from '@angular/forms';
 import { NgSupabaseService } from 'src/app/services/ng-supabase.service';
 import { AvatarService } from 'src/app/services/avatar.service';
+import { AvatarLabelExportService } from './avatar-label-export.service';
+import {
+  AvatarLabelSettings,
+  DEFAULT_LABEL_BACKGROUND,
+  loadAvatarLabelSettings,
+  saveAvatarLabelSettings,
+} from './avatar-label-export.types';
 import {
   avatarDisplaySrc,
   AVATAR_PLACEHOLDER_SRC,
   getFamilyDisplayName,
   hasAvatarConfig,
+  isAdminGeneratedAvatar,
   normalizeAvatarFromPersonne,
   resolveAvatarDataUri,
 } from './admin-avatars.utils';
@@ -32,6 +42,7 @@ export interface AdminAvatarPersonneView {
   prenom: string;
   nom: string;
   hasAvatar: boolean;
+  generatedByAdmin: boolean;
   imageSrc: string;
 }
 
@@ -57,6 +68,8 @@ export interface AdminAvatarFamilleView {
     MatFormFieldModule,
     MatInputModule,
     MatSnackBarModule,
+    MatTooltipModule,
+    FormsModule,
   ],
   templateUrl: './admin-avatars.component.html',
   styleUrls: ['./admin-avatars.component.scss'],
@@ -66,11 +79,19 @@ export class AdminAvatarsComponent implements OnInit {
   private readonly supabase = inject(NgSupabaseService);
   private readonly avatarService = inject(AvatarService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly labelExport = inject(AvatarLabelExportService);
 
   readonly loading = signal(false);
+  readonly exportingFamilleId = signal<number | null>(null);
   readonly filterText = signal('');
   readonly familles = signal<AdminAvatarFamilleView[]>([]);
   readonly placeholderSrc = AVATAR_PLACEHOLDER_SRC;
+  readonly labelSettings = signal<AvatarLabelSettings>(loadAvatarLabelSettings());
+  readonly defaultLabelBackground = DEFAULT_LABEL_BACKGROUND;
+
+  readonly labelBackgroundPreview = computed(() =>
+    this.labelSettings().backgroundDataUrl ?? DEFAULT_LABEL_BACKGROUND
+  );
 
   readonly displayedColumns = ['famille', 'membres', 'avatars', 'action'];
 
@@ -151,6 +172,7 @@ export class AdminAvatarsComponent implements OnInit {
         prenom: row.prenom ?? '',
         nom: row.nom ?? '',
         hasAvatar,
+        generatedByAdmin: isAdminGeneratedAvatar(avatar),
         imageSrc: avatarDisplaySrc(dataUri),
       };
     });
@@ -172,5 +194,93 @@ export class AdminAvatarsComponent implements OnInit {
       avatarCount: personnes.filter((p) => p.hasAvatar).length,
       memberCount: personnes.length,
     };
+  }
+
+  persistLabelSettings(): void {
+    saveAvatarLabelSettings(this.labelSettings());
+  }
+
+  updateLabelWidth(value: string): void {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return;
+    this.labelSettings.update((s) => ({ ...s, widthMm: Math.min(200, Math.max(20, n)) }));
+    this.persistLabelSettings();
+  }
+
+  updateLabelHeight(value: string): void {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return;
+    this.labelSettings.update((s) => ({ ...s, heightMm: Math.min(200, Math.max(20, n)) }));
+    this.persistLabelSettings();
+  }
+
+  updateWeddingDate(value: string): void {
+    this.labelSettings.update((s) => ({ ...s, weddingDate: value }));
+    this.persistLabelSettings();
+  }
+
+  async onLabelBackgroundSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      this.snackBar.open('Choisissez une image (PNG, JPG…).', 'OK', { duration: 4000 });
+      return;
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      this.snackBar.open('Image trop lourde (max 4 Mo).', 'OK', { duration: 4000 });
+      return;
+    }
+    try {
+      const dataUrl = await this.readFileAsDataUrl(file);
+      this.labelSettings.update((s) => ({ ...s, backgroundDataUrl: dataUrl }));
+      this.persistLabelSettings();
+      this.snackBar.open('Fond d\'étiquette enregistré.', 'OK', { duration: 2500 });
+    } catch {
+      this.snackBar.open('Impossible de lire l\'image.', 'OK', { duration: 4000 });
+    }
+  }
+
+  resetLabelBackground(): void {
+    this.labelSettings.update((s) => ({ ...s, backgroundDataUrl: null }));
+    this.persistLabelSettings();
+    this.snackBar.open('Fond par défaut restauré.', 'OK', { duration: 2500 });
+  }
+
+  private readFileAsDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result ?? ''));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async exportLabel(famille: AdminAvatarFamilleView, event: Event): Promise<void> {
+    event.preventDefault();
+    event.stopPropagation();
+    if (this.exportingFamilleId() != null) return;
+
+    this.exportingFamilleId.set(famille.id);
+    try {
+      await this.labelExport.exportPdf(
+        {
+          displayName: famille.displayName,
+          personnes: famille.personnes.map((p) => ({
+            prenom: p.prenom,
+            nom: p.nom,
+            imageSrc: p.imageSrc,
+          })),
+        },
+        this.labelSettings()
+      );
+      this.snackBar.open(`Étiquette exportée — ${famille.displayName}`, 'OK', { duration: 3000 });
+    } catch (e) {
+      console.error('export label', e);
+      this.snackBar.open('Export de l\'étiquette impossible.', 'OK', { duration: 5000 });
+    } finally {
+      this.exportingFamilleId.set(null);
+    }
   }
 }

@@ -50,18 +50,31 @@
             <span *ngIf="p.updatedLabel" class="admin-avatars-detail-date f-s-12 text-muted">
               Dernière mise à jour : {{ p.updatedLabel }}
             </span>
-            <button
-              *ngIf="p.canAdminGenerate"
-              mat-stroked-button
-              color="primary"
-              type="button"
-              class="admin-avatars-generate-btn m-t-8"
-              [disabled]="generatingPersonneId() === p.id"
-              (click)="generateRandomAvatar(p)"
-            >
-              <mat-icon>casino</mat-icon>
-              Générer au hasard
-            </button>
+            <div *ngIf="p.canAdminGenerate || p.canAdminEdit" class="admin-avatars-detail-actions m-t-8">
+              <button
+                *ngIf="p.canAdminGenerate"
+                mat-stroked-button
+                color="primary"
+                type="button"
+                class="admin-avatars-action-btn"
+                [disabled]="generatingPersonneId() === p.id"
+                (click)="generateRandomAvatar(p)"
+              >
+                <mat-icon>casino</mat-icon>
+                {{ p.hasAvatar ? 'Regénérer au hasard' : 'Générer au hasard' }}
+              </button>
+              <button
+                *ngIf="p.canAdminEdit"
+                mat-flat-button
+                color="primary"
+                type="button"
+                class="admin-avatars-action-btn"
+                (click)="openEditor(p)"
+              >
+                <mat-icon>edit</mat-icon>
+                Éditer
+              </button>
+            </div>
           </figcaption>
         </figure>
       </li>

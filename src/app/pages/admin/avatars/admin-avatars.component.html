@@ -3,8 +3,75 @@
     <mat-card-title>Avatars des invités</mat-card-title>
     <p class="f-s-13 text-muted m-t-8 m-b-16">
       Liste des familles avec les effigies créées par les invités. Cliquez sur une famille pour
-      afficher les avatars en grand.
+      afficher les avatars en grand, ou exportez une étiquette imprimable par famille.
     </p>
+
+    <div class="admin-avatars-label-settings m-b-16">
+      <h3 class="admin-avatars-label-settings-title">Paramètres des étiquettes</h3>
+      <div class="admin-avatars-label-settings-grid">
+        <mat-form-field appearance="outline" class="admin-avatars-label-field">
+          <mat-label>Largeur (mm)</mat-label>
+          <input
+            matInput
+            type="number"
+            min="20"
+            max="200"
+            step="0.5"
+            [ngModel]="labelSettings().widthMm"
+            (ngModelChange)="updateLabelWidth($event)"
+          />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="admin-avatars-label-field">
+          <mat-label>Hauteur (mm)</mat-label>
+          <input
+            matInput
+            type="number"
+            min="20"
+            max="200"
+            step="0.5"
+            [ngModel]="labelSettings().heightMm"
+            (ngModelChange)="updateLabelHeight($event)"
+          />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="admin-avatars-label-field admin-avatars-label-field--date">
+          <mat-label>Date affichée</mat-label>
+          <input
+            matInput
+            [ngModel]="labelSettings().weddingDate"
+            (ngModelChange)="updateWeddingDate($event)"
+          />
+        </mat-form-field>
+        <div class="admin-avatars-label-bg-actions">
+          <input
+            #labelBgInput
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            hidden
+            (change)="onLabelBackgroundSelected($event)"
+          />
+          <button mat-stroked-button type="button" (click)="labelBgInput.click()">
+            <mat-icon>upload</mat-icon>
+            Fond personnalisé
+          </button>
+          <button
+            mat-button
+            type="button"
+            (click)="resetLabelBackground()"
+            [disabled]="!labelSettings().backgroundDataUrl"
+          >
+            Fond par défaut
+          </button>
+        </div>
+        <div class="admin-avatars-label-preview-wrap">
+          <span class="f-s-12 text-muted d-block m-b-4">Aperçu du fond</span>
+          <img
+            class="admin-avatars-label-preview"
+            [src]="labelBackgroundPreview()"
+            alt="Aperçu fond étiquette"
+          />
+        </div>
+      </div>
+    </div>
 
     <div class="m-b-12 d-flex flex-wrap align-center gap-12">
       <mat-form-field appearance="outline" class="admin-avatars-search">
@@ -22,8 +89,17 @@
       </button>
     </div>
 
-    <div class="f-s-13 text-muted m-b-8">
-      {{ filteredFamilles().length }} famille(s) — {{ totalAvatars() }} avatar(s) configuré(s)
+    <div class="f-s-13 text-muted m-b-8 d-flex flex-wrap align-center gap-12">
+      <span>{{ filteredFamilles().length }} famille(s) — {{ totalAvatars() }} avatar(s) configuré(s)</span>
+      <span class="admin-avatars-legend">
+        <span class="admin-avatars-thumb-wrap admin-avatars-legend-icon" aria-hidden="true">
+          <span class="admin-avatars-thumb admin-avatars-thumb--legend"></span>
+          <span class="admin-avatars-admin-badge">
+            <mat-icon>star</mat-icon>
+          </span>
+        </span>
+        Avatar généré ou édité par l'admin
+      </span>
     </div>
 
     <div *ngIf="loading()" class="d-flex justify-center p-24">
@@ -47,13 +123,23 @@
           <td mat-cell *matCellDef="let f">
             <ul class="admin-avatars-members">
               <li *ngFor="let p of f.personnes" class="admin-avatars-member">
-                <img
-                  class="admin-avatars-thumb"
-                  [src]="p.imageSrc"
-                  [alt]="'Avatar de ' + p.prenom + ' ' + p.nom"
-                  width="40"
-                  height="40"
-                />
+                <span class="admin-avatars-thumb-wrap">
+                  <img
+                    class="admin-avatars-thumb"
+                    [src]="p.imageSrc"
+                    [alt]="'Avatar de ' + p.prenom + ' ' + p.nom"
+                    width="40"
+                    height="40"
+                  />
+                  <span
+                    *ngIf="p.generatedByAdmin"
+                    class="admin-avatars-admin-badge"
+                    matTooltip="Avatar généré ou édité par l'admin"
+                    aria-label="Avatar généré ou édité par l'admin"
+                  >
+                    <mat-icon>star</mat-icon>
+                  </span>
+                </span>
                 <span class="admin-avatars-member-name">{{ p.prenom }} {{ p.nom }}</span>
               </li>
             </ul>
@@ -71,24 +157,33 @@
         <ng-container matColumnDef="action">
           <th mat-header-cell *matHeaderCellDef></th>
           <td mat-cell *matCellDef="let f">
-            <a
-              mat-icon-button
-              color="primary"
-              [routerLink]="['/admin/avatars', f.id]"
-              aria-label="Voir les avatars en grand"
-            >
-              <mat-icon>zoom_in</mat-icon>
-            </a>
+            <div class="admin-avatars-actions-cell">
+              <button
+                mat-stroked-button
+                color="primary"
+                type="button"
+                class="admin-avatars-export-btn"
+                [disabled]="exportingFamilleId() === f.id"
+                (click)="exportLabel(f, $event)"
+                matTooltip="Exporter l'étiquette PDF"
+              >
+                <mat-icon>label</mat-icon>
+                Étiquette
+              </button>
+              <a
+                mat-icon-button
+                color="primary"
+                [routerLink]="['/admin/avatars', f.id]"
+                aria-label="Voir les avatars en grand"
+              >
+                <mat-icon>zoom_in</mat-icon>
+              </a>
+            </div>
           </td>
         </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr
-          mat-row
-          *matRowDef="let row; columns: displayedColumns"
-          class="admin-avatars-row"
-          [routerLink]="['/admin/avatars', row.id]"
-        ></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns" class="admin-avatars-row"></tr>
       </table>
 
       <p *ngIf="filteredFamilles().length === 0" class="p-24 text-center text-muted">

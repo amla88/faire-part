@@ -221,6 +221,41 @@ export class AvatarService {
     }
   }
 
+  /** Enregistre ou remplace un avatar admin (sans token invité). */
+  async saveAvatarForAdmin(
+    personneId: number,
+    seed: string | null,
+    options: any | null
+  ): Promise<AvatarRow | null> {
+    try {
+      const client = this.supabase.getClient();
+      const rpcRes = await client.rpc('generate_avatar_for_admin', {
+        p_personne_id: personneId,
+        p_seed: seed,
+        p_options: options,
+      });
+      if (rpcRes.error) {
+        console.error('AvatarService.saveAvatarForAdmin RPC error', rpcRes.error);
+        return null;
+      }
+      let data: any = rpcRes.data;
+      if (Array.isArray(data)) data = data[0] || null;
+      if (!data) return null;
+      const imageDataUri = options ? this.generateDataUri(options) : null;
+      return {
+        id: data.id,
+        seed: data.seed || null,
+        options: data.options || null,
+        created_at: data.created_at || null,
+        updated_at: data.updated_at || null,
+        imageDataUri,
+      };
+    } catch (e) {
+      console.error('AvatarService.saveAvatarForAdmin error', e);
+      return null;
+    }
+  }
+
   /** Optionnel: initialiser le service à partir d'un AppUser déjà chargé afin d'éviter duplication */
   initFromUser(user: any | null): void {
     try {

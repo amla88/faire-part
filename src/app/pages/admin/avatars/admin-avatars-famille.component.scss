@@ -70,7 +70,14 @@
   }
 }
 
-.admin-avatars-generate-btn {
+.admin-avatars-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.admin-avatars-action-btn {
   mat-icon {
     margin-right: 4px;
     font-size: 18px;

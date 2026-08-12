@@ -1,0 +1,17 @@
+<h2 mat-dialog-title class="admin-avatar-editor-dialog-title">
+  Éditer l'avatar — {{ data.prenom }} {{ data.nom }}
+</h2>
+
+<mat-dialog-content class="admin-avatar-editor-dialog-content">
+  <app-avatar-editor
+    [embedInAdmin]="true"
+    [adminPersonneId]="data.personneId"
+    [adminInitialSeed]="data.seed ?? null"
+    [adminInitialOptions]="data.options ?? null"
+    (savedToServer)="onSaved()"
+  />
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="close()">Fermer</button>
+</mat-dialog-actions>

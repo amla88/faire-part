@@ -13,12 +13,14 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { NgSupabaseService } from 'src/app/services/ng-supabase.service';
 import { AvatarService } from 'src/app/services/avatar.service';
 import {
   avatarDisplaySrc,
   AVATAR_PLACEHOLDER_SRC,
   canAdminGenerateAvatar,
+  canAdminEditAvatar,
   getFamilyDisplayName,
   hasAvatarConfig,
   isAdminGeneratedAvatar,
@@ -30,6 +32,10 @@ import {
   defaultAvatarDicebearFormState,
   randomizeAvatarDicebearForm,
 } from 'src/app/utils/avatar-dicebear-form';
+import {
+  AdminAvatarEditorDialogComponent,
+  AdminAvatarEditorDialogData,
+} from './admin-avatar-editor-dialog.component';
 
 export interface AdminAvatarPersonneDetail {
   id: number;
@@ -38,6 +44,9 @@ export interface AdminAvatarPersonneDetail {
   hasAvatar: boolean;
   generatedByAdmin: boolean;
   canAdminGenerate: boolean;
+  canAdminEdit: boolean;
+  avatarSeed: string | null;
+  avatarOptions: unknown | null;
   imageSrc: string;
   updatedLabel: string | null;
 }
@@ -53,6 +62,7 @@ export interface AdminAvatarPersonneDetail {
     MatIconModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
+    MatDialogModule,
   ],
   templateUrl: './admin-avatars-famille.component.html',
   styleUrls: ['./admin-avatars-famille.component.scss'],
@@ -63,6 +73,7 @@ export class AdminAvatarsFamilleComponent implements OnInit {
   private readonly supabase = inject(NgSupabaseService);
   private readonly avatarService = inject(AvatarService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
 
   readonly loading = signal(false);
   readonly generatingPersonneId = signal<number | null>(null);
@@ -115,31 +126,9 @@ export class AdminAvatarsFamilleComponent implements OnInit {
       }
 
       const personnesRaw = Array.isArray(data.personnes) ? data.personnes : [];
-      const mapped: AdminAvatarPersonneDetail[] = personnesRaw.map((p) => {
-        const row = p as {
-          id: number;
-          prenom?: string;
-          nom?: string;
-        };
-        const avatar = normalizeAvatarFromPersonne(p);
-        const avatarsRaw = (p as { avatars?: unknown }).avatars;
-        const avRow = Array.isArray(avatarsRaw) ? avatarsRaw[0] : avatarsRaw;
-        const avObj = avRow && typeof avRow === 'object' ? (avRow as Record<string, unknown>) : null;
-        const updatedAt = avObj?.['updated_at'] ?? avObj?.['created_at'];
-        const hasAvatar = hasAvatarConfig(avatar);
-        const generatedByAdmin = isAdminGeneratedAvatar(avatar);
-        const dataUri = resolveAvatarDataUri(avatar, this.avatarService);
-        return {
-          id: Number(row.id),
-          prenom: row.prenom ?? '',
-          nom: row.nom ?? '',
-          hasAvatar,
-          generatedByAdmin,
-          canAdminGenerate: canAdminGenerateAvatar(avatar),
-          imageSrc: avatarDisplaySrc(dataUri),
-          updatedLabel: hasAvatar && updatedAt ? this.formatDate(String(updatedAt)) : null,
-        };
-      });
+      const mapped: AdminAvatarPersonneDetail[] = personnesRaw.map((p) =>
+        this.mapPersonneDetail(p as Record<string, unknown>)
+      );
 
       mapped.sort((a, b) => {
         const cmp = a.nom.localeCompare(b.nom, 'fr', { sensitivity: 'base' });
@@ -176,6 +165,84 @@ export class AdminAvatarsFamilleComponent implements OnInit {
     }
   }
 
+  private mapPersonneDetail(raw: Record<string, unknown>): AdminAvatarPersonneDetail {
+    const avatar = normalizeAvatarFromPersonne(raw);
+    const avatarsRaw = raw['avatars'];
+    const avRow = Array.isArray(avatarsRaw) ? avatarsRaw[0] : avatarsRaw;
+    const avObj = avRow && typeof avRow === 'object' ? (avRow as Record<string, unknown>) : null;
+    const updatedAt = avObj?.['updated_at'] ?? avObj?.['created_at'];
+    const hasAvatar = hasAvatarConfig(avatar);
+    const generatedByAdmin = isAdminGeneratedAvatar(avatar);
+    const dataUri = resolveAvatarDataUri(avatar, this.avatarService);
+    return {
+      id: Number(raw['id']),
+      prenom: String(raw['prenom'] ?? ''),
+      nom: String(raw['nom'] ?? ''),
+      hasAvatar,
+      generatedByAdmin,
+      canAdminGenerate: canAdminGenerateAvatar(avatar),
+      canAdminEdit: canAdminEditAvatar(avatar),
+      avatarSeed: avatar?.seed ?? null,
+      avatarOptions: avatar?.options ?? null,
+      imageSrc: avatarDisplaySrc(dataUri),
+      updatedLabel: hasAvatar && updatedAt ? this.formatDate(String(updatedAt)) : null,
+    };
+  }
+
+  private applySavedAvatar(
+    personneId: number,
+    seed: string,
+    options: Record<string, unknown>,
+    updatedAt?: string | null
+  ): void {
+    const dataUri = this.avatarService.generateDataUri(options);
+    this.personnes.update((list) =>
+      list.map((p) =>
+        p.id === personneId
+          ? {
+              ...p,
+              hasAvatar: true,
+              generatedByAdmin: true,
+              canAdminGenerate: true,
+              canAdminEdit: true,
+              avatarSeed: seed,
+              avatarOptions: options,
+              imageSrc: avatarDisplaySrc(dataUri),
+              updatedLabel: updatedAt
+                ? this.formatDate(updatedAt)
+                : this.formatDate(new Date().toISOString()),
+            }
+          : p
+      )
+    );
+  }
+
+  openEditor(personne: AdminAvatarPersonneDetail): void {
+    if (!personne.canAdminEdit) return;
+
+    const data: AdminAvatarEditorDialogData = {
+      personneId: personne.id,
+      prenom: personne.prenom,
+      nom: personne.nom,
+      seed: personne.avatarSeed,
+      options: (personne.avatarOptions as Record<string, unknown> | null) ?? null,
+    };
+
+    const ref = this.dialog.open(AdminAvatarEditorDialogComponent, {
+      data,
+      width: '960px',
+      maxWidth: '96vw',
+      maxHeight: '92vh',
+      autoFocus: false,
+    });
+
+    ref.afterClosed().subscribe((result) => {
+      if (!result?.saved) return;
+      const fid = this.familleId();
+      if (fid != null) void this.load(fid);
+    });
+  }
+
   async generateRandomAvatar(personne: AdminAvatarPersonneDetail): Promise<void> {
     if (!personne.canAdminGenerate || this.generatingPersonneId() != null) return;
 
@@ -195,26 +262,17 @@ export class AdminAvatarsFamilleComponent implements OnInit {
 
       if (error) throw error;
 
-      const dataUri = this.avatarService.generateDataUri(options);
-      this.personnes.update((list) =>
-        list.map((p) =>
-          p.id === personne.id
-            ? {
-                ...p,
-                hasAvatar: true,
-                generatedByAdmin: true,
-                canAdminGenerate: false,
-                imageSrc: avatarDisplaySrc(dataUri),
-                updatedLabel: data?.updated_at
-                  ? this.formatDate(String(data.updated_at))
-                  : this.formatDate(new Date().toISOString()),
-              }
-            : p
-        )
+      this.applySavedAvatar(
+        personne.id,
+        seed,
+        options,
+        data?.updated_at ? String(data.updated_at) : null
       );
 
       this.snackBar.open(
-        `Avatar généré pour ${personne.prenom} ${personne.nom}.`,
+        personne.hasAvatar
+          ? `Nouvel avatar généré pour ${personne.prenom} ${personne.nom}.`
+          : `Avatar généré pour ${personne.prenom} ${personne.nom}.`,
         'OK',
         { duration: 3000 }
       );
@@ -222,7 +280,7 @@ export class AdminAvatarsFamilleComponent implements OnInit {
       console.error('generate avatar for admin', e);
       const msg =
         e && typeof e === 'object' && 'message' in e && String((e as { message: string }).message).includes('avatar_already_exists')
-          ? 'Cet invité a déjà un avatar — génération impossible.'
+          ? 'Cet invité a déjà créé son avatar — modification impossible.'
           : 'Impossible de générer l\'avatar.';
       this.snackBar.open(msg, 'OK', { duration: 5000 });
     } finally {

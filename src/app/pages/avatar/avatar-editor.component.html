@@ -1,5 +1,5 @@
-<div class="avatar-editor-container avatar-editor-bridgerton" [class.avatar-editor--embed]="embedInGame()">
-  @if (!embedInGame()) {
+<div class="avatar-editor-container avatar-editor-bridgerton" [class.avatar-editor--embed]="embedInGame() || embedInAdmin()">
+  @if (!embedInGame() && !embedInAdmin()) {
     <div class="editor-header">
       <p class="editor-eyebrow">Le salon des portraits</p>
       <h1 class="editor-title">Éditeur d’avatar</h1>

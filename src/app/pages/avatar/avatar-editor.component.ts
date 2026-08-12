@@ -47,6 +47,12 @@ export class AvatarEditorComponent implements OnInit {
   /** Mode jeu : charge l’avatar depuis le serveur et notifie la boîte de dialogue après sauvegarde. */
   readonly embedInGame = input(false);
 
+  /** Mode admin : édition pour une personne ciblée (sans session invité). */
+  readonly embedInAdmin = input(false);
+  readonly adminPersonneId = input<number | null>(null);
+  readonly adminInitialSeed = input<string | null>(null);
+  readonly adminInitialOptions = input<Record<string, unknown> | null>(null);
+
   /** Émis après un enregistrement réussi (RPC), pour fermer la surcouche jeu. */
   readonly savedToServer = output<void>();
 
@@ -292,6 +298,19 @@ export class AvatarEditorComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    if (this.embedInAdmin()) {
+      const opts = this.adminInitialOptions();
+      if (opts) {
+        this.applyOptions(opts);
+      } else {
+        this.setDefaultOptions();
+      }
+      const seed = this.adminInitialSeed();
+      if (seed != null && String(seed).trim() !== '') {
+        this.seed.set(String(seed));
+      }
+      return;
+    }
     if (this.embedInGame()) {
       void this.loadFreshFromServerForGameEmbed();
       return;
@@ -411,13 +430,6 @@ export class AvatarEditorComponent implements OnInit {
    * Upsert : un seul avatar par personne.
    */
   async saveAvatar(): Promise<void> {
-    const user = this.auth.getUser();
-    if (!user || !user.selected_personne_id) {
-      this.snackBar.open('Aucune personne sélectionnée. Veuillez choisir une personne.', 'OK', { duration: 4000 });
-      return;
-    }
-
-    const personneId = user.selected_personne_id as number;
     const seed = this.seed();
     const options = {
       seed: this.seed(),
@@ -440,6 +452,38 @@ export class AvatarEditorComponent implements OnInit {
       skinColor: [this.skinColor()],
       backgroundColor: [this.backgroundColor()],
     };
+
+    if (this.embedInAdmin()) {
+      const personneId = this.adminPersonneId();
+      if (personneId == null) {
+        this.snackBar.open('Personne introuvable pour la sauvegarde.', 'OK', { duration: 4000 });
+        return;
+      }
+      this.isSaving.set(true);
+      try {
+        const avatarRow = await this.avatarService.saveAvatarForAdmin(personneId, seed, options);
+        if (avatarRow) {
+          this.savedToServer.emit();
+          this.snackBar.open('Avatar enregistré', undefined, { duration: 2000 });
+        } else {
+          this.snackBar.open('Impossible d\'enregistrer l\'avatar', 'OK', { duration: 4000 });
+        }
+      } catch (err) {
+        console.error('Erreur saveAvatar admin', err);
+        this.snackBar.open('Impossible d\'enregistrer l\'avatar', 'OK', { duration: 4000 });
+      } finally {
+        this.isSaving.set(false);
+      }
+      return;
+    }
+
+    const user = this.auth.getUser();
+    if (!user || !user.selected_personne_id) {
+      this.snackBar.open('Aucune personne sélectionnée. Veuillez choisir une personne.', 'OK', { duration: 4000 });
+      return;
+    }
+
+    const personneId = user.selected_personne_id as number;
 
     this.isSaving.set(true);
     try {
@@ -506,6 +550,22 @@ export class AvatarEditorComponent implements OnInit {
   }
 
   async resetAvatar(): Promise<void> {
+    if (this.embedInAdmin()) {
+      const opts = this.adminInitialOptions();
+      if (opts) {
+        this.applyOptions(opts);
+        const seed = this.adminInitialSeed();
+        if (seed != null && String(seed).trim() !== '') {
+          this.seed.set(String(seed));
+        }
+        this.snackBar.open('Avatar restauré.', undefined, { duration: 2000 });
+      } else {
+        this.setDefaultOptions();
+        this.snackBar.open('Réinitialisation aux valeurs par défaut.', undefined, { duration: 2000 });
+      }
+      return;
+    }
+
     const user = this.auth.getUser();
     if (!user || !user.selected_personne_id) {
         this.setDefaultOptions();
