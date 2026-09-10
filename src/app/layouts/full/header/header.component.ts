@@ -32,6 +32,8 @@ import { Router } from '@angular/router';
 export class HeaderComponent {
   @Input() showToggle = true;
   @Input() toggleChecked = false;
+  /** Partie publique : pas de menu ni de liens secondaires. */
+  @Input() guestMinimal = false;
   @Output() toggleMobileNav = new EventEmitter<void>();
   // provide AuthService to access cached avatar
   auth = inject(AuthService);

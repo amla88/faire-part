@@ -3,7 +3,6 @@ import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { NgSupabaseService } from './ng-supabase.service';
 import { AvatarService } from './avatar.service';
-import { isCountdownWindowActive } from './countdown-window';
 
 /** Après un login réussi : le tableau de bord affiche une fois l’accueil jeu / classique. */
 export const SESSION_POST_LOGIN_ONBOARDING_KEY = 'faire-part-post-login-onboarding';
@@ -50,21 +49,7 @@ export class AuthService {
 
       if (!res.success) return res;
 
-      // Fenêtre temporaire : après connexion, tomber sur le décompte uniquement.
-      if (isCountdownWindowActive()) {
-        this.router.navigate(['/decompte']);
-        return res;
-      }
-
-      // Perform navigation according to personnes count (preserve previous behaviour)
-      const user = res.user!;
-      if (user.personnes && user.personnes.length > 1) {
-        // multiple persons -> selection page
-        this.router.navigate(['/person']);
-      } else {
-        // single or no persons -> go to root (dashboard)
-        this.router.navigate(['/']);
-      }
+      this.router.navigate(['/dashboard']);
 
       return res;
     } catch (e: any) {
@@ -144,11 +129,19 @@ export class AuthService {
         console.error('[AuthService] avatars prefetch error', e);
       }
 
+      const principalId = data.personne_principale != null ? Number(data.personne_principale) : NaN;
+      const selectedId =
+        personnes.length === 1
+          ? personnes[0].id
+          : Number.isFinite(principalId) && personnes.some((p) => Number(p.id) === principalId)
+            ? principalId
+            : (personnes[0]?.id ?? null);
+
       const user: AppUser = {
         famille_id: data.id,
         personne_principale_id: data.personne_principale || undefined,
         personnes,
-        selected_personne_id: personnes.length === 1 ? personnes[0].id : null,
+        selected_personne_id: selectedId,
         avatars: Object.keys(avatarsMap).length ? avatarsMap : undefined,
       };
 

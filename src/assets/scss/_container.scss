@@ -37,6 +37,10 @@ body {
   margin-top: var(--topstrip-offset);
 }
 
+.mainWrapper--guest-minimal .mat-sidenav.sidebarNav {
+  display: none !important;
+}
+
 .container {
   max-width: 1200px;
   padding-left: 24px;

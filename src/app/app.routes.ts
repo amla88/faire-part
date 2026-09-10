@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { BlankComponent } from './layouts/blank/blank.component';
 import { FullComponent } from './layouts/full/full.component';
-import { AuthGuard, anniversaire40Guard, landingRedirectGuard } from './services/auth.guard';
+import { AuthGuard, guestPublicHomeGuard, landingRedirectGuard } from './services/auth.guard';
 import { adminGuard } from './services/admin.guard';
 
 export const routes: Routes = [
@@ -23,22 +23,24 @@ export const routes: Routes = [
       },
       {
         path: '',
-        canActivateChild: [AuthGuard],
+        canActivateChild: [AuthGuard, guestPublicHomeGuard],
         children: [
           {
             path: '',
-            // Redirige immédiatement vers /decompte ou /dashboard (évite un écran blanc)
+            // Redirige immédiatement vers /dashboard (évite un écran blanc)
             canMatch: [landingRedirectGuard],
             loadComponent: () => import('./pages/landing/landing.component').then((m) => m.LandingComponent),
             pathMatch: 'full',
           },
           {
             path: 'decompte',
-            loadComponent: () => import('./pages/decompte/decompte.component').then((m) => m.DecompteComponent),
+            redirectTo: '/dashboard',
+            pathMatch: 'full',
           },
           {
             path: 'person',
-            loadComponent: () => import('./pages/person/person.component').then((m) => m.PersonComponent),
+            redirectTo: '/dashboard',
+            pathMatch: 'full',
           },
           {
             path: '',
@@ -49,54 +51,16 @@ export const routes: Routes = [
                 loadComponent: () =>
                   import('./pages/dashboard/dashboard.component').then((m) => m.DashboardComponent),
               },
-              {
-                path: 'rsvp',
-                loadComponent: () =>
-                  import('./pages/rsvp/rsvp.component').then((m) => m.RsvpComponent),
-              },
-              {
-                path: 'anecdotes',
-                loadComponent: () =>
-                  import('./pages/anecdotes/anecdotes.component').then((m) => m.AnecdotesComponent),
-              },
-              {
-                path: 'idees',
-                loadComponent: () =>
-                  import('./pages/boite-idees/boite-idees.component').then((m) => m.BoiteIdeesComponent),
-              },
-              {
-                path: 'musiques',
-                loadComponent: () =>
-                  import('./pages/musiques/musiques.component').then((m) => m.MusiquesComponent),
-              },
-              {
-                path: 'jeu',
-                loadComponent: () =>
-                  import('./pages/jeu/jeu.component').then((m) => m.JeuComponent),
-              },
-              {
-                path: 'anniversaire-40',
-                canActivate: [anniversaire40Guard],
-                loadComponent: () =>
-                  import('./pages/anniversaire-40/anniversaire-40.component').then((m) => m.Anniversaire40Component),
-              },
-              {
-                path: 'profile',
-                loadComponent: () =>
-                  import('./pages/profile/profile.component').then((m) => m.ProfileComponent),
-              },
-              {
-                path: 'avatar',
-                loadComponent: () => import('./pages/avatar/avatar-editor.component').then((m) => m.AvatarEditorComponent),
-              },
-              {
-                path: 'photos/upload',
-                loadComponent: () => import('./pages/photos/upload/photo-upload.component').then((m) => m.PhotoUploadComponent),
-              },
-              {
-                path: 'photos/album',
-                loadComponent: () => import('./pages/photos/album/photo-album.component').then((m) => m.PhotoAlbumComponent),
-              },
+              { path: 'rsvp', redirectTo: 'dashboard', pathMatch: 'full' },
+              { path: 'anecdotes', redirectTo: 'dashboard', pathMatch: 'full' },
+              { path: 'idees', redirectTo: 'dashboard', pathMatch: 'full' },
+              { path: 'musiques', redirectTo: 'dashboard', pathMatch: 'full' },
+              { path: 'jeu', redirectTo: 'dashboard', pathMatch: 'full' },
+              { path: 'anniversaire-40', redirectTo: 'dashboard', pathMatch: 'full' },
+              { path: 'profile', redirectTo: 'dashboard', pathMatch: 'full' },
+              { path: 'avatar', redirectTo: 'dashboard', pathMatch: 'full' },
+              { path: 'photos/upload', redirectTo: 'dashboard', pathMatch: 'full' },
+              { path: 'photos/album', redirectTo: 'dashboard', pathMatch: 'full' },
             ],
           },
         ],

@@ -7,7 +7,6 @@ import {
 } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { isCountdownWindowActive } from 'src/app/services/countdown-window';
 
 @Injectable({ providedIn: 'root' })
 export class QuickLoginGuard implements CanActivate {
@@ -31,19 +30,7 @@ export class QuickLoginGuard implements CanActivate {
       return false;
     }
 
-    const user = res.user!;
-    if (isCountdownWindowActive()) {
-      await this.router.navigate(['/decompte'], { replaceUrl: true });
-      return false;
-    }
-
-    if (user.personnes && user.personnes.length > 1) {
-      await this.router.navigate(['/person'], { replaceUrl: true });
-      return false;
-    }
-
-    // single or no persons -> go to root (dashboard)
-    await this.router.navigate(['/'], { replaceUrl: true });
+    await this.router.navigate(['/dashboard'], { replaceUrl: true });
     return false;
   }
 }

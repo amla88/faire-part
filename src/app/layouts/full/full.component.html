@@ -3,6 +3,7 @@
 <mat-sidenav-container
   class="mainWrapper blue_theme light-theme"
   [class.mainWrapper--fill-viewport]="layoutFillViewport"
+  [class.mainWrapper--guest-minimal]="guestMinimalChrome"
   autosize
   autoFocus
   dir="ltr"
@@ -10,7 +11,8 @@
   <!-- ============================================================== -->
   <!-- Vertical Sidebar -->
   <!-- ============================================================== -->
-  <mat-sidenav #leftsidenav [mode]="isOver ? 'over' : 'side'" [opened]="!isOver"
+  <mat-sidenav #leftsidenav [mode]="isOver || guestMinimalChrome ? 'over' : 'side'"
+    [opened]="guestMinimalChrome ? false : !isOver"
     (openedChange)="onSidenavOpenedChange($event)" class="sidebarNav">
     <div class="flex-layout">
       <ng-scrollbar class="position-relative" style="height: 100%">
@@ -32,7 +34,11 @@
     <!-- VerticalHeader -->
     <!-- ============================================================== -->
     
-    <app-header [showToggle]="!isOver" (toggleMobileNav)="sidenav.toggle()"></app-header>
+    <app-header
+      [showToggle]="!isOver && !guestMinimalChrome"
+      [guestMinimal]="guestMinimalChrome"
+      (toggleMobileNav)="sidenav.toggle()"
+    ></app-header>
     
     <main class="pageWrapper maxWidth" [class.pageWrapper--fill-viewport]="layoutFillViewport">
       <!-- ============================================================== -->

@@ -10,13 +10,11 @@ import {
   CanActivateFn,
 } from '@angular/router';
 import { AuthService } from './auth.service';
-import { isCountdownWindowActive } from './countdown-window';
 
 /**
  * Route `/` : redirige sans rendre de composant.
  * - déconnecté -> login
- * - connecté + fenêtre décompte active -> `/decompte`
- * - connecté sinon -> `/dashboard`
+ * - connecté -> unique page publique `/dashboard`
  */
 export const landingRedirectGuard: CanMatchFn = () => {
   const router = inject(Router);
@@ -26,11 +24,16 @@ export const landingRedirectGuard: CanMatchFn = () => {
     return router.parseUrl('/authentication/login');
   }
 
-  if (isCountdownWindowActive()) {
-    return router.parseUrl('/decompte');
-  }
-
   return router.parseUrl('/dashboard');
+};
+
+/** Partie publique : une seule page une fois connecté (`/dashboard`). */
+export const guestPublicHomeGuard: CanActivateFn = (_route, state) => {
+  const url = state.url.split('?')[0].split('#')[0];
+  if (url === '/dashboard' || url.startsWith('/dashboard/')) {
+    return true;
+  }
+  return inject(Router).parseUrl('/dashboard');
 };
 
 /** Page Anniversaire 40 ans : uniquement si la personne sélectionnée est invitée (`invite_anniversaire`). */

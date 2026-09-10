@@ -1,107 +1,197 @@
 <div class="dashboard-bridgerton">
 	<section class="dashboard-hero" aria-labelledby="dashboard-title">
 		<div class="dashboard-hero-frame">
-			<p class="dashboard-eyebrow">Le salon des époux</p>
-			<h1 id="dashboard-title" class="dashboard-title">Bienvenue, {{ selectedPersonName }}</h1>
+			<p class="dashboard-eyebrow">Samedi 12 septembre</p>
+			<h1 id="dashboard-title" class="dashboard-title">Le grand jour, {{ selectedPersonName() }}</h1>
 			<p class="dashboard-lede">
-				Il nous en fait l’honneur de vous revoir dans cette demeure — toute virtuelle qu’elle soit.
-				Vos réponses, votre avatar et les menus du festin s’offrent à votre discrétion.
+				Le domaine s’apprête à ouvrir ses portes. Voici, consignés pour votre maisonnée, le programme de la journée,
+				le lieu du rendez-vous, et ce que chacun a daigné confirmer au registre.
 			</p>
 			<div class="dashboard-flourish" aria-hidden="true"></div>
 		</div>
 	</section>
 
-	<app-response-summary></app-response-summary>
+	<section class="day-of-section" aria-labelledby="day-of-family-title">
+		<mat-card class="bridgerton-card">
+			<mat-card-content>
+				<div class="bridgerton-card-heading">
+					<span class="bridgerton-card-kicker">La maisonnée</span>
+					<h2 id="day-of-family-title" class="bridgerton-card-title">Vos présences</h2>
+				</div>
+				<p class="day-of-prose">
+					Ci-dessous, les membres de votre famille, et les actes auxquels ils ont répondu par l’affirmative.
+				</p>
 
-	@if (showAnniversaireInviteCard()) {
-		<section class="dashboard-anniversaire-wrap" aria-labelledby="dashboard-anniv-title">
-			<mat-card class="bridgerton-card dashboard-anniversaire-card">
-				<mat-card-content>
-					<div class="dashboard-anniversaire-heading">
-						<span class="bridgerton-card-kicker">Anniversaire</span>
-						<h2 id="dashboard-anniv-title" class="bridgerton-card-title dashboard-anniversaire-title">
-							Vous êtes invité(e)
-						</h2>
+				@if (loading()) {
+					<div class="day-of-loading">
+						<mat-progress-spinner diameter="36" mode="indeterminate" color="primary"></mat-progress-spinner>
+						<span>Consultation du registre…</span>
 					</div>
-					<p class="dashboard-anniversaire-prose">
-						Une page du domaine rassemble les détails de la célébration des 40 ans d'Amaury.
-					</p>
-					<div class="dashboard-anniversaire-actions">
-						<button
-							mat-flat-button
-							color="primary"
-							type="button"
-							routerLink="/anniversaire-40"
-							class="bridgerton-rsvp-btn"
-						>
-							<mat-icon>celebration</mat-icon>
-							Voir les informations
-						</button>
-					</div>
-				</mat-card-content>
-			</mat-card>
-		</section>
-	}
+				} @else if (membres().length === 0) {
+					<p class="bridgerton-empty">Aucune personne n’a été trouvée pour votre famille.</p>
+				} @else {
+					<ul class="family-list">
+						@for (p of membres(); track p.id) {
+							<li class="family-row">
+								<app-avatar-macaron
+									[imageSrc]="p.imageSrc"
+									[prenom]="p.prenom"
+									[nom]="p.nom"
+									[size]="56"
+								/>
+								<div class="family-body">
+									<p class="family-name">{{ p.displayName }}</p>
+									@if (p.declined) {
+										<p class="family-declined">A prié d’être excusé</p>
+									} @else if (p.yesEvents.length === 0) {
+										<p class="family-none">Aucune présence consignée</p>
+									} @else {
+										<ul class="family-yes">
+											@for (ev of p.yesEvents; track ev.key) {
+												<li class="family-chip">
+													<span class="family-chip-time">{{ ev.time }}</span>
+													<span class="family-chip-title">{{ ev.title }}</span>
+												</li>
+											}
+										</ul>
+									}
+								</div>
+							</li>
+						}
+					</ul>
+				}
+			</mat-card-content>
+		</mat-card>
+	</section>
 
-	<section class="dashboard-email-wrap" aria-labelledby="dashboard-email-title">
-		<mat-card class="bridgerton-card dashboard-email-card">
-			@if (emailLoading()) {
-				<mat-card-content>
-					<p class="bridgerton-loading">Chargement de votre correspondance…</p>
-				</mat-card-content>
-			} @else if (profileEmail()) {
-				<mat-card-content>
-					<div class="dashboard-email-heading">
-						<span class="bridgerton-card-kicker">Messagerie du domaine</span>
-						<h2 id="dashboard-email-title" class="bridgerton-card-title dashboard-email-title">
-							Votre adresse de courriel
-						</h2>
-					</div>
-					<p class="dashboard-email-value" [attr.title]="profileEmail()">{{ profileEmail() }}</p>
-					<p class="dashboard-email-prose">
-						C’est à cette adresse que nous pourrions vous faire parvenir des nouvelles. Si elle n’est point la bonne,
-						nous vous prions de la corriger dans votre profil.
+	<section class="day-of-section" aria-labelledby="day-of-programme-title">
+		<mat-card class="bridgerton-card">
+			<mat-card-content>
+				<div class="bridgerton-card-heading">
+					<span class="bridgerton-card-kicker">L’ordre du jour</span>
+					<h2 id="day-of-programme-title" class="bridgerton-card-title">Le programme</h2>
+				</div>
+				<p class="day-of-prose">
+					Les heures ci-dessous correspondent aux actes auxquels votre famille a répondu oui.
+				</p>
+
+				@if (loading()) {
+					<p class="bridgerton-loading">Le programme se dévoile…</p>
+				} @else if (!hasAnyPresence()) {
+					<p class="bridgerton-empty">
+						Aucune présence n’a encore été consignée ; le domaine demeure néanmoins ouvert à ceux qui sauraient se présenter.
 					</p>
-					<div class="dashboard-email-actions">
-						<button
-							mat-flat-button
-							color="primary"
-							type="button"
-							routerLink="/profile"
-							class="bridgerton-rsvp-btn"
-						>
-							<mat-icon>person</mat-icon>
-							Mon profil
-						</button>
-					</div>
-				</mat-card-content>
-			} @else {
-				<mat-card-content>
-					<div class="dashboard-email-heading dashboard-email-heading--oops">
-						<span class="bridgerton-card-kicker">Messagerie du domaine</span>
-						<p class="dashboard-email-oops" aria-hidden="true">Oups</p>
-						<h2 id="dashboard-email-title" class="bridgerton-card-title dashboard-email-title">
-							Aucune adresse E-mail enregistrée
-						</h2>
-					</div>
-					<p class="dashboard-email-prose">
-						Il nous manque une direction électronique pour vous joindre — ce serait fort aimable d’en déposer une
-						dans votre profil, lorsque vous aurez un moment.
+					<ol class="programme-list programme-list--all">
+						@for (ev of events; track ev.key) {
+							<li class="programme-item">
+								<div class="programme-time">{{ ev.time }}</div>
+								<div class="programme-copy">
+									<h3 class="programme-title">{{ ev.title }}</h3>
+									<p class="programme-sub">{{ ev.subtitle }}</p>
+								</div>
+							</li>
+						}
+					</ol>
+				} @else {
+					<ol class="programme-list">
+						@for (ev of programme(); track ev.key) {
+							<li class="programme-item">
+								<div class="programme-time">{{ ev.time }}</div>
+								<div class="programme-copy">
+									<h3 class="programme-title">{{ ev.title }}</h3>
+									<p class="programme-sub">{{ ev.subtitle }}</p>
+									<p class="programme-who">{{ attendeeNames(ev) }}</p>
+								</div>
+							</li>
+						}
+					</ol>
+				}
+			</mat-card-content>
+		</mat-card>
+	</section>
+
+	<section class="day-of-section" aria-labelledby="day-of-venue-title">
+		<mat-card class="bridgerton-card">
+			<mat-card-content>
+				<div class="bridgerton-card-heading">
+					<span class="bridgerton-card-kicker">Le rendez-vous</span>
+					<h2 id="day-of-venue-title" class="bridgerton-card-title">L’adresse</h2>
+				</div>
+				<address class="venue-address">
+					<strong class="venue-name">{{ venue.name }}</strong>
+					<span>{{ venue.street }}</span>
+					<span>{{ venue.city }}</span>
+					<span>{{ venue.country }}</span>
+				</address>
+				<div class="day-of-actions">
+					<a
+						mat-flat-button
+						color="primary"
+						class="bridgerton-rsvp-btn"
+						[href]="venue.mapsUrl"
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						<mat-icon>map</mat-icon>
+						Ouvrir dans Google Maps
+					</a>
+				</div>
+			</mat-card-content>
+		</mat-card>
+	</section>
+
+	<section class="day-of-section" aria-labelledby="day-of-lodging-title">
+		<mat-card class="bridgerton-card">
+			<mat-card-content>
+				<div class="bridgerton-card-heading">
+					<span class="bridgerton-card-kicker">Pour la nuit</span>
+					<h2 id="day-of-lodging-title" class="bridgerton-card-title">Dormir sur place</h2>
+				</div>
+				<p class="day-of-prose day-of-prose--last">
+					Il est loisible de reposer sur le domaine. Nous vous prions toutefois d’apporter, dans la mesure du possible,
+					votre tente, votre matelas et vos couvertures.
+				</p>
+				<p class="day-of-contact">
+					Pour tout renseignement, adressez-vous à <strong>Amaury Larive</strong> ou à
+					<strong>Thibaud Hautier</strong>.
+				</p>
+			</mat-card-content>
+		</mat-card>
+	</section>
+
+	<section class="day-of-section" aria-labelledby="day-of-offering-title">
+		<mat-card class="bridgerton-card">
+			<mat-card-content>
+				<div class="bridgerton-card-heading">
+					<span class="bridgerton-card-kicker">L’offrande</span>
+					<h2 id="day-of-offering-title" class="bridgerton-card-title">Le trésor des mariés</h2>
+				</div>
+				<p class="day-of-prose">
+					Si l’envie vous prend de garnir le trésor des mariés, une cassette sera mise à disposition le jour&nbsp;J.
+					Elle est également, dès à présent, accessible pour financer nos futures expéditions.
+				</p>
+				<div class="offering-account" role="group" aria-label="Coordonnées bancaires">
+					<p class="offering-iban">
+						<span class="offering-label">Compte</span>
+						<span class="offering-value">{{ offering.iban }}</span>
 					</p>
-					<div class="dashboard-email-actions">
-						<button
-							mat-flat-button
-							color="primary"
-							type="button"
-							routerLink="/profile"
-							class="bridgerton-rsvp-btn"
-						>
-							<mat-icon>edit</mat-icon>
-							Ajouter mon courriel
-						</button>
-					</div>
-				</mat-card-content>
-			}
+					<p class="offering-bic">
+						<span class="offering-label">BIC</span>
+						<span class="offering-value">{{ offering.bic }}</span>
+					</p>
+				</div>
+				<div class="day-of-actions">
+					<button
+						mat-stroked-button
+						type="button"
+						class="bridgerton-rsvp-btn"
+						(click)="copyIban()"
+					>
+						<mat-icon>{{ ibanCopied() ? 'check' : 'content_copy' }}</mat-icon>
+						{{ ibanCopied() ? 'Coordonnées copiées' : 'Copier le numéro' }}
+					</button>
+				</div>
+			</mat-card-content>
 		</mat-card>
 	</section>
 </div>
