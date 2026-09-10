@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { GAME_CONTENT_WRITES_LOCKED } from '../core/game-content-lock';
 import { gameState, isPlayerArchetype, REMOTE_PROGRESS_PLAYER_KEY } from '../core/game-state';
 
 type RpcResult<T> = { data: T | null; error: any };
@@ -143,7 +144,16 @@ export class GameBackendBridge {
     return rows.find((r) => Number(r.id) === personneId) ?? null;
   }
 
+  private guestContentWritesLocked(): boolean {
+    return GAME_CONTENT_WRITES_LOCKED;
+  }
+
+  private fakeInsertId(): number {
+    return Date.now();
+  }
+
   async insertAnecdoteForSelected(contenu: string): Promise<number | null> {
+    if (this.guestContentWritesLocked()) return this.fakeInsertId();
     const token = this.getToken();
     if (!token) throw new Error("Jeton d'invitation introuvable.");
     const personneId = this.getSelectedPersonneId();
@@ -176,6 +186,7 @@ export class GameBackendBridge {
   }
 
   async deleteAnecdoteForSelected(anecdoteId: number): Promise<void> {
+    if (this.guestContentWritesLocked()) return;
     const token = this.getToken();
     if (!token) throw new Error("Jeton d'invitation introuvable.");
     const res = await this.rpc<boolean>('delete_anecdote_for_token', {
@@ -204,6 +215,7 @@ export class GameBackendBridge {
   }
 
   async deleteIdeeForSelected(ideeId: number): Promise<void> {
+    if (this.guestContentWritesLocked()) return;
     const token = this.getToken();
     if (!token) throw new Error("Jeton d'invitation introuvable.");
     const res = await this.rpc<boolean>('delete_idee_for_token', {
@@ -214,6 +226,7 @@ export class GameBackendBridge {
   }
 
   async insertIdeeForSelected(contenu: string): Promise<number | null> {
+    if (this.guestContentWritesLocked()) return this.fakeInsertId();
     const token = this.getToken();
     if (!token) throw new Error("Jeton d'invitation introuvable.");
     const personneId = this.getSelectedPersonneId();
@@ -233,6 +246,7 @@ export class GameBackendBridge {
     lien: string;
     commentaire?: string;
   }): Promise<number | null> {
+    if (this.guestContentWritesLocked()) return this.fakeInsertId();
     const token = this.getToken();
     if (!token) throw new Error("Jeton d'invitation introuvable.");
     const personneId = this.getSelectedPersonneId();
@@ -280,6 +294,7 @@ export class GameBackendBridge {
   }
 
   async deleteMusiqueForSelected(musiqueId: number): Promise<void> {
+    if (this.guestContentWritesLocked()) return;
     const token = this.getToken();
     if (!token) throw new Error("Jeton d'invitation introuvable.");
     const res = await this.rpc<boolean>('delete_musique_for_token', {
@@ -290,6 +305,7 @@ export class GameBackendBridge {
   }
 
   async uploadPhotoForSelected(file: File): Promise<{ path?: string; publicUrl?: string } | null> {
+    if (this.guestContentWritesLocked()) return { path: 'locked', publicUrl: '' };
     if (!file) throw new Error('Aucun fichier fourni');
     const token = this.getToken();
     if (!token) throw new Error("Jeton d'invitation introuvable.");
@@ -420,6 +436,7 @@ export class GameBackendBridge {
   }
 
   async deleteFamilyPhotoForSelected(key: string): Promise<void> {
+    if (this.guestContentWritesLocked()) return;
     const user = this.getUser();
     const token = this.getToken();
     if (!user?.famille_id) throw new Error('Utilisateur non authentifié.');
@@ -480,6 +497,7 @@ export class GameBackendBridge {
     allergenes_alimentaires?: string;
     regimes_remarques?: string;
   }): Promise<void> {
+    if (this.guestContentWritesLocked()) return;
     const user = this.getUser();
     if (!user?.famille_id) throw new Error('Famille introuvable (app_user).');
     const familleId = Number(user.famille_id);
@@ -534,6 +552,13 @@ export class GameBackendBridge {
 
   /** Acte 3: sauvegarder avatar via RPC token-based existant */
   async upsertAvatarForSelected(seed: string, options: any, imageDataUri?: string | null): Promise<void> {
+    if (this.guestContentWritesLocked()) {
+      const personneId = this.getSelectedPersonneId();
+      if (personneId) {
+        this.mergeAvatarIntoAppUserCache(personneId, { seed, options, imageDataUri: imageDataUri ?? undefined });
+      }
+      return;
+    }
     const token = this.getToken();
     if (!token) throw new Error("Jeton d'invitation introuvable.");
     const personneId = this.getSelectedPersonneId();

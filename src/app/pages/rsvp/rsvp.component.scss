@@ -232,6 +232,25 @@
 	margin-top: 12px;
 }
 
+.rsvp-grid--locked {
+	opacity: 0.88;
+	pointer-events: none;
+}
+
+.rsvp-change-request {
+	margin-top: 8px;
+	padding-top: 8px;
+	scroll-margin-top: 88px;
+}
+
+.rsvp-change-title {
+	font-family: 'Cormorant Garamond', serif;
+	font-size: 1.35rem;
+	font-weight: 600;
+	color: var(--bridgerton-ink);
+	margin: 8px 0 8px;
+}
+
 .bridgerton-rsvp-btn {
 	font-family: 'Plus Jakarta Sans', sans-serif !important;
 	font-weight: 500 !important;

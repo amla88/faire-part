@@ -4,8 +4,13 @@
 			<p class="rsvp-eyebrow">Le registre des présences</p>
 			<h1 id="rsvp-page-title" class="rsvp-page-title">RSVP</h1>
 			<p class="rsvp-lede">
-				Indiquez vos intentions de présence et, le cas échéant, les précisions utiles au banquet.
-				Tout peut être modifié jusqu’à la date indiquée par les mariés.
+				@if (writesLocked) {
+					Les inscriptions sont closes. Vous pouvez consulter vos réponses ci-dessous.
+					Pour un changement, envoyez-nous une demande : nous la traiterons manuellement.
+				} @else {
+					Indiquez vos intentions de présence et, le cas échéant, les précisions utiles au banquet.
+					Tout peut être modifié jusqu’à la date indiquée par les mariés.
+				}
 			</p>
 			<div class="rsvp-flourish" aria-hidden="true"></div>
 		</div>
@@ -34,14 +39,18 @@
 
 					@if (personnes.length > 0) {
 						<p class="rsvp-prose">
-							Nous recueillons ici vos intentions de présence.
-							Pour celles et ceux conviés au repas, quelques précisions utiles au banquet&nbsp;:
-							allergènes, intolérances, régimes et préférences — afin que chacun soit servi avec égards.
+							@if (writesLocked) {
+								Voici les réponses actuellement consignées dans le registre.
+							} @else {
+								Nous recueillons ici vos intentions de présence.
+								Pour celles et ceux conviés au repas, quelques précisions utiles au banquet&nbsp;:
+								allergènes, intolérances, régimes et préférences — afin que chacun soit servi avec égards.
+							}
 						</p>
 					}
 
 					@if (personnes.length > 0) {
-						<div class="rsvp-grid">
+						<div class="rsvp-grid" [class.rsvp-grid--locked]="writesLocked">
 							<div formArrayName="personnes">
 								@for (p of personnes; track p.id) {
 									<div [formGroupName]="$index" class="person-block">
@@ -114,7 +123,7 @@
 						</div>
 					}
 
-					@if (personnes.length > 0) {
+					@if (personnes.length > 0 && !writesLocked) {
 						<div class="form-actions">
 							<button mat-flat-button color="primary" type="button" class="bridgerton-rsvp-btn" (click)="submit()" [disabled]="saving">
 								<mat-icon>save</mat-icon>
@@ -124,6 +133,46 @@
 						</div>
 					}
 				</form>
+			}
+
+			@if (!loading && writesLocked) {
+				<section id="demande" class="rsvp-change-request" aria-labelledby="rsvp-change-title">
+					<h2 id="rsvp-change-title" class="rsvp-change-title">Demander une modification</h2>
+					<p class="rsvp-prose">
+						Expliquez le changement souhaité (présence, allergènes, etc.). Un message nous sera envoyé.
+					</p>
+					<form [formGroup]="changeRequestForm" (ngSubmit)="sendChangeRequest()">
+						<mat-form-field appearance="outline" class="w-100 rsvp-dietary-field" subscriptSizing="dynamic">
+							<mat-label>Votre e-mail (pour vous répondre)</mat-label>
+							<input matInput type="email" formControlName="contactEmail" autocomplete="email" />
+						</mat-form-field>
+						<mat-form-field appearance="outline" class="w-100 rsvp-dietary-field" subscriptSizing="dynamic">
+							<mat-label>Votre demande</mat-label>
+							<textarea
+								matInput
+								formControlName="message"
+								rows="4"
+								placeholder="Ex. : Alice ne pourra finalement pas venir au repas…"
+								[cdkTextareaAutosize]="true"
+								cdkAutosizeMinRows="4"
+								cdkAutosizeMaxRows="10"
+							></textarea>
+						</mat-form-field>
+						<div class="form-actions">
+							<button
+								mat-flat-button
+								color="primary"
+								type="submit"
+								class="bridgerton-rsvp-btn"
+								[disabled]="sendingRequest"
+							>
+								<mat-icon>mail</mat-icon>
+								Envoyer la demande
+							</button>
+							<button mat-button type="button" (click)="cancel()" [disabled]="sendingRequest">Retour</button>
+						</div>
+					</form>
+				</section>
 			}
 		</mat-card-content>
 	</mat-card>

@@ -96,7 +96,12 @@
             <p class="anniv-presence-error" role="alert">{{ presenceLoadError() }}</p>
           } @else {
             <p class="anniv-presence-lede">
-              Vous pourrez modifier ce choix à tout moment.
+              @if (writesLocked) {
+                Les inscriptions sont closes.
+                <a routerLink="/rsvp" fragment="demande" class="anniv-presence-link">Demander une modification</a>
+              } @else {
+                Vous pourrez modifier ce choix à tout moment.
+              }
             </p>
             <div class="anniv-presence-control" [class.anniv-presence-control--saving]="savingPresence()">
               <span
@@ -107,7 +112,7 @@
               <mat-slide-toggle
                 class="anniv-presence-toggle"
                 [checked]="presentAnniversaire()"
-                [disabled]="savingPresence()"
+                [disabled]="savingPresence() || writesLocked"
                 (change)="onPresenceChange($event.checked)"
                 aria-label="Présence à l’anniversaire : présent ou absent"
               />

@@ -21,6 +21,7 @@ import {
 import { gameState, isPlayerArchetype, REMOTE_PROGRESS_PLAYER_KEY, type ActId } from 'src/game/core/game-state';
 import { dispatchRequestDomainMap, startSceneFromGame } from 'src/game/core/open-domain-map';
 import { gameBackend } from 'src/game/services/GameBackendBridge';
+import { GAME_CONTENT_LOCK_BANNER, GAME_CONTENT_WRITES_LOCKED } from 'src/game/core/game-content-lock';
 
 @Component({
   selector: 'app-jeu',
@@ -54,6 +55,8 @@ export class JeuComponent implements AfterViewInit, OnDestroy {
     this.refreshPhaserScale();
   };
   readonly hasSave = signal(false);
+  readonly contentWritesLocked = GAME_CONTENT_WRITES_LOCKED;
+  readonly contentLockBanner = GAME_CONTENT_LOCK_BANNER;
   private userInteracted = false;
   private mapEventHandler = () => {
     this.goToDomainMap();

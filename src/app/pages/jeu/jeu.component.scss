@@ -9,6 +9,21 @@
   padding: 8px;
 }
 
+.jeu-lock-banner {
+  max-width: 1280px;
+  margin: 0 auto 8px;
+  padding: 8px 14px;
+  text-align: center;
+  font-family: 'Italiana', serif;
+  font-size: clamp(0.95rem, 2.2vw, 1.2rem);
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  color: #faf6f1;
+  background: color-mix(in srgb, var(--bridgerton-wine, #6b3d4f) 88%, #2c2433 12%);
+  border: 1px solid color-mix(in srgb, var(--bridgerton-gold) 45%, transparent);
+  box-shadow: 0 4px 14px rgba(44, 36, 51, 0.18);
+}
+
 .game-shell {
   position: relative;
   max-width: 1280px;

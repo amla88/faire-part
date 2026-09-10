@@ -350,6 +350,14 @@
   color: var(--anniv-muted);
 }
 
+.anniv-presence-link {
+  display: inline-block;
+  margin-top: 8px;
+  color: var(--anniv-cyan);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .anniv-presence-control {
   display: flex;
   align-items: center;

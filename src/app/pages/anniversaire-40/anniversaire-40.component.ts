@@ -5,8 +5,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { RouterModule } from '@angular/router';
 import { AuthService, AppUser } from 'src/app/services/auth.service';
 import { NgSupabaseService } from 'src/app/services/ng-supabase.service';
+import { RSVP_WRITES_LOCKED } from 'src/app/services/guest-rsvp-lock';
 
 /** Page invitée : Day After / 40 ans — image + texte mission. */
 @Component({
@@ -19,6 +21,7 @@ import { NgSupabaseService } from 'src/app/services/ng-supabase.service';
     MatSlideToggleModule,
     MatSnackBarModule,
     MatProgressSpinnerModule,
+    RouterModule,
   ],
   templateUrl: './anniversaire-40.component.html',
   styleUrls: ['./anniversaire-40.component.scss'],
@@ -33,6 +36,7 @@ export class Anniversaire40Component implements OnInit {
 
   readonly loadingPresence = signal(true);
   readonly savingPresence = signal(false);
+  readonly writesLocked = RSVP_WRITES_LOCKED;
   readonly presentAnniversaire = signal(false);
   readonly presenceLoadError = signal<string | null>(null);
   private personneId: number | null = null;
@@ -70,6 +74,7 @@ export class Anniversaire40Component implements OnInit {
   }
 
   async onPresenceChange(checked: boolean): Promise<void> {
+    if (this.writesLocked) return;
     if (this.savingPresence()) return;
     const pid = this.personneId;
     if (pid == null) return;

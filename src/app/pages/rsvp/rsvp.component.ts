@@ -10,12 +10,14 @@ import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import { NgSupabaseService } from 'src/app/services/ng-supabase.service';
 import { AuthService } from 'src/app/services/auth.service';
 import { AvatarService } from 'src/app/services/avatar.service';
 import { AvatarMacaronComponent } from 'src/app/shared/avatar-macaron/avatar-macaron.component';
+import { RSVP_WRITES_LOCKED } from 'src/app/services/guest-rsvp-lock';
+import { RsvpChangeRequestService } from 'src/app/services/rsvp-change-request.service';
 
 @Component({
   selector: 'app-rsvp',
@@ -45,14 +47,23 @@ export class RsvpComponent implements OnInit {
   private avatar = inject(AvatarService);
   private fb = inject(FormBuilder);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private snack = inject(MatSnackBar);
+  private changeRequest = inject(RsvpChangeRequestService);
 
+  readonly writesLocked = RSVP_WRITES_LOCKED;
   loading = true;
   saving = false;
+  sendingRequest = false;
   personnes: Array<any> = [];
 
   form = this.fb.group({
     personnes: this.fb.array([])
+  });
+
+  changeRequestForm = this.fb.group({
+    contactEmail: ['', [Validators.email, Validators.maxLength(200)]],
+    message: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(4000)]],
   });
 
   get personnesArray() {
@@ -148,15 +159,23 @@ export class RsvpComponent implements OnInit {
           this.applyDeclineToRow(g, p, true);
         }
       }
+      if (this.writesLocked) {
+        this.form.disable({ emitEvent: false });
+      }
+      await this.prefillContactEmail();
     } catch (err) {
       console.error('Erreur lors de la récupération des personnes :', err);
       this.personnes = [];
     } finally {
       this.loading = false;
+      if (this.writesLocked && this.route.snapshot.fragment === 'demande') {
+        setTimeout(() => document.getElementById('demande')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+      }
     }
   }
 
   async submit() {
+    if (this.writesLocked) return;
     if (this.form.invalid) return;
     this.saving = true;
     try {
@@ -203,6 +222,28 @@ export class RsvpComponent implements OnInit {
       );
     } finally {
       this.saving = false;
+    }
+  }
+
+  async sendChangeRequest(): Promise<void> {
+    if (!this.writesLocked || this.sendingRequest) return;
+    if (this.changeRequestForm.invalid) {
+      this.changeRequestForm.markAllAsTouched();
+      return;
+    }
+    this.sendingRequest = true;
+    try {
+      const v = this.changeRequestForm.getRawValue();
+      await this.changeRequest.send({
+        message: v.message ?? '',
+        contactEmail: v.contactEmail ?? '',
+      });
+      this.snack.open('Votre demande a bien été envoyée. Merci.', undefined, { duration: 4500 });
+      this.changeRequestForm.patchValue({ message: '' });
+    } catch (err: any) {
+      this.snack.open(err?.message || 'Envoi impossible', 'OK', { duration: 6000 });
+    } finally {
+      this.sendingRequest = false;
     }
   }
 
@@ -267,5 +308,25 @@ export class RsvpComponent implements OnInit {
     const raw = this.avatar.getAvatarDataUri(pid);
     const s = raw != null ? String(raw).trim() : '';
     return s.length > 0 ? s : null;
+  }
+
+  private async prefillContactEmail(): Promise<void> {
+    const token = this.auth.getToken();
+    const user = this.auth.getUser();
+    const personneId = Number(user?.selected_personne_id ?? user?.personne_principale_id);
+    if (!token || !Number.isFinite(personneId)) return;
+    try {
+      const { data } = await this.supabase.getClient().rpc('get_profile_for_token', {
+        p_token: token,
+        p_personne_id: personneId,
+      });
+      const row = Array.isArray(data) ? data[0] : data;
+      const em = String((row as { email?: string | null } | null)?.email ?? '').trim();
+      if (em) {
+        this.changeRequestForm.patchValue({ contactEmail: em });
+      }
+    } catch {
+      /* ignore */
+    }
   }
 }

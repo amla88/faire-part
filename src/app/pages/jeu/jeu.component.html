@@ -1,4 +1,7 @@
 <div class="jeu-page">
+  @if (contentWritesLocked) {
+    <p class="jeu-lock-banner" role="status">{{ contentLockBanner }}</p>
+  }
   <div #gameShell class="game-shell" [class.portrait]="isPortrait()">
     <div
       #gameHost

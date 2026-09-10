@@ -75,6 +75,7 @@ jobs:
           cp -f ionos/api/photos-delete.php dist/faire-part/browser/api/photos-delete.php
           cp -f ionos/api/spotify-search.php dist/faire-part/browser/api/spotify-search.php
           cp -f ionos/api/spotify-playlist-add.php dist/faire-part/browser/api/spotify-playlist-add.php
+          cp -f ionos/api/rsvp-change-request.php dist/faire-part/browser/api/rsvp-change-request.php
           sed "s|\"supabase-url\": \"\"|\"supabase-url\": \"${SUPABASE_URL}\"|; s|\"supabase-anon-key\": \"\"|\"supabase-anon-key\": \"${SUPABASE_ANON_KEY}\"|; s|\"spotify-client-id\": \"\"|\"spotify-client-id\": \"${SPOTIFY_CLIENT_ID}\"|; s|\"spotify-client-secret\": \"\"|\"spotify-client-secret\": \"${SPOTIFY_CLIENT_SECRET}\"|" ionos/api/supabase-meta.json > dist/faire-part/browser/api/supabase-meta.json
           node -e "require('fs').writeFileSync('dist/faire-part/browser/api/spotify-meta.json', JSON.stringify({'spotify-refresh-token':process.env.SPOTIFY_REFRESH_TOKEN||'','spotify-playlist-id':process.env.SPOTIFY_PLAYLIST_ID||''}));"
 
