@@ -3,7 +3,7 @@
     <mat-card-title>Avatars des invités</mat-card-title>
     <p class="f-s-13 text-muted m-t-8 m-b-16">
       Liste des familles avec les effigies créées par les invités. Cliquez sur une famille pour
-      afficher les avatars en grand, ou exportez une étiquette imprimable par famille.
+      afficher les avatars en grand, ou exportez des étiquettes 20×10 mm (avatar à gauche, nom à droite).
     </p>
 
     <div class="admin-avatars-label-settings m-b-16">
@@ -14,7 +14,7 @@
           <input
             matInput
             type="number"
-            min="20"
+            min="8"
             max="200"
             step="0.5"
             [ngModel]="labelSettings().widthMm"
@@ -26,19 +26,11 @@
           <input
             matInput
             type="number"
-            min="20"
+            min="8"
             max="200"
             step="0.5"
             [ngModel]="labelSettings().heightMm"
             (ngModelChange)="updateLabelHeight($event)"
-          />
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="admin-avatars-label-field admin-avatars-label-field--date">
-          <mat-label>Date affichée</mat-label>
-          <input
-            matInput
-            [ngModel]="labelSettings().weddingDate"
-            (ngModelChange)="updateWeddingDate($event)"
           />
         </mat-form-field>
         <div class="admin-avatars-label-mode">
@@ -51,8 +43,8 @@
           <p class="f-s-12 text-muted m-t-4 m-b-0">
             {{
               labelSettings().oneLabelPerPerson
-                ? 'Chaque membre reçoit sa propre étiquette (nom + famille en sous-titre).'
-                : 'Une étiquette globale par famille avec tous les membres.'
+                ? 'Format 20×10 mm : avatar à gauche, prénom et nom empilés à droite.'
+                : 'Une étiquette par famille (premier membre affiché sur ce petit format).'
             }}
           </p>
         </div>
@@ -78,11 +70,11 @@
           </button>
         </div>
         <div class="admin-avatars-label-preview-wrap">
-          <span class="f-s-12 text-muted d-block m-b-4">Aperçu du fond</span>
+          <span class="f-s-12 text-muted d-block m-b-4">Aperçu ({{ labelSettings().widthMm }}×{{ labelSettings().heightMm }} mm)</span>
           <img
             class="admin-avatars-label-preview"
-            [src]="labelBackgroundPreview()"
-            alt="Aperçu fond étiquette"
+            [src]="labelPreviewUrl() || labelBackgroundPreview()"
+            alt="Aperçu étiquette"
           />
         </div>
         <div class="admin-avatars-label-export-all">

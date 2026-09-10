@@ -6,18 +6,17 @@ import {
   AvatarLabelSettings,
   DEFAULT_LABEL_BACKGROUND,
   expandLabelJobs,
-  WEDDING_LOGO_SRC,
 } from './avatar-label-export.types';
 import { AVATAR_PLACEHOLDER_SRC } from './admin-avatars.utils';
 
 const EXPORT_DPI = 300;
 const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
-const A4_MARGIN_MM = 10;
+const A4_MARGIN_MM = 8;
+const A4_MIN_GAP_MM = 1.2;
 
 interface LabelRenderAssets {
   bg: HTMLImageElement;
-  logo: HTMLImageElement;
 }
 
 interface A4LabelLayout {
@@ -68,8 +67,7 @@ export class AvatarLabelExportService {
 
     const bgSrc = settings.backgroundDataUrl ?? DEFAULT_LABEL_BACKGROUND;
     const assets: LabelRenderAssets = {
-      bg: await this.loadImage(bgSrc),
-      logo: await this.loadImage(WEDDING_LOGO_SRC),
+      bg: await this.loadBackground(bgSrc, this.mmToPx(settings.widthMm), this.mmToPx(settings.heightMm)),
     };
 
     const layout = this.computeA4Layout(settings.widthMm, settings.heightMm);
@@ -107,6 +105,11 @@ export class AvatarLabelExportService {
     this.downloadDataUrl(canvas.toDataURL('image/png'), `etiquette-${slug}.png`);
   }
 
+  async previewDataUrl(famille: AvatarLabelFamille, settings: AvatarLabelSettings): Promise<string> {
+    const canvas = await this.renderLabelCanvas(famille, settings);
+    return canvas.toDataURL('image/png');
+  }
+
   private allLabelsFilename(): string {
     const stamp = new Date();
     const pad = (n: number) => String(n).padStart(2, '0');
@@ -116,8 +119,8 @@ export class AvatarLabelExportService {
   private computeA4Layout(labelW: number, labelH: number): A4LabelLayout {
     const usableW = A4_WIDTH_MM - A4_MARGIN_MM * 2;
     const usableH = A4_HEIGHT_MM - A4_MARGIN_MM * 2;
-    const maxCols = Math.max(1, Math.floor(usableW / labelW));
-    const maxRows = Math.max(1, Math.floor(usableH / labelH));
+    const maxCols = Math.max(1, Math.floor((usableW + A4_MIN_GAP_MM) / (labelW + A4_MIN_GAP_MM)));
+    const maxRows = Math.max(1, Math.floor((usableH + A4_MIN_GAP_MM) / (labelH + A4_MIN_GAP_MM)));
 
     let best: A4LabelLayout = {
       cols: 1,
@@ -134,6 +137,8 @@ export class AvatarLabelExportService {
         const perPage = cols * rows;
         const gapX = cols > 1 ? (usableW - cols * labelW) / (cols - 1) : 0;
         const gapY = rows > 1 ? (usableH - rows * labelH) / (rows - 1) : 0;
+        if (cols > 1 && gapX + 0.01 < A4_MIN_GAP_MM) continue;
+        if (rows > 1 && gapY + 0.01 < A4_MIN_GAP_MM) continue;
         const gridW = cols * labelW + Math.max(0, cols - 1) * gapX;
         const gridH = rows * labelH + Math.max(0, rows - 1) * gapY;
         if (gridW > usableW + 0.01 || gridH > usableH + 0.01) continue;
@@ -224,73 +229,99 @@ export class AvatarLabelExportService {
     if (!ctx) throw new Error('Canvas indisponible');
 
     const bgSrc = settings.backgroundDataUrl ?? DEFAULT_LABEL_BACKGROUND;
-    const [bg, logo] = assets
-      ? [assets.bg, assets.logo]
-      : await Promise.all([this.loadImage(bgSrc), this.loadImage(WEDDING_LOGO_SRC)]);
+    const bg = assets?.bg ?? (await this.loadBackground(bgSrc, wPx, hPx));
 
     ctx.drawImage(bg, 0, 0, wPx, hPx);
 
-    // Voile crème léger pour lisibilité
-    ctx.fillStyle = 'rgba(255, 252, 248, 0.12)';
+    ctx.fillStyle = 'rgba(255, 248, 230, 0.08)';
     ctx.fillRect(0, 0, wPx, hPx);
 
-    const midX = wPx / 2;
-    ctx.strokeStyle = 'rgba(184, 150, 90, 0.55)';
-    ctx.lineWidth = Math.max(1, wPx * 0.004);
-    ctx.setLineDash([wPx * 0.01, wPx * 0.008]);
-    ctx.beginPath();
-    ctx.moveTo(midX, hPx * 0.1);
-    ctx.lineTo(midX, hPx * 0.9);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    const inset = Math.max(2, Math.round(hPx * 0.045));
+    ctx.strokeStyle = 'rgba(184, 149, 80, 0.9)';
+    ctx.lineWidth = Math.max(1.2, hPx * 0.028);
+    ctx.strokeRect(inset, inset, wPx - inset * 2, hPx - inset * 2);
+    ctx.strokeStyle = 'rgba(232, 206, 140, 0.45)';
+    ctx.lineWidth = Math.max(0.8, hPx * 0.012);
+    ctx.strokeRect(inset + 2, inset + 2, wPx - (inset + 2) * 2, hPx - (inset + 2) * 2);
 
-    await this.drawAvatars(ctx, famille.personnes, 0, 0, midX, hPx, famille.subtitle);
-    this.drawBranding(ctx, logo, settings.weddingDate, midX, 0, wPx - midX, hPx);
+    const person = this.resolveLabelPerson(famille);
+    let avatarImg: HTMLImageElement;
+    try {
+      avatarImg = await this.loadImage(person.imageSrc);
+    } catch {
+      avatarImg = await this.loadImage(AVATAR_PLACEHOLDER_SRC);
+    }
+    this.drawCompactPerson(ctx, person, avatarImg, wPx, hPx);
 
     return canvas;
   }
 
-  private async drawAvatars(
+  private resolveLabelPerson(famille: AvatarLabelFamille): AvatarLabelPerson {
+    return (
+      famille.personnes[0] ?? {
+        prenom: famille.displayName || '?',
+        nom: '',
+        imageSrc: AVATAR_PLACEHOLDER_SRC,
+      }
+    );
+  }
+
+  private drawCompactPerson(
     ctx: CanvasRenderingContext2D,
-    personnes: AvatarLabelPerson[],
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    subtitle?: string
-  ): Promise<void> {
-    const list = personnes.length > 0 ? personnes : [{ prenom: '?', nom: '', imageSrc: AVATAR_PLACEHOLDER_SRC }];
-    const count = list.length;
-    const cols = count <= 1 ? 1 : count <= 2 ? 2 : count <= 4 ? 2 : 3;
-    const rows = Math.ceil(count / cols);
-    const pad = w * 0.08;
-    const cellW = (w - pad * 2) / cols;
-    const cellH = (h - pad * 2) / rows;
-    const avatarSize = Math.min(cellW, cellH) * 0.72;
+    person: AvatarLabelPerson,
+    avatarImg: HTMLImageElement,
+    wPx: number,
+    hPx: number
+  ): void {
+    const pad = Math.max(5, hPx * 0.1);
+    const avatarR = Math.max(8, (hPx - pad * 2) * 0.46);
+    const ax = pad + avatarR;
+    const ay = hPx / 2;
+    this.drawCircularAvatar(ctx, avatarImg, ax, ay, avatarR);
 
-    const images = await Promise.all(list.map((p) => this.loadImage(p.imageSrc)));
+    const textX = ax + avatarR + pad * 0.75;
+    const textW = Math.max(12, wPx - pad - textX);
+    const prenom = (person.prenom || '').trim();
+    const nom = (person.nom || '').trim();
 
-    for (let i = 0; i < count; i++) {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const cx = x + pad + cellW * col + cellW / 2;
-      const cy = y + pad + cellH * row + cellH / 2 - h * 0.04;
-      this.drawCircularAvatar(ctx, images[i], cx, cy, avatarSize / 2);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#3a2a22';
 
-      const name = `${list[i].prenom} ${list[i].nom}`.trim();
-      if (name) {
-        ctx.fillStyle = '#3d2f36';
-        ctx.font = `600 ${Math.max(10, avatarSize * 0.16)}px Georgia, "Times New Roman", serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-        ctx.fillText(name, cx, cy + avatarSize / 2 + avatarSize * 0.06, cellW * 0.95);
-      }
-      if (count === 1 && subtitle?.trim()) {
-        ctx.fillStyle = 'rgba(92, 74, 82, 0.85)';
-        ctx.font = `italic ${Math.max(8, avatarSize * 0.12)}px Georgia, "Times New Roman", serif`;
-        ctx.fillText(subtitle.trim(), cx, cy + avatarSize / 2 + avatarSize * 0.22, cellW * 0.95);
-      }
+    if (prenom && nom) {
+      const prenomSize = this.fitFontSize(ctx, prenom, textW, hPx * 0.26, hPx * 0.14, 700);
+      const nomSize = this.fitFontSize(ctx, nom, textW, hPx * 0.2, hPx * 0.11, 600);
+      ctx.font = `700 ${prenomSize}px Georgia, "Times New Roman", serif`;
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText(prenom, textX, ay - hPx * 0.04, textW);
+      ctx.fillStyle = 'rgba(58, 42, 34, 0.78)';
+      ctx.font = `600 ${nomSize}px Georgia, "Times New Roman", serif`;
+      ctx.textBaseline = 'top';
+      ctx.fillText(nom, textX, ay + hPx * 0.02, textW);
+      return;
     }
+
+    const single = prenom || nom || '?';
+    const size = this.fitFontSize(ctx, single, textW, hPx * 0.28, hPx * 0.14, 700);
+    ctx.font = `700 ${size}px Georgia, "Times New Roman", serif`;
+    ctx.textBaseline = 'middle';
+    ctx.fillText(single, textX, ay, textW);
+  }
+
+  private fitFontSize(
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    maxWidth: number,
+    maxSize: number,
+    minSize: number,
+    weight: number
+  ): number {
+    let size = maxSize;
+    while (size > minSize) {
+      ctx.font = `${weight} ${size}px Georgia, "Times New Roman", serif`;
+      if (ctx.measureText(text).width <= maxWidth) return size;
+      size -= 0.4;
+    }
+    return minSize;
   }
 
   private drawCircularAvatar(
@@ -308,86 +339,36 @@ export class AvatarLabelExportService {
     ctx.drawImage(img, cx - radius, cy - radius, radius * 2, radius * 2);
     ctx.restore();
 
-    ctx.strokeStyle = 'rgba(184, 150, 90, 0.85)';
-    ctx.lineWidth = Math.max(1.5, radius * 0.06);
+    ctx.strokeStyle = 'rgba(196, 163, 74, 0.95)';
+    ctx.lineWidth = Math.max(1.6, radius * 0.08);
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     ctx.stroke();
+    ctx.strokeStyle = 'rgba(232, 210, 140, 0.65)';
+    ctx.lineWidth = Math.max(0.8, radius * 0.03);
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius - ctx.lineWidth, 0, Math.PI * 2);
+    ctx.stroke();
   }
 
-  private drawBranding(
-    ctx: CanvasRenderingContext2D,
-    logo: HTMLImageElement,
-    weddingDate: string,
-    x: number,
-    y: number,
-    w: number,
-    h: number
-  ): void {
-    const cx = x + w / 2;
-    const panelW = w * 0.78;
-    const panelH = h * 0.88;
-    const panelX = cx - panelW / 2;
-    const panelY = y + (h - panelH) / 2;
-    const radius = h * 0.06;
-
-    const grad = ctx.createLinearGradient(panelX, panelY, panelX + panelW, panelY + panelH);
-    grad.addColorStop(0, '#3d5248');
-    grad.addColorStop(0.5, '#4a6358');
-    grad.addColorStop(1, '#5a7568');
-    ctx.fillStyle = grad;
-    this.roundRect(ctx, panelX, panelY, panelW, panelH, radius);
-    ctx.fill();
-
-    ctx.strokeStyle = 'rgba(214, 188, 130, 0.55)';
-    ctx.lineWidth = Math.max(1, w * 0.008);
-    this.roundRect(ctx, panelX, panelY, panelW, panelH, radius);
-    ctx.stroke();
-
-    const logoMaxW = panelW * 0.72;
-    const logoMaxH = panelH * 0.38;
-    const logoScale = Math.min(logoMaxW / logo.width, logoMaxH / logo.height);
-    const logoW = logo.width * logoScale;
-    const logoH = logo.height * logoScale;
-    const logoY = panelY + panelH * 0.14;
-
-    ctx.drawImage(logo, cx - logoW / 2, logoY, logoW, logoH);
-
-    const ruleY = logoY + logoH + panelH * 0.07;
-    ctx.strokeStyle = 'rgba(214, 188, 130, 0.75)';
-    ctx.lineWidth = Math.max(1, w * 0.005);
-    ctx.beginPath();
-    ctx.moveTo(cx - panelW * 0.28, ruleY);
-    ctx.lineTo(cx + panelW * 0.28, ruleY);
-    ctx.stroke();
-
-    ctx.fillStyle = 'rgba(250, 246, 241, 0.95)';
-    ctx.font = `italic ${Math.max(11, h * 0.085)}px Georgia, "Times New Roman", serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText(weddingDate, cx, ruleY + panelH * 0.06, panelW * 0.9);
-  }
-
-  private roundRect(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    r: number
-  ): void {
-    const radius = Math.min(r, w / 2, h / 2);
-    ctx.beginPath();
-    ctx.moveTo(x + radius, y);
-    ctx.lineTo(x + w - radius, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
-    ctx.lineTo(x + w, y + h - radius);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
-    ctx.lineTo(x + radius, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
-    ctx.lineTo(x, y + radius);
-    ctx.quadraticCurveTo(x, y, x + radius, y);
-    ctx.closePath();
+  private async loadBackground(src: string, wPx: number, hPx: number): Promise<HTMLImageElement> {
+    try {
+      return await this.loadImage(src);
+    } catch {
+      const c = document.createElement('canvas');
+      c.width = Math.max(8, wPx);
+      c.height = Math.max(8, hPx);
+      const ctx = c.getContext('2d');
+      if (ctx) {
+        const grad = ctx.createLinearGradient(0, 0, wPx, hPx);
+        grad.addColorStop(0, '#f3e3c4');
+        grad.addColorStop(0.45, '#ead4a8');
+        grad.addColorStop(1, '#dcc48a');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, wPx, hPx);
+      }
+      return this.loadImage(c.toDataURL('image/png'));
+    }
   }
 
   private loadImage(src: string): Promise<HTMLImageElement> {

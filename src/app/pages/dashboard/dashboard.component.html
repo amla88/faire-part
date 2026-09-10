@@ -19,7 +19,8 @@
 					<h2 id="day-of-family-title" class="bridgerton-card-title">Vos présences</h2>
 				</div>
 				<p class="day-of-prose">
-					Ci-dessous, les membres de votre famille, et les actes auxquels ils ont répondu par l’affirmative.
+					Ci-dessous, les membres de votre famille, les actes auxquels ils ont répondu par l’affirmative,
+					et, le cas échéant, la table qui leur est assignée pour le banquet.
 				</p>
 
 				@if (loading()) {
@@ -41,6 +42,9 @@
 								/>
 								<div class="family-body">
 									<p class="family-name">{{ p.displayName }}</p>
+									@if (p.tableLabel) {
+										<p class="family-table">{{ tableSeatPhrase(p.tableLabel) }}</p>
+									}
 									@if (p.declined) {
 										<p class="family-declined">A prié d’être excusé</p>
 									} @else if (p.yesEvents.length === 0) {

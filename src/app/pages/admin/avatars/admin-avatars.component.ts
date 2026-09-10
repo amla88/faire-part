@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   OnInit,
   signal,
@@ -24,8 +25,11 @@ import { NgSupabaseService } from 'src/app/services/ng-supabase.service';
 import { AvatarService } from 'src/app/services/avatar.service';
 import { AvatarLabelExportService } from './avatar-label-export.service';
 import {
+  AvatarLabelFamille,
   AvatarLabelSettings,
   DEFAULT_LABEL_BACKGROUND,
+  MIN_LABEL_MM,
+  MAX_LABEL_MM,
   loadAvatarLabelSettings,
   saveAvatarLabelSettings,
   expandLabelJobs,
@@ -98,6 +102,8 @@ export class AdminAvatarsComponent implements OnInit {
   readonly labelBackgroundPreview = computed(() =>
     this.labelSettings().backgroundDataUrl ?? DEFAULT_LABEL_BACKGROUND
   );
+  readonly labelPreviewUrl = signal<string | null>(null);
+  private labelPreviewGen = 0;
 
   readonly displayedColumns = ['famille', 'membres', 'avatars', 'action'];
 
@@ -139,6 +145,14 @@ export class AdminAvatarsComponent implements OnInit {
         imageSrc: p.imageSrc,
       })),
     };
+  }
+
+  constructor() {
+    effect(() => {
+      const settings = this.labelSettings();
+      const sample = this.previewSample();
+      void this.refreshLabelPreview(sample, settings);
+    });
   }
 
   ngOnInit(): void {
@@ -229,22 +243,50 @@ export class AdminAvatarsComponent implements OnInit {
     saveAvatarLabelSettings(this.labelSettings());
   }
 
+  private previewSample(): AvatarLabelFamille {
+    const first = this.familles()[0]?.personnes[0];
+    return {
+      displayName: first ? `${first.prenom} ${first.nom}` : 'Amaury Larive',
+      personnes: [
+        {
+          prenom: first?.prenom || 'Amaury',
+          nom: first?.nom || 'Larive',
+          imageSrc: first?.imageSrc || AVATAR_PLACEHOLDER_SRC,
+        },
+      ],
+    };
+  }
+
+  private async refreshLabelPreview(
+    sample: AvatarLabelFamille,
+    settings: AvatarLabelSettings
+  ): Promise<void> {
+    const gen = ++this.labelPreviewGen;
+    try {
+      const url = await this.labelExport.previewDataUrl(sample, settings);
+      if (gen === this.labelPreviewGen) this.labelPreviewUrl.set(url);
+    } catch {
+      if (gen === this.labelPreviewGen) this.labelPreviewUrl.set(null);
+    }
+  }
+
   updateLabelWidth(value: string): void {
     const n = Number(value);
     if (!Number.isFinite(n)) return;
-    this.labelSettings.update((s) => ({ ...s, widthMm: Math.min(200, Math.max(20, n)) }));
+    this.labelSettings.update((s) => ({
+      ...s,
+      widthMm: Math.min(MAX_LABEL_MM, Math.max(MIN_LABEL_MM, n)),
+    }));
     this.persistLabelSettings();
   }
 
   updateLabelHeight(value: string): void {
     const n = Number(value);
     if (!Number.isFinite(n)) return;
-    this.labelSettings.update((s) => ({ ...s, heightMm: Math.min(200, Math.max(20, n)) }));
-    this.persistLabelSettings();
-  }
-
-  updateWeddingDate(value: string): void {
-    this.labelSettings.update((s) => ({ ...s, weddingDate: value }));
+    this.labelSettings.update((s) => ({
+      ...s,
+      heightMm: Math.min(MAX_LABEL_MM, Math.max(MIN_LABEL_MM, n)),
+    }));
     this.persistLabelSettings();
   }
 

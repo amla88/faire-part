@@ -71,6 +71,8 @@ export interface FamilyMember {
   declined: boolean;
   yesEvents: FamilyMemberYes[];
   imageSrc: string | null;
+  /** Libellé de table du repas, si la personne est invitée et placée. */
+  tableLabel: string | null;
 }
 
 export interface ProgrammeItem extends WeddingEventDef {
@@ -136,6 +138,16 @@ export class DashboardComponent implements OnInit {
     return item.attendees.map((p) => p.prenom).join(', ');
   }
 
+  tableSeatPhrase(label: string): string {
+    const t = label.trim();
+    if (!t) return '';
+    if (/^à la\b/i.test(t)) return t;
+    if (/^table\b/i.test(t)) {
+      return `À la ${t.charAt(0).toLowerCase()}${t.slice(1)}`;
+    }
+    return `À la table « ${t} »`;
+  }
+
   async copyIban(): Promise<void> {
     const value = `${this.offering.iban} — BIC ${this.offering.bic}`;
     try {
@@ -176,13 +188,42 @@ export class DashboardComponent implements OnInit {
     return v === true || v === 'true' || v === 1 || v === '1';
   }
 
-  private async loadFamille(user: AppUser): Promise<void> {
+  private async loadSeatingByPersonne(token: string | null): Promise<Map<number, string>> {
+    const map = new Map<number, string>();
+    if (!token) return map;
     try {
       const client = this.supabase.getClient();
       const rpcRes: { data?: unknown; error?: { message?: string } | null } = await client.rpc(
-        'get_personnes_by_famille',
-        { p_famille_id: user.famille_id },
+        'get_seating_for_famille_token',
+        { p_token: token },
       );
+      if (rpcRes.error) {
+        console.warn('Erreur Supabase rpc get_seating_for_famille_token:', rpcRes.error);
+        return map;
+      }
+      const rows: unknown[] = Array.isArray(rpcRes.data) ? rpcRes.data : [];
+      for (const raw of rows) {
+        const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+        const id = Number(r['personne_id']);
+        const label = String(r['table_label'] ?? '').trim();
+        if (Number.isFinite(id) && label.length > 0) {
+          map.set(id, label);
+        }
+      }
+    } catch (err) {
+      console.warn('Erreur lors de la récupération des tables :', err);
+    }
+    return map;
+  }
+
+  private async loadFamille(user: AppUser): Promise<void> {
+    try {
+      const client = this.supabase.getClient();
+      const token = this.auth.getToken();
+      const [rpcRes, seatingByPersonne] = await Promise.all([
+        client.rpc('get_personnes_by_famille', { p_famille_id: user.famille_id }),
+        this.loadSeatingByPersonne(token),
+      ]);
       if (rpcRes.error) {
         console.warn('Erreur Supabase rpc get_personnes_by_famille:', rpcRes.error);
         this.membres.set([]);
@@ -203,14 +244,17 @@ export class DashboardComponent implements OnInit {
                 title: ev.title,
                 subtitle: ev.subtitle,
               }));
+        const id = Number(r['id']);
+        const tableLabel = !declined ? seatingByPersonne.get(id) ?? null : null;
         return {
-          id: Number(r['id']),
+          id,
           nom: String(r['nom'] ?? ''),
           prenom: String(r['prenom'] ?? ''),
           displayName: `${r['prenom'] ?? ''} ${r['nom'] ?? ''}`.trim(),
           declined,
           yesEvents,
           imageSrc: null,
+          tableLabel,
         };
       });
 

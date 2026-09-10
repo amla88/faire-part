@@ -1,10 +1,11 @@
-export const DEFAULT_LABEL_BACKGROUND = 'assets/images/labels/etiquette-fond-bridgerton.png';
-export const WEDDING_LOGO_SRC = 'assets/images/logos/logo.png';
+export const DEFAULT_LABEL_BACKGROUND = 'assets/images/labels/etiquette-fond-dore.png';
 export const DEFAULT_WEDDING_DATE = '12 septembre 2026';
-export const DEFAULT_LABEL_WIDTH_MM = 60;
-export const DEFAULT_LABEL_HEIGHT_MM = 40;
+export const DEFAULT_LABEL_WIDTH_MM = 20;
+export const DEFAULT_LABEL_HEIGHT_MM = 10;
+export const MIN_LABEL_MM = 8;
+export const MAX_LABEL_MM = 200;
 
-export const LABEL_SETTINGS_STORAGE_KEY = 'admin_avatar_label_settings';
+export const LABEL_SETTINGS_STORAGE_KEY = 'admin_avatar_label_settings_v2';
 
 export interface AvatarLabelSettings {
   widthMm: number;
@@ -22,7 +23,7 @@ export function defaultAvatarLabelSettings(): AvatarLabelSettings {
     heightMm: DEFAULT_LABEL_HEIGHT_MM,
     weddingDate: DEFAULT_WEDDING_DATE,
     backgroundDataUrl: null,
-    oneLabelPerPerson: false,
+    oneLabelPerPerson: true,
   };
 }
 
@@ -42,7 +43,7 @@ export function loadAvatarLabelSettings(): AvatarLabelSettings {
         typeof parsed.backgroundDataUrl === 'string' && parsed.backgroundDataUrl.startsWith('data:')
           ? parsed.backgroundDataUrl
           : null,
-      oneLabelPerPerson: parsed.oneLabelPerPerson === true,
+      oneLabelPerPerson: parsed.oneLabelPerPerson !== false,
     };
   } catch {
     return defaults;
@@ -60,7 +61,7 @@ export function saveAvatarLabelSettings(settings: AvatarLabelSettings): void {
 function clampMm(value: unknown, fallback: number): number {
   const n = Number(value);
   if (!Number.isFinite(n)) return fallback;
-  return Math.min(200, Math.max(20, Math.round(n * 10) / 10));
+  return Math.min(MAX_LABEL_MM, Math.max(MIN_LABEL_MM, Math.round(n * 10) / 10));
 }
 
 export interface AvatarLabelPerson {
